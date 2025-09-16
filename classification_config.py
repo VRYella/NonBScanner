@@ -26,6 +26,7 @@ MOTIF_LENGTH_LIMITS = {
     "R-Loop":            {"S_min": 140, "S_max": 400},   # RLFS+REZ, min 100bp, up to 400bp
     "Cruciform":         {"S_min": 23,  "S_max": 100},   # 2x10bp arm + 3bp spacer, max 2x50bp
     "Triplex":           {"S_min": 30,  "S_max": 400},   # 10bp arm + spacer, up to 2x100bp
+    "A-philic_DNA":      {"S_min": 10,  "S_max": 50},    # Tetranucleotide windows, 10-20bp optimal
     "Sticky_DNA":        {"S_min": 236, "S_max": 1000},  # 59x GAA, up to ~333x
     "G4":                {"S_min": 13,  "S_max": 100},   # 4x3bp G run, up to long G4s
     "G-Triplex":         {"S_min": 28,  "S_max": 100},   # 3x3bp G runs
@@ -84,6 +85,13 @@ SCORING_METHODS = {
         "base_score_range": (30.0, 800.0),
         "normalization_factor": "homogeneity_weighted"
     },
+    "A-philic_DNA": {
+        "method": "tetranucleotide_log2_odds",
+        "description": "Tetranucleotide log2 odds scoring with strong count thresholding",
+        "reference": "Vinogradov Bioinformatics 2003, Bolshoy et al. PNAS 1991",
+        "base_score_range": (10.0, 50.0),
+        "normalization_factor": "log2_odds_weighted"
+    },
     "Sticky_DNA": {
         "method": "sticky_enhanced", 
         "description": "GAA/TTC triplex potential with superlinear repeat scaling",
@@ -139,6 +147,8 @@ def get_motif_limits(motif_class: str, subclass: str = None) -> Tuple[int, int]:
         limits = MOTIF_LENGTH_LIMITS.get("G4", {"S_min": 13, "S_max": 100})
     elif motif_class == "AC-Motif":
         limits = MOTIF_LENGTH_LIMITS.get("AC-motif", {"S_min": 21, "S_max": 37})
+    elif motif_class == "A-philic DNA":
+        limits = MOTIF_LENGTH_LIMITS.get("A-philic_DNA", {"S_min": 10, "S_max": 50})
     else:
         # Try exact match first
         limits = MOTIF_LENGTH_LIMITS.get(motif_class)

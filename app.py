@@ -179,6 +179,8 @@ if CONFIG_AVAILABLE:
             expanded_order.append("G-Triplex")
         elif motif == "AC-motif":
             expanded_order.append("AC-Motif")
+        elif motif == "A-philic_DNA":
+            expanded_order.append("A-philic DNA")  # NEW: Class 9
         else:
             # Map to display names
             display_name = motif.replace("_", " ").replace("-", "-")
@@ -196,13 +198,13 @@ if CONFIG_AVAILABLE:
                 display_name = "i-Motif"
             expanded_order.append(display_name)
     
-    MOTIF_ORDER = expanded_order + ["Hybrid", "Non-B DNA Clusters"]
+    MOTIF_ORDER = expanded_order + ["Hybrid", "Non-B DNA Clusters"]  # Classes 10, 11
 else:
-    # Fallback to original order
+    # Fallback to original order with A-philic DNA added
     MOTIF_ORDER = [
         "Sticky DNA","Curved DNA","Z-DNA","eGZ (Extruded-G)","Slipped DNA","R-Loop",
         "Cruciform","Triplex DNA","G-Triplex","G4","Relaxed G4","Bulged G4","Bipartite G4",
-        "Multimeric G4","i-Motif","AC-Motif","Hybrid","Non-B DNA Clusters"
+        "Multimeric G4","i-Motif","AC-Motif","A-philic DNA","Hybrid","Non-B DNA Clusters"
     ]
 
 MOTIF_COLORS = {
@@ -212,6 +214,7 @@ MOTIF_COLORS = {
     "Triplex DNA": "#B5EAD7","Sticky DNA": "#DCB8CB","G-Triplex": "#C7CEEA",
     "G4": "#A2D7D8","Relaxed G4": "#A2D7B8","Bulged G4": "#A2A7D8",
     "Bipartite G4": "#A2D788","Multimeric G4": "#A2A7B8","i-Motif": "#B0C4DE",
+    "A-philic DNA": "#E6B8F7",  # NEW: Light purple for A-philic DNA
     "Hybrid": "#C1A192","Non-B DNA Clusters": "#A2C8CC","AC-Motif": "#F5B041"
 }
 PAGES = {
@@ -286,7 +289,7 @@ with tab_pages["Home"]:
             🎯 <b>Smart Classification:</b> Evidence-based motif length limits and scoring<br>
             📈 <b>Advanced Visualization:</b> Interactive plots and comprehensive analysis tools
         </span><br>
-        <b>Motif Classes (10 classes, 22+ subclasses):</b><br>
+        <b>Motif Classes (11 classes, 22+ subclasses):</b><br>
         <span style='color:#1565c0;'>
             <b>1. Curved DNA</b> (Global curvature, Local Curvature),<br>
             <b>2. Slipped DNA</b> (Direct Repeat, STR),<br>
@@ -296,8 +299,9 @@ with tab_pages["Home"]:
             <b>6. G-Quadruplex Family</b> (Multimeric G4, Canonical G4, Relaxed G4, Bulged G4, Bipartite G4, Imperfect G4, G-Triplex intermediate),<br>
             <b>7. i-Motif Family</b> (Canonical i-motif, Relaxed i-motif, AC-motif),<br>
             <b>8. Z-DNA</b> (Z-DNA, eGZ (Extruded-G) DNA),<br>
-            <b>9. Hybrid</b> (dynamic overlaps),<br>
-            <b>10. Non-B DNA Clusters</b> (dynamic clusters).
+            <b>9. A-philic DNA</b> (High-confidence A-philic, Moderate A-philic),<br>
+            <b>10. Hybrid</b> (dynamic overlaps),<br>
+            <b>11. Non-B DNA Clusters</b> (dynamic clusters).
         </span>
         <br>
         <b>Upload single or multi-FASTA files...</b>
@@ -1085,6 +1089,7 @@ with tab_pages["Documentation"]:
         <li><b>G4 (G-Quadruplex) and Variants</b>: Detects canonical/variant G4 motifs by G-run/loop regex. G4Hunter scoring for content/structure.</li>
         <li><b>i-Motif</b>: C-rich sequences for i-motif under acid. Regex for C runs/loops; scoring by run count and content.</li>
         <li><b>AC-Motif</b>: Alternating A-rich/C-rich consensus regions by regex. Scoring by pattern presence.</li>
+        <li><b>A-philic DNA</b>: Uses tetranucleotide log2 odds scoring to identify A-tract-favoring sequences with high protein-binding affinity. Classified as high-confidence or moderate A-philic based on score thresholds and strong tetranucleotide counts.</li>
         <li><b>Hybrid Motif</b>: Regions where motif classes overlap; found by interval intersection, scored on diversity/size.</li>
         <li><b>Non-B DNA Clusters</b>: Hotspots with multiple motifs in a window; sliding algorithm, scored by motif count/diversity.</li>
     </ul>
@@ -1096,6 +1101,9 @@ with tab_pages["Documentation"]:
         <li>Zeraati et al., 2018 Nature Chemistry</li>
         <li>Bacolla et al., 2006 Nucleic Acids Research</li>
         <li>Mirkin & Frank-Kamenetskii, 1994 Annual Review of Biophysics</li>
+        <li>Vinogradov, 2003 Bioinformatics (A-philic DNA tetranucleotide analysis)</li>
+        <li>Bolshoy et al., 1991 PNAS (A-tract structural properties)</li>
+        <li>Rohs et al., 2009 Nature (Protein-DNA interactions, A-philic binding)</li>
         <li>New et al., 2020 Journal of DNA Structure</li>
     </ul>
     </div>
