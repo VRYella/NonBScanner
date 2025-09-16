@@ -1,0 +1,244 @@
+# NBDFinder Motif Classification System
+# ====================================
+# 10 major classes, 22 subclasses with priorities and constraints
+
+classes:
+  class01:
+    name: "Curved DNA"
+    priority: 1
+    description: "A-tract mediated DNA curvature"
+    subclasses:
+      - name: "A-Phased Repeats"
+        pattern_type: "at_rich"
+        min_length: 15
+        max_length: 200
+        scoring_method: "curvature_raw"
+        
+  class02:
+    name: "Slipped DNA"
+    priority: 2
+    description: "Hairpin and slip-out structures from repeats"
+    subclasses:
+      - name: "Direct Repeats"
+        pattern_type: "direct_repeat"
+        min_length: 20
+        max_length: 300
+        scoring_method: "repeat_stability"
+      - name: "Short Tandem Repeats"
+        pattern_type: "tandem_repeat"
+        min_length: 11
+        max_length: 100
+        scoring_method: "str_enhanced"
+        
+  class03:
+    name: "Cruciform"
+    priority: 3
+    description: "Four-way junction from inverted repeats"
+    subclasses:
+      - name: "Perfect Inverted Repeats"
+        pattern_type: "inverted_repeat"
+        min_length: 23
+        max_length: 100
+        scoring_method: "cruciform_stability"
+      - name: "Imperfect Inverted Repeats"
+        pattern_type: "imperfect_ir"
+        min_length: 23
+        max_length: 100
+        scoring_method: "cruciform_mismatch"
+        
+  class04:
+    name: "R-Loop"
+    priority: 4
+    description: "RNA-DNA hybrid with displaced ssDNA"
+    subclasses:
+      - name: "R-Loop Forming Sequence"
+        pattern_type: "rlfs"
+        min_length: 140
+        max_length: 400
+        scoring_method: "rloop_potential"
+      - name: "R-Loop Exit Zone"
+        pattern_type: "rez"
+        min_length: 20
+        max_length: 100
+        scoring_method: "gc_enrichment"
+        
+  class05:
+    name: "Triplex"
+    priority: 5
+    description: "Three-stranded DNA structures"
+    subclasses:
+      - name: "H-DNA (Hoogsteen)"
+        pattern_type: "homopurine"
+        min_length: 30
+        max_length: 400
+        scoring_method: "triplex_enhanced"
+      - name: "Sticky DNA"
+        pattern_type: "gaa_repeat"
+        min_length: 236
+        max_length: 1000
+        scoring_method: "sticky_enhanced"
+        
+  class06:
+    name: "G4 Family"
+    priority: 6
+    description: "G-quadruplex and related structures"
+    subclasses:
+      - name: "Canonical G4"
+        pattern_type: "g4_canonical"
+        min_length: 13
+        max_length: 100
+        scoring_method: "g4hunter_adapted"
+      - name: "Relaxed G4"
+        pattern_type: "g4_relaxed"
+        min_length: 13
+        max_length: 100
+        scoring_method: "g4hunter_adapted"
+      - name: "Bulged G4"
+        pattern_type: "g4_bulged"
+        min_length: 13
+        max_length: 100
+        scoring_method: "g4hunter_adapted"
+      - name: "G-Triplex"
+        pattern_type: "g_triplex"
+        min_length: 28
+        max_length: 100
+        scoring_method: "g4hunter_adapted"
+        
+  class07:
+    name: "i-Motif"
+    priority: 7
+    description: "C-rich complementary to G4 structures"
+    subclasses:
+      - name: "Canonical i-Motif"
+        pattern_type: "imotif_canonical"
+        min_length: 23
+        max_length: 100
+        scoring_method: "g4hunter_adapted"
+      - name: "AC-Motif"
+        pattern_type: "ac_motif"
+        min_length: 21
+        max_length: 37
+        scoring_method: "ac_enhanced"
+        
+  class08:
+    name: "Z-DNA"
+    priority: 8
+    description: "Left-handed double helix"
+    subclasses:
+      - name: "Z-DNA Seeker"
+        pattern_type: "zdna_canonical"
+        min_length: 50
+        max_length: 200
+        scoring_method: "z_seeker"
+      - name: "Enhanced GZ"
+        pattern_type: "egz"
+        min_length: 28
+        max_length: 200
+        scoring_method: "z_seeker"
+        
+  class09:
+    name: "Hybrid"
+    priority: 9
+    description: "Overlapping or composite motifs"
+    subclasses:
+      - name: "Overlapping Motifs"
+        pattern_type: "overlap_derived"
+        min_length: 10
+        max_length: 500
+        scoring_method: "composite_scoring"
+        
+  class10:
+    name: "Cluster"
+    priority: 10
+    description: "High-density motif regions"
+    subclasses:
+      - name: "Motif Hotspots"
+        pattern_type: "density_based"
+        min_length: 100
+        max_length: 10000
+        scoring_method: "density_diversity"
+
+# Scoring method definitions
+scoring_methods:
+  curvature_raw:
+    description: "AT content weighted by tract length and spacing"
+    reference: "Olson et al. PNAS 1998"
+    base_score_range: [5.0, 200.0]
+    
+  repeat_stability:
+    description: "Thermodynamic stability of repeat structures"
+    reference: "Wells et al. Journal of Biological Chemistry 1988"
+    base_score_range: [10.0, 300.0]
+    
+  str_enhanced:
+    description: "Short tandem repeat expansion potential"
+    reference: "McMurray Annual Review of Genetics 2010"
+    base_score_range: [8.0, 150.0]
+    
+  cruciform_stability:
+    description: "Inverted repeat thermodynamic analysis"
+    reference: "Lilley & Clegg Annual Review 1993"
+    base_score_range: [15.0, 250.0]
+    
+  cruciform_mismatch:
+    description: "Mismatch-tolerant cruciform scoring"
+    reference: "Lilley & Clegg Annual Review 1993"
+    base_score_range: [10.0, 200.0]
+    
+  rloop_potential:
+    description: "RNA-DNA hybrid formation probability"
+    reference: "Aguilera & Garcia-Muse Molecular Cell 2012"
+    base_score_range: [50.0, 600.0]
+    
+  gc_enrichment:
+    description: "GC content enrichment in exit zones"
+    reference: "Aguilera & Garcia-Muse Molecular Cell 2012"
+    base_score_range: [20.0, 100.0]
+    
+  triplex_enhanced:
+    description: "Homopurine/pyrimidine content with pH-dependent stability"
+    reference: "Frank-Kamenetskii & Mirkin Annual Review 1995"
+    base_score_range: [30.0, 800.0]
+    
+  sticky_enhanced:
+    description: "GAA/TTC triplex potential with superlinear repeat scaling"
+    reference: "Sakamoto et al. Journal of Biological Chemistry 1999"
+    base_score_range: [200.0, 2000.0]
+    
+  g4hunter_adapted:
+    description: "G-richness and C-richness balance adapted from G4Hunter"
+    reference: "Bedrat et al. Nucleic Acids Research 2016"
+    base_score_range: [0.5, 5.0]
+    
+  ac_enhanced:
+    description: "AC dinucleotide motif specific scoring"
+    reference: "Cer et al. Nucleic Acids Research 2013"
+    base_score_range: [10.0, 50.0]
+    
+  z_seeker:
+    description: "Dinucleotide scoring with mismatch penalties"
+    reference: "Ho et al. Nucleic Acids Research 1986"
+    base_score_range: [50.0, 500.0]
+    
+  composite_scoring:
+    description: "Combined scoring for overlapping motifs"
+    reference: "NBDFinder methodology"
+    base_score_range: [1.0, 100.0]
+    
+  density_diversity:
+    description: "Motif density and diversity in genomic windows"
+    reference: "NBDFinder clustering algorithm"
+    base_score_range: [1.0, 10.0]
+
+# Priority ordering (lower number = higher priority)
+priority_order:
+  - class01  # Curved DNA
+  - class02  # Slipped DNA
+  - class03  # Cruciform
+  - class04  # R-Loop
+  - class05  # Triplex
+  - class06  # G4 Family
+  - class07  # i-Motif
+  - class08  # Z-DNA
+  - class09  # Hybrid
+  - class10  # Cluster

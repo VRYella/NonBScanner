@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NBDFinder - Non-B DNA Motif Detection Suite</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #333;
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+        .subtitle {
+            text-align: center;
+            color: #7f8c8d;
+            font-size: 1.2rem;
+            margin-bottom: 30px;
+        }
+        .services {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+            margin: 40px 0;
+        }
+        .service-card {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 25px;
+            border: 1px solid #e9ecef;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            text-align: center;
+        }
+        .service-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+        }
+        .service-icon {
+            font-size: 3rem;
+            margin-bottom: 15px;
+        }
+        .service-title {
+            font-size: 1.5rem;
+            color: #2c3e50;
+            margin-bottom: 15px;
+        }
+        .service-description {
+            color: #6c757d;
+            margin-bottom: 20px;
+            line-height: 1.5;
+        }
+        .btn {
+            display: inline-block;
+            padding: 12px 25px;
+            background: #3498db;
+            color: white;
+            text-decoration: none;
+            border-radius: 25px;
+            transition: background-color 0.3s ease;
+            font-weight: 500;
+        }
+        .btn:hover {
+            background: #2980b9;
+        }
+        .btn-secondary {
+            background: #95a5a6;
+        }
+        .btn-secondary:hover {
+            background: #7f8c8d;
+        }
+        .features {
+            background: #ecf0f1;
+            border-radius: 10px;
+            padding: 25px;
+            margin: 30px 0;
+        }
+        .features h3 {
+            color: #2c3e50;
+            margin-bottom: 20px;
+        }
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+        }
+        .feature-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .feature-icon {
+            font-size: 1.2rem;
+        }
+        .classes-info {
+            background: #e8f5e8;
+            border-radius: 10px;
+            padding: 25px;
+            margin: 30px 0;
+            border-left: 5px solid #27ae60;
+        }
+        .classes-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+        .class-item {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 3px solid #27ae60;
+        }
+        .class-title {
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 5px;
+        }
+        .subclass-count {
+            color: #7f8c8d;
+            font-size: 0.9rem;
+        }
+        .footer {
+            text-align: center;
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid #bdc3c7;
+            color: #7f8c8d;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧬 NBDFinder</h1>
+        <div class="subtitle">Non-B DNA Motif Detection Suite</div>
+        
+        <div class="classes-info">
+            <h3>📊 Comprehensive Detection System</h3>
+            <p><strong>10 Major Non-B DNA Classes</strong> with <strong>22+ Specialized Subclasses</strong></p>
+            <div class="classes-grid">
+                <div class="class-item">
+                    <div class="class-title">Class 1: Curved DNA</div>
+                    <div class="subclass-count">2 subclasses: Global & Local Curvature</div>
+                </div>
+                <div class="class-item">
+                    <div class="class-title">Class 2: Slipped DNA</div>
+                    <div class="subclass-count">2 subclasses: Direct Repeats & STR</div>
+                </div>
+                <div class="class-item">
+                    <div class="class-title">Class 3: Cruciform DNA</div>
+                    <div class="subclass-count">1 subclass: Palindromic Inverted Repeats</div>
+                </div>
+                <div class="class-item">
+                    <div class="class-title">Class 4: R-Loop</div>
+                    <div class="subclass-count">1 subclass: R-Loop Formation Sites</div>
+                </div>
+                <div class="class-item">
+                    <div class="class-title">Class 5: Triplex DNA</div>
+                    <div class="subclass-count">2 subclasses: Mirror Repeats & Sticky DNA</div>
+                </div>
+                <div class="class-item">
+                    <div class="class-title">Class 6: G-Quadruplex Family</div>
+                    <div class="subclass-count">7 subclasses: Canonical, Bulged, Relaxed, etc.</div>
+                </div>
+                <div class="class-item">
+                    <div class="class-title">Class 7: i-Motif</div>
+                    <div class="subclass-count">3 subclasses: Canonical, Extended, AC-Motif</div>
+                </div>
+                <div class="class-item">
+                    <div class="class-title">Class 8: Z-DNA</div>
+                    <div class="subclass-count">2 subclasses: Classic Z-DNA & eGZ</div>
+                </div>
+                <div class="class-item">
+                    <div class="class-title">Class 9: Hybrid Motifs</div>
+                    <div class="subclass-count">2 subclasses: Overlaps & Composites</div>
+                </div>
+                <div class="class-item">
+                    <div class="class-title">Class 10: Clusters</div>
+                    <div class="subclass-count">2 subclasses: Hotspots & Mixed Clusters</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="services">
+            <div class="service-card">
+                <div class="service-icon">🖥️</div>
+                <h3 class="service-title">Web Interface</h3>
+                <p class="service-description">
+                    Interactive Streamlit application with visualization suite, file upload, 
+                    and comprehensive analysis tools. Perfect for exploratory analysis and research.
+                </p>
+                <a href="http://localhost:8501" class="btn" target="_blank">Launch Web App</a>
+            </div>
+            
+            <div class="service-card">
+                <div class="service-icon">🚀</div>
+                <h3 class="service-title">REST API</h3>
+                <p class="service-description">
+                    Programmatic access for integration with pipelines and automated analysis.
+                    JSON responses with comprehensive motif data and metadata.
+                </p>
+                <a href="http://localhost:8000/docs" class="btn btn-secondary" target="_blank">API Documentation</a>
+            </div>
+        </div>
+
+        <div class="features">
+            <h3>🔬 Key Features</h3>
+            <div class="feature-grid">
+                <div class="feature-item">
+                    <span class="feature-icon">⚡</span>
+                    <span>Hyperscan-accelerated detection (40x+ speed)</span>
+                </div>
+                <div class="feature-item">
+                    <span class="feature-icon">📊</span>
+                    <span>Normalized scoring (0-1 scale)</span>
+                </div>
+                <div class="feature-item">
+                    <span class="feature-icon">🎯</span>
+                    <span>22+ specialized subclasses</span>
+                </div>
+                <div class="feature-item">
+                    <span class="feature-icon">📈</span>
+                    <span>21+ visualization types</span>
+                </div>
+                <div class="feature-item">
+                    <span class="feature-icon">🔬</span>
+                    <span>Literature-validated algorithms</span>
+                </div>
+                <div class="feature-item">
+                    <span class="feature-icon">💾</span>
+                    <span>Multiple export formats</span>
+                </div>
+                <div class="feature-item">
+                    <span class="feature-icon">🌐</span>
+                    <span>REST API integration</span>
+                </div>
+                <div class="feature-item">
+                    <span class="feature-icon">📋</span>
+                    <span>Comprehensive documentation</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="features">
+            <h3>🚀 Quick Start Examples</h3>
+            <h4>Web Interface</h4>
+            <p>1. Click "Launch Web App" above<br>
+               2. Go to "Upload & Analyze" tab<br>
+               3. Paste your sequence or upload FASTA file<br>
+               4. View results in "Results" tab</p>
+            
+            <h4>API Usage</h4>
+            <pre style="background: #2c3e50; color: #ecf0f1; padding: 15px; border-radius: 5px; overflow-x: auto;">
+# Health check
+curl http://localhost:8000/api/v1/health
+
+# Analyze sequence
+curl -X POST http://localhost:8000/api/v1/analyze \
+  -H "Content-Type: application/json" \
+  -d '{"sequence": "GGGTTAGGGTTAGGGTTAGGG", "sequence_name": "test"}'
+
+# Get motif class information
+curl http://localhost:8000/api/v1/motif-info
+            </pre>
+        </div>
+
+        <div class="footer">
+            <p>Developed by Dr. Venkata Rajesh Yella | 
+               <a href="mailto:yvrajesh_bt@kluniversity.in">yvrajesh_bt@kluniversity.in</a> | 
+               <a href="https://github.com/VRYella" target="_blank">GitHub: VRYella</a>
+            </p>
+        </div>
+    </div>
+</body>
+</html>
