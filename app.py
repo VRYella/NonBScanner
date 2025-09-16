@@ -614,9 +614,16 @@ with tab_pages["Results"]:
             
             # Calculate and display enhanced coverage statistics
             stats = get_basic_stats(st.session_state.seqs[seq_idx], motifs)
+            
+            # Filter motifs for density calculation (exclude hybrid and cluster)
+            filtered_motifs = [m for m in motifs if m.get('Class') not in ['Hybrid', 'Non-B_DNA_Cluster']]
+            excluded_motifs = [m for m in motifs if m.get('Class') in ['Hybrid', 'Non-B_DNA_Cluster']]
+            
             motif_count = len(motifs)
+            filtered_count = len(filtered_motifs)
+            excluded_count = len(excluded_motifs)
             coverage_pct = stats.get("Motif Coverage %", 0)
-            non_b_density = (motif_count / sequence_length * 1000) if sequence_length > 0 else 0
+            non_b_density = (filtered_count / sequence_length * 1000) if sequence_length > 0 else 0
             
             # Enhanced summary card
             st.markdown(f"""
@@ -626,11 +633,11 @@ with tab_pages["Results"]:
                 <div style='display: flex; justify-content: space-around; margin-top: 15px; flex-wrap: wrap;'>
                     <div style='text-align: center; min-width: 120px;'>
                         <h2 style='margin: 5px; color: #FFD700;'>{coverage_pct:.2f}%</h2>
-                        <p style='margin: 0; font-size: 16px;'>Motif Coverage</p>
+                        <p style='margin: 0; font-size: 16px;'>Motif Coverage*</p>
                     </div>
                     <div style='text-align: center; min-width: 120px;'>
                         <h2 style='margin: 5px; color: #FFD700;'>{non_b_density:.2f}</h2>
-                        <p style='margin: 0; font-size: 16px;'>Non-B DNA Density<br>(motifs/kb)</p>
+                        <p style='margin: 0; font-size: 16px;'>Non-B DNA Density*<br>(motifs/kb)</p>
                     </div>
                     <div style='text-align: center; min-width: 120px;'>
                         <h2 style='margin: 5px; color: #FFD700;'>{motif_count}</h2>
@@ -640,6 +647,10 @@ with tab_pages["Results"]:
                         <h2 style='margin: 5px; color: #FFD700;'>{sequence_length:,}</h2>
                         <p style='margin: 0; font-size: 16px;'>Sequence Length (bp)</p>
                     </div>
+                </div>
+                <div style='margin-top: 15px; font-size: 14px; opacity: 0.9;'>
+                    <p style='margin: 0;'>* Coverage and density calculations exclude hybrid and cluster motifs</p>
+                    {"<p style='margin: 0;'>⚠️ " + str(excluded_count) + " motifs excluded: " + ", ".join(set(m.get('Class', 'Unknown') for m in excluded_motifs)) + "</p>" if excluded_count > 0 else ""}
                 </div>
             </div>
             """, unsafe_allow_html=True)
@@ -979,20 +990,30 @@ with tab_pages["Download"]:
             try:
                 from nbdio.writers import create_density_bedgraph
                 if all_seq_data:
+                    # Filter out hybrid and cluster motifs for density export
+                    all_motifs = [motif for seq_data in all_seq_data for motif in seq_data['motifs']]
+                    filtered_motifs = [m for m in all_motifs if m.get('Class') not in ['Hybrid', 'Non-B_DNA_Cluster']]
+                    
                     # Use the first sequence for length estimation
-                    seq_length = max([motif.get('End', 0) for motif in all_seq_data[0]['motifs']], default=1000)
+                    seq_length = max([motif.get('End', 0) for motif in all_motifs], default=1000)
                     density_data = create_density_bedgraph(
-                        [motif for seq_data in all_seq_data for motif in seq_data['motifs']],
+                        filtered_motifs,
                         seq_length,
                         sequence_name="NBDFinder_Analysis"
                     )
+                    
+                    excluded_count = len(all_motifs) - len(filtered_motifs)
+                    help_text = "BedGraph format for motif density visualization"
+                    if excluded_count > 0:
+                        help_text += f" (excludes {excluded_count} hybrid/cluster motifs)"
+                    
                     st.download_button(
                         "📊 Download Density",
                         data=density_data,
                         file_name="nbdfinder_density.bedgraph",
                         mime="text/plain", 
                         use_container_width=True,
-                        help="BedGraph format for motif density visualization"
+                        help=help_text
                     )
             except Exception as e:
                 st.error(f"Density export error: {e}")

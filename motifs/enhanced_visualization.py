@@ -47,7 +47,7 @@ class InformationBasedVisualizer:
         self.coverage_stats = self._calculate_comprehensive_stats()
         
     def _calculate_comprehensive_stats(self):
-        """Calculate comprehensive coverage and density statistics"""
+        """Calculate comprehensive coverage and density statistics, excluding hybrid and cluster motifs"""
         if self.df.empty:
             return {
                 'motif_coverage_pct': 0,
@@ -55,18 +55,28 @@ class InformationBasedVisualizer:
                 'covered_positions': 0,
                 'total_motifs': 0,
                 'motif_density_per_kb': 0,
-                'avg_motif_length': 0
+                'avg_motif_length': 0,
+                'excluded_motifs_count': 0,
+                'excluded_motif_types': []
             }
             
-        # Calculate covered positions
+        # Filter out hybrid and cluster motifs for coverage/density calculations
+        filtered_df = self.df[~self.df['Class'].isin(['Hybrid', 'Non-B_DNA_Cluster'])]
+        excluded_df = self.df[self.df['Class'].isin(['Hybrid', 'Non-B_DNA_Cluster'])]
+        
+        # Calculate covered positions using filtered motifs only
         covered = set()
-        for _, row in self.df.iterrows():
+        for _, row in filtered_df.iterrows():
             covered.update(range(int(row['Start']), int(row['End']) + 1))
         
         coverage_pct = (len(covered) / self.seq_length * 100) if self.seq_length > 0 else 0
-        total_motifs = len(self.df)
+        total_motifs = len(filtered_df)
         motif_density_per_kb = (total_motifs / self.seq_length * 1000) if self.seq_length > 0 else 0
-        avg_length = self.df['Length'].mean() if not self.df.empty else 0
+        avg_length = filtered_df['Length'].mean() if not filtered_df.empty else 0
+        
+        # Track excluded motifs
+        excluded_count = len(excluded_df)
+        excluded_types = list(excluded_df['Class'].unique()) if excluded_count > 0 else []
         
         return {
             'motif_coverage_pct': round(coverage_pct, 2),
@@ -74,7 +84,9 @@ class InformationBasedVisualizer:
             'covered_positions': len(covered),
             'total_motifs': total_motifs,
             'motif_density_per_kb': round(motif_density_per_kb, 2),
-            'avg_motif_length': round(avg_length, 2)
+            'avg_motif_length': round(avg_length, 2),
+            'excluded_motifs_count': excluded_count,
+            'excluded_motif_types': excluded_types
         }
     
     def create_coverage_analysis(self):
@@ -94,47 +106,63 @@ class InformationBasedVisualizer:
             plots['detailed_coverage_map'] = fig
             return plots
         
+        # Filter dataframe to exclude hybrid and cluster motifs for visualizations
+        filtered_df = self.df[~self.df['Class'].isin(['Hybrid', 'Non-B_DNA_Cluster'])]
+        excluded_df = self.df[self.df['Class'].isin(['Hybrid', 'Non-B_DNA_Cluster'])]
+        
         # 1. Coverage Overview Dashboard
         fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, figsize=(18, 14))
-        fig.suptitle(f'Coverage & Density Analysis - {self.seq_name}', fontsize=16, fontweight='bold')
+        title = f'Coverage & Density Analysis - {self.seq_name}'
+        if len(excluded_df) > 0:
+            excluded_types = ', '.join(excluded_df['Class'].unique())
+            title += f'\n⚠️ Excluded from calculations: {excluded_types} ({len(excluded_df)} motifs)'
+        fig.suptitle(title, fontsize=16, fontweight='bold')
         
         # Coverage percentage gauge
         coverage_pct = self.coverage_stats['motif_coverage_pct']
         ax1.pie([coverage_pct, 100-coverage_pct], labels=['Covered', 'Uncovered'], 
                 autopct='%1.1f%%', startangle=90, colors=['#ff6b6b', '#e9e9e9'])
-        ax1.set_title(f'Motif Coverage: {coverage_pct}%', fontweight='bold')
+        ax1.set_title(f'Motif Coverage: {coverage_pct}%*', fontweight='bold')
         
-        # Density per class
-        class_density = self.df.groupby('Class').size().sort_values(ascending=False)
-        ax2.bar(range(len(class_density)), class_density.values, color='skyblue')
-        ax2.set_xticks(range(len(class_density)))
-        ax2.set_xticklabels(class_density.index, rotation=60, ha='right', fontsize=10)
-        ax2.set_title(f'Non-B DNA Density by Class\n(Total: {self.coverage_stats["non_b_dna_density"]:.2f} motifs/kb)', fontweight='bold')
-        ax2.set_ylabel('Count')
+        # Density per class (excluding hybrid and cluster)
+        if not filtered_df.empty:
+            class_density = filtered_df.groupby('Class').size().sort_values(ascending=False)
+            bars = ax2.bar(range(len(class_density)), class_density.values, color='skyblue')
+            ax2.set_xticks(range(len(class_density)))
+            ax2.set_xticklabels(class_density.index, rotation=60, ha='right', fontsize=10)
+            ax2.set_title(f'Non-B DNA Density by Class*\n(Total: {self.coverage_stats["non_b_dna_density"]:.2f} motifs/kb)', fontweight='bold')
+            ax2.set_ylabel('Count')
+        else:
+            ax2.text(0.5, 0.5, 'No motifs found\n(excluding hybrid/cluster)', ha='center', va='center', transform=ax2.transAxes)
+            ax2.set_title(f'Non-B DNA Density by Class*\n(Total: {self.coverage_stats["non_b_dna_density"]:.2f} motifs/kb)', fontweight='bold')
         
-        # Coverage heatmap along sequence
-        if not self.df.empty:
+        # Coverage heatmap along sequence (excluding hybrid and cluster)
+        if not filtered_df.empty:
             bins = min(100, self.seq_length // 10)
-            hist, edges = np.histogram(self.df['Start'], bins=bins, range=(0, self.seq_length))
+            hist, edges = np.histogram(filtered_df['Start'], bins=bins, range=(0, self.seq_length))
             im = ax3.imshow([hist], aspect='auto', cmap='hot', extent=[0, self.seq_length, -0.5, 0.5])
-            ax3.set_title('Motif Density Heatmap Along Sequence', fontweight='bold')
+            ax3.set_title('Motif Density Heatmap Along Sequence*', fontweight='bold')
             ax3.set_xlabel('Sequence Position (bp)')
             ax3.set_yticks([])
             plt.colorbar(im, ax=ax3, label='Motif Count')
         else:
-            ax3.text(0.5, 0.5, 'No motifs found', ha='center', va='center', transform=ax3.transAxes)
-            ax3.set_title('Motif Density Heatmap Along Sequence', fontweight='bold')
+            ax3.text(0.5, 0.5, 'No motifs found\n(excluding hybrid/cluster)', ha='center', va='center', transform=ax3.transAxes)
+            ax3.set_title('Motif Density Heatmap Along Sequence*', fontweight='bold')
         
-        # Length distribution impact on coverage
-        if not self.df.empty:
-            ax4.scatter(self.df['Length'], self.df['Actual_Score'], alpha=0.6, c=self.df['Start'], cmap='viridis')
+        # Length distribution impact on coverage (excluding hybrid and cluster)
+        if not filtered_df.empty:
+            scatter = ax4.scatter(filtered_df['Length'], filtered_df['Actual_Score'], alpha=0.6, c=filtered_df['Start'], cmap='viridis')
             ax4.set_xlabel('Motif Length (bp)')
             ax4.set_ylabel('Score')
-            ax4.set_title('Length vs Score (colored by position)', fontweight='bold')
-            cbar = plt.colorbar(ax4.collections[0], ax=ax4, label='Position')
+            ax4.set_title('Length vs Score (colored by position)*', fontweight='bold')
+            cbar = plt.colorbar(scatter, ax=ax4, label='Position')
         else:
-            ax4.text(0.5, 0.5, 'No motifs found', ha='center', va='center', transform=ax4.transAxes)
-            ax4.set_title('Length vs Score Analysis', fontweight='bold')
+            ax4.text(0.5, 0.5, 'No motifs found\n(excluding hybrid/cluster)', ha='center', va='center', transform=ax4.transAxes)
+            ax4.set_title('Length vs Score Analysis*', fontweight='bold')
+        
+        # Add footnote explanation
+        fig.text(0.02, 0.02, '* Excludes hybrid and cluster motifs from coverage/density calculations', 
+                fontsize=10, style='italic', alpha=0.7)
         
         plt.tight_layout()
         plt.subplots_adjust(hspace=0.4, wspace=0.3)  # Add extra spacing
@@ -143,14 +171,21 @@ class InformationBasedVisualizer:
         # 2. Detailed Coverage Map
         fig2, ax = plt.subplots(1, 1, figsize=(18, 10))
         
+        # Show all motifs in the detailed map but distinguish excluded ones
         if not self.df.empty:
-            # Create detailed coverage visualization
-            classes = self.df['Class'].unique()
-            colors = plt.cm.Set3(np.linspace(0, 1, len(classes)))
-            class_colors = dict(zip(classes, colors))
+            # Create detailed coverage visualization showing all motifs but highlighting excluded ones
+            filtered_classes = filtered_df['Class'].unique() if not filtered_df.empty else []
+            excluded_classes = excluded_df['Class'].unique() if not excluded_df.empty else []
+            all_classes = list(filtered_classes) + list(excluded_classes)
             
-            for i, cls in enumerate(classes):
-                cls_motifs = self.df[self.df['Class'] == cls]
+            colors = plt.cm.Set3(np.linspace(0, 1, len(filtered_classes))) if len(filtered_classes) > 0 else []
+            excluded_colors = ['#cccccc'] * len(excluded_classes)  # Gray for excluded
+            all_colors = list(colors) + excluded_colors
+            class_colors = dict(zip(all_classes, all_colors))
+            
+            # Plot filtered motifs normally
+            for i, cls in enumerate(filtered_classes):
+                cls_motifs = filtered_df[filtered_df['Class'] == cls]
                 y_pos = i
                 for _, motif in cls_motifs.iterrows():
                     width = motif['End'] - motif['Start']
@@ -158,17 +193,35 @@ class InformationBasedVisualizer:
                                            facecolor=class_colors[cls], alpha=0.7, edgecolor='black')
                     ax.add_patch(rect)
             
+            # Plot excluded motifs in gray at the bottom
+            excluded_y_start = len(filtered_classes)
+            for i, cls in enumerate(excluded_classes):
+                cls_motifs = excluded_df[excluded_df['Class'] == cls]
+                y_pos = excluded_y_start + i
+                for _, motif in cls_motifs.iterrows():
+                    width = motif['End'] - motif['Start']
+                    rect = patches.Rectangle((motif['Start'], y_pos-0.4), width, 0.8, 
+                                           facecolor='#cccccc', alpha=0.5, edgecolor='red', linestyle='--')
+                    ax.add_patch(rect)
+            
             ax.set_xlim(0, self.seq_length)
-            ax.set_ylim(-0.5, len(classes)-0.5)
-            ax.set_yticks(range(len(classes)))
-            ax.set_yticklabels(classes, fontsize=10)
+            ax.set_ylim(-0.5, len(all_classes)-0.5)
+            ax.set_yticks(range(len(all_classes)))
+            
+            # Create labels, marking excluded ones
+            y_labels = list(filtered_classes) + [f"{cls} (excluded)" for cls in excluded_classes]
+            ax.set_yticklabels(y_labels, fontsize=10)
+            
             ax.set_xlabel('Sequence Position (bp)')
-            ax.set_title(f'Detailed Motif Coverage Map - {self.seq_name}\nCoverage: {coverage_pct}% | Density: {self.coverage_stats["non_b_dna_density"]:.2f} motifs/kb', 
-                        fontweight='bold', fontsize=14)
+            title = f'Detailed Motif Coverage Map - {self.seq_name}\nCoverage: {coverage_pct}%* | Density: {self.coverage_stats["non_b_dna_density"]:.2f} motifs/kb*'
+            if len(excluded_df) > 0:
+                title += f'\n(Gray/dashed: {len(excluded_df)} excluded motifs)'
+            ax.set_title(title, fontweight='bold', fontsize=14)
             
             # Add coverage statistics text
             stats_text = f"""
-            Total Motifs: {self.coverage_stats['total_motifs']}
+            Total Motifs (included): {self.coverage_stats['total_motifs']}
+            Excluded Motifs: {self.coverage_stats['excluded_motifs_count']}
             Covered Positions: {self.coverage_stats['covered_positions']} bp
             Average Motif Length: {self.coverage_stats['avg_motif_length']:.1f} bp
             """
@@ -640,8 +693,14 @@ class InformationBasedVisualizer:
         This is the main function that implements the problem statement requirements.
         """
         print(f"🎯 Generating comprehensive information-based visualizations for {self.seq_name}...")
-        print(f"📊 Motif Coverage: {self.coverage_stats['motif_coverage_pct']}%")
-        print(f"🧬 Non-B DNA Density: {self.coverage_stats['non_b_dna_density']:.2f} motifs/kb")
+        print(f"📊 Motif Coverage: {self.coverage_stats['motif_coverage_pct']}% (excluding hybrid & cluster)")
+        print(f"🧬 Non-B DNA Density: {self.coverage_stats['non_b_dna_density']:.2f} motifs/kb (excluding hybrid & cluster)")
+        
+        if self.coverage_stats['excluded_motifs_count'] > 0:
+            print(f"⚠️  Excluded from calculations: {self.coverage_stats['excluded_motifs_count']} motifs")
+            print(f"   Types excluded: {', '.join(self.coverage_stats['excluded_motif_types'])}")
+        else:
+            print("✅ No hybrid or cluster motifs found - all motifs included in calculations")
         print("=" * 80)
         
         all_plots = {}
