@@ -158,11 +158,21 @@ def get_basic_stats(seq, motifs=None):
     }
     
     if motifs is not None:
+        # Filter out hybrid and cluster motifs for coverage calculations
+        filtered_motifs = [m for m in motifs if m.get('Class') not in ['Hybrid', 'Non-B_DNA_Cluster']]
+        
         covered = set()
-        for m in motifs:
-            covered.update(range(m['Start'], m['End']))
+        for m in filtered_motifs:
+            covered.update(range(m['Start'], m['End'] + 1))  # Inclusive range
         coverage_pct = (len(covered) / length * 100) if length else 0
         stats["Motif Coverage %"] = round(coverage_pct, 2)
+        
+        # Add info about excluded motifs
+        excluded_count = len(motifs) - len(filtered_motifs)
+        stats["Excluded_Motifs_Count"] = excluded_count
+        if excluded_count > 0:
+            excluded_types = set(m.get('Class', 'Unknown') for m in motifs if m.get('Class') in ['Hybrid', 'Non-B_DNA_Cluster'])
+            stats["Excluded_Motif_Types"] = list(excluded_types)
     
     return stats
 
