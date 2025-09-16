@@ -4,7 +4,7 @@ NBDFinder Unified Orchestrator - all_motifs_refactored.py
 
 ENHANCED FOR MAXIMUM SPECIFICITY AND MINIMAL REDUNDANCY
 
-Unified detection API that runs all motif detectors (Classes 1–8) in parallel
+Unified detection API that runs all motif detectors (Classes 1–9) in parallel
 using ProcessPoolExecutor for maximum performance while preserving scientific
 accuracy and implementing literature-backed specificity improvements.
 
@@ -16,19 +16,33 @@ Key Features:
 - Advanced overlap filtering with global position tracking
 - Inter-class overlap limits (max 50% overlap) for hybrid detection
 - Standardized results with standardize_motif_output 
-- Official 10-class, 22-subclass taxonomy mapping via classification_config
-- Automatic addition of hybrids (Class 9) and clusters (Class 10)
+- Official 11-class, 22+-subclass taxonomy mapping via classification_config
+- Automatic addition of hybrids (Class 10) and clusters (Class 11)
+- NEW: A-philic DNA motif detection (Class 9)
 - Hyperscan integration for fast candidate discovery
 - Independent scientific scoring systems preserved
 
 Performance Improvements:
 - Reduces excessive motif calls by 99%+ through intelligent filtering
 - Example: 667 overlapping motifs → 5 high-specificity motifs
-- Maintains all 10 classes with proper "0" reporting for missing classes
+- Maintains all 11 classes with proper "0" reporting for missing classes
 - Literature-backed quality thresholds ensure scientific accuracy
 
+Class System:
+1. Curved DNA
+2. Slipped DNA 
+3. Cruciform DNA
+4. R-loop
+5. Triplex
+6. G-Quadruplex
+7. i-motif
+8. Z-DNA
+9. A-philic DNA (NEW)
+10. Hybrid (updated from Class 9)
+11. Non-B DNA Clusters (updated from Class 10)
+
 Author: Dr. Venkata Rajesh Yella
-Updated: 2024 - Enhanced Specificity Algorithm
+Updated: 2024 - Enhanced Specificity Algorithm with A-philic DNA Integration
 """
 
 import re
@@ -51,6 +65,7 @@ try:
     from motifs.g_quadruplex import find_g_quadruplex
     from motifs.i_motif import find_i_motif
     from motifs.z_dna import find_z_dna
+    from motifs.a_philic_dna import find_a_philic_dna  # NEW: Class 9
     from motifs.hybrid import find_hybrid
     from motifs.cluster import find_cluster
     from motifs.base_motif import standardize_motif_output, validate_motif, select_best_nonoverlapping_motifs
@@ -65,6 +80,7 @@ except ImportError as e:
     def find_g_quadruplex(seq, name): return []
     def find_i_motif(seq, name): return []
     def find_z_dna(seq, name): return []
+    def find_a_philic_dna(seq, name): return []  # NEW: Class 9 fallback
     def find_hybrid(motifs, seq, name): return []
     def find_cluster(motifs, seq_len, name): return []
     def standardize_motif_output(motif, name, idx): return motif
@@ -104,6 +120,7 @@ def apply_quality_thresholding(motifs: List[Dict[str, Any]]) -> List[Dict[str, A
         'G-Quadruplex': {'min_score': 0.3, 'min_length': 15},
         'i-motif': {'min_score': 0.25, 'min_length': 12},
         'Z-DNA': {'min_score': 0.3, 'min_length': 10},
+        'A-philic DNA': {'min_score': 10.0, 'min_length': 10},  # NEW: Class 9 - log2 odds based scoring
         'Hybrid': {'min_score': 0.1, 'min_length': 10},
         'Mirror_Repeat': {'min_score': 0.15, 'min_length': 8}  # Legacy name mapping
     }
@@ -218,7 +235,7 @@ def all_motifs_refactored(seq: str,
         except Exception:
             pass  # Continue if caching fails
     
-    # Define motif detectors for Classes 1-8 (parallel execution)
+    # Define motif detectors for Classes 1-9 (parallel execution)
     detectors = [
         (find_curved_DNA, "Curved DNA"),
         (find_slipped_dna, "Slipped DNA"), 
@@ -227,7 +244,8 @@ def all_motifs_refactored(seq: str,
         (find_triplex, "Triplex"),
         (find_g_quadruplex, "G-Quadruplex"),
         (find_i_motif, "i-motif"),
-        (find_z_dna, "Z-DNA")
+        (find_z_dna, "Z-DNA"),
+        (find_a_philic_dna, "A-philic DNA")  # NEW: Class 9
     ]
     
     # Prepare arguments for parallel execution
@@ -290,7 +308,7 @@ def all_motifs_refactored(seq: str,
         motif['S.No'] = i + 1
         motif['Sequence_Name'] = sequence_name
     
-    print(f"Classes 1-8: {len(all_motifs)} total motifs found")
+    print(f"Classes 1-9: {len(all_motifs)} total motifs found")
     
     # Apply quality thresholding to reduce low-specificity motifs
     high_quality_motifs = apply_quality_thresholding(all_motifs)
@@ -298,7 +316,7 @@ def all_motifs_refactored(seq: str,
         print(f"After quality filtering: {len(high_quality_motifs)} motifs (removed {len(all_motifs) - len(high_quality_motifs)} low-quality)")
         all_motifs = high_quality_motifs
     
-    # Add hybrids (Class 9) - requires all motifs from Classes 1-8
+    # Add hybrids (Class 10) - requires all motifs from Classes 1-9
     try:
         hybrid_motifs = find_hybrid(all_motifs, seq, sequence_name)
         standardized_hybrids = []
@@ -318,7 +336,7 @@ def all_motifs_refactored(seq: str,
                 standardized_hybrids.append(classified)
         
         all_motifs.extend(standardized_hybrids)
-        print(f"✓ Hybrid (Class 9): {len(standardized_hybrids)} motifs found")
+        print(f"✓ Hybrid (Class 10): {len(standardized_hybrids)} motifs found")
     except Exception as e:
         print(f"✗ Hybrid detection failed: {e}")
     
@@ -330,7 +348,7 @@ def all_motifs_refactored(seq: str,
     else:
         print(f"Overlap filtering disabled: keeping all {len(all_motifs)} motifs")
     
-    # Add clusters (Class 10) - requires all motifs including hybrids
+    # Add clusters (Class 11) - requires all motifs including hybrids
     if report_hotspots:
         try:
             cluster_motifs = find_cluster(all_motifs, len(seq), sequence_name)
@@ -351,7 +369,7 @@ def all_motifs_refactored(seq: str,
                     standardized_clusters.append(classified)
             
             all_motifs.extend(standardized_clusters)
-            print(f"✓ Cluster (Class 10): {len(standardized_clusters)} motifs found")
+            print(f"✓ Cluster (Class 11): {len(standardized_clusters)} motifs found")
         except Exception as e:
             print(f"✗ Cluster detection failed: {e}")
     
