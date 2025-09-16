@@ -163,7 +163,7 @@ def get_basic_stats(seq, motifs=None):
         
         covered = set()
         for m in filtered_motifs:
-            covered.update(range(m['Start'], m['End']))
+            covered.update(range(m['Start'], m['End'] + 1))  # Inclusive range
         coverage_pct = (len(covered) / length * 100) if length else 0
         stats["Motif Coverage %"] = round(coverage_pct, 2)
         

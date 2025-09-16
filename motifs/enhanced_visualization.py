@@ -72,7 +72,15 @@ class InformationBasedVisualizer:
         coverage_pct = (len(covered) / self.seq_length * 100) if self.seq_length > 0 else 0
         total_motifs = len(filtered_df)
         motif_density_per_kb = (total_motifs / self.seq_length * 1000) if self.seq_length > 0 else 0
-        avg_length = filtered_df['Length'].mean() if not filtered_df.empty else 0
+        
+        # Calculate average length safely
+        if not filtered_df.empty and 'Length' in filtered_df.columns:
+            avg_length = filtered_df['Length'].mean()
+        elif not filtered_df.empty and 'Start' in filtered_df.columns and 'End' in filtered_df.columns:
+            # Calculate length from Start and End if Length column doesn't exist
+            avg_length = (filtered_df['End'] - filtered_df['Start'] + 1).mean()
+        else:
+            avg_length = 0
         
         # Track excluded motifs
         excluded_count = len(excluded_df)
