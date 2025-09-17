@@ -1,3 +1,0 @@
-seq_id	start	end	window_len	n_tets	sum_log2	strong_count	label	window_seq
-seq1	0	10	10	7	12.2821	4	A_moderate	AGGGCCCCGG
-seq1	10	20	10	7	10.5267	4	A_moderate	GGACCCCCCA
