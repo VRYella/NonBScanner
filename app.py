@@ -614,8 +614,8 @@ with tab_pages["Results"]:
             # Enhanced summary card
             st.markdown(f"""
             <div style='background: linear-gradient(90deg, #667eea 0%, #764ba2 100%); 
-                        border-radius: 15px; padding: 20px; margin: 20px 0; color: white;'>
-                <h3 style='margin: 0; color: white; text-align: center;'>🧬 Enhanced Non-B DNA Analysis</h3>
+                        border-radius: 12px; padding: 15px; margin: 10px 0; color: white;'>
+                <h3 style='margin: 0; color: white; text-align: center;'>Comprehensive Non-B DNA Analysis</h3>
                 <div style='display: flex; justify-content: space-around; margin-top: 15px; flex-wrap: wrap;'>
                     <div style='text-align: center; min-width: 120px;'>
                         <h2 style='margin: 5px; color: #FFD700;'>{coverage_pct:.2f}%</h2>
