@@ -475,7 +475,7 @@ with tab_pages["Upload & Analyze"]:
         config_summary = f"""
         **Configuration Summary:**
         - Motifs: {len(MOTIF_ORDER)} classes selected (comprehensive analysis)
-        - Scoring: Normalized scores (0-1 scale) for fair comparison
+        - Scoring: Raw scores (algorithm-specific scales) for authentic results
         - Threshold: 0.0 (include all detected motifs)
         - Overlaps: Not allowed within motif class, allowed between classes
         - Hotspots: Detected (cluster analysis enabled)
@@ -487,6 +487,13 @@ with tab_pages["Upload & Analyze"]:
         # Run button (primary) and status indicator
         if st.button("🔬 Run Motif Analysis", type="primary", use_container_width=True):
             st.session_state.analysis_status = "Running"
+            
+            # Set analysis parameters based on requirements
+            nonoverlap = True  # Keep overlaps disabled for specificity
+            report_hotspots = True  # Enable hotspot detection 
+            calc_conservation = False  # Disable to reduce computation time
+            threshold = 0.0  # Show all detected motifs (even 0 scores)
+            
             validation_messages = []
 
             # Scientific validation check
@@ -517,11 +524,12 @@ with tab_pages["Upload & Analyze"]:
                         motifs = all_motifs_refactored(seq, sequence_name=sequence_name, nonoverlap=nonoverlap,
                                                       report_hotspots=report_hotspots, calculate_conservation=calc_conservation)
 
-                        # Validate and filter
+                        # Validate and filter - using raw scoring as requested
                         validated_motifs = []
                         for m in motifs:
                             try:
-                                s = float(m.get('Normalized_Score', 0))
+                                # Use raw/actual score instead of normalized as requested
+                                s = float(m.get('Actual_Score', m.get('Score', 0)))
                             except Exception:
                                 s = 0.0
                             if s >= threshold:
@@ -633,53 +641,38 @@ with tab_pages["Results"]:
             </div>
             """, unsafe_allow_html=True)
             
-            # Score comparison section (using normalized scores for optimal analysis)
-            if any('Normalized_Score' in m for m in motifs):
+            # Score analysis section (using raw scores as requested)
+            if motifs:
                 st.markdown("### 📈 Score Analysis")
                 
                 score_col1, score_col2 = st.columns(2)
                 
                 with score_col1:
-                    # Normalized vs Actual scores comparison with better filtering
-                    normalized_scores = []
-                    actual_scores = []
+                    # Raw score distribution
+                    raw_scores = []
                     
                     for m in motifs:
-                        # Get actual score from various possible keys
-                        actual_score = m.get('Actual_Score')
-                        if actual_score is None:
-                            actual_score = m.get('Score', 0)
-                        
-                        # Get normalized score
-                        normalized_score = m.get('Normalized_Score', 0)
+                        # Get actual/raw score from various possible keys
+                        raw_score = m.get('Actual_Score')
+                        if raw_score is None:
+                            raw_score = m.get('Score', 0)
                         
                         # Convert to float and add if valid
                         try:
-                            actual_float = float(actual_score) if actual_score is not None else 0.0
-                            normalized_float = float(normalized_score) if normalized_score is not None else 0.0
-                            
-                            actual_scores.append(actual_float)
-                            normalized_scores.append(normalized_float)
+                            raw_float = float(raw_score) if raw_score is not None else 0.0
+                            raw_scores.append(raw_float)
                         except (ValueError, TypeError):
-                            # If conversion fails, use 0
-                            actual_scores.append(0.0)
-                            normalized_scores.append(0.0)
+                            raw_scores.append(0.0)
                     
-                    # Score distribution analysis
-                    if actual_scores and any(s > 0 for s in actual_scores + normalized_scores):
-                        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 4))
+                    # Raw score distribution analysis
+                    if raw_scores and any(s > 0 for s in raw_scores):
+                        fig, ax = plt.subplots(figsize=(10, 4))
                         
-                        ax1.hist(actual_scores, bins=20, alpha=0.7, color='skyblue', label='Actual Scores')
-                        ax1.set_xlabel('Actual Score')
-                        ax1.set_ylabel('Frequency')
-                        ax1.set_title('Actual Score Distribution')
-                        ax1.legend()
-                        
-                        ax2.hist(normalized_scores, bins=20, alpha=0.7, color='lightcoral', label='Normalized Scores')
-                        ax2.set_xlabel('Normalized Score (0-1)')
-                        ax2.set_ylabel('Frequency')
-                        ax2.set_title('Normalized Score Distribution')
-                        ax2.legend()
+                        ax.hist(raw_scores, bins=20, alpha=0.7, color='skyblue', label='Raw Scores')
+                        ax.set_xlabel('Raw Score')
+                        ax.set_ylabel('Frequency')
+                        ax.set_title('Raw Score Distribution')
+                        ax.legend()
                         
                         plt.tight_layout()
                         st.pyplot(fig)
@@ -689,18 +682,62 @@ with tab_pages["Results"]:
                         st.info("This could be due to:\n- Low sequence quality\n- Missing motif features\n- Scoring threshold too high")
                 
                 with score_col2:
-                    # Motif class distribution
+                    # Motif class distribution - show all classes even if 0
                     motif_classes = [m.get('Class', 'Unknown') for m in motifs]
-                    if motif_classes:
-                        class_counts = Counter(motif_classes)
-                        
-                        fig, ax = plt.subplots(figsize=(8, 6))
-                        colors = ['#ff9999', '#66b3ff', '#99ff99', '#ffcc99', '#ff99cc', '#99ccff', '#ffccbb', '#ccffcc']
-                        ax.pie(class_counts.values(), labels=class_counts.keys(), autopct='%1.1f%%', 
-                              colors=colors[:len(class_counts)], startangle=90)
-                        ax.set_title('Motif Class Distribution')
-                        st.pyplot(fig)
-                        plt.close(fig)
+                    
+                    # Initialize all classes with 0 counts  
+                    all_class_counts = {cls: 0 for cls in MOTIF_ORDER}
+                    
+                    # Update with actual counts
+                    actual_counts = Counter(motif_classes)
+                    all_class_counts.update(actual_counts)
+                    
+                    # Remove 'Unknown' if it exists and has 0 count
+                    if 'Unknown' in all_class_counts and all_class_counts['Unknown'] == 0:
+                        del all_class_counts['Unknown']
+                    
+                    fig, ax = plt.subplots(figsize=(10, 8))
+                    
+                    # Create labels showing count and percentage
+                    labels = []
+                    values = list(all_class_counts.values())
+                    total = sum(values) if sum(values) > 0 else 1  # Avoid division by zero
+                    
+                    for cls, count in all_class_counts.items():
+                        percentage = (count / total) * 100 if total > 0 else 0
+                        if count > 0:
+                            labels.append(f'{cls}\n({count}, {percentage:.1f}%)')
+                        else:
+                            labels.append(f'{cls}\n(0, 0.0%)')
+                    
+                    # Use colors from MOTIF_COLORS where available
+                    colors = []
+                    for cls in all_class_counts.keys():
+                        if cls in MOTIF_COLORS:
+                            colors.append(MOTIF_COLORS[cls])
+                        else:
+                            # Default colors for any missing classes
+                            default_colors = ['#ff9999', '#66b3ff', '#99ff99', '#ffcc99', 
+                                            '#ff99cc', '#99ccff', '#ffccbb', '#ccffcc']
+                            colors.append(default_colors[len(colors) % len(default_colors)])
+                    
+                    # Create bar chart instead of pie chart for better readability when many classes have 0
+                    bars = ax.bar(range(len(all_class_counts)), values, color=colors)
+                    ax.set_xlabel('Motif Classes')
+                    ax.set_ylabel('Count')
+                    ax.set_title('Motif Class Distribution (All Classes)')
+                    ax.set_xticks(range(len(all_class_counts)))
+                    ax.set_xticklabels(list(all_class_counts.keys()), rotation=45, ha='right')
+                    
+                    # Add count labels on bars
+                    for bar, count in zip(bars, values):
+                        if count > 0:
+                            ax.text(bar.get_x() + bar.get_width()/2, bar.get_height() + 0.1, 
+                                   str(count), ha='center', va='bottom')
+                    
+                    plt.tight_layout()
+                    st.pyplot(fig)
+                    plt.close(fig)
             
             # Enhanced motif table with new columns
             st.markdown(f"### 📋 Detailed Motif Table for **{sequence_name}**")
@@ -710,7 +747,7 @@ with tab_pages["Results"]:
             display_columns = st.multiselect(
                 "Select columns to display:",
                 available_columns,
-                default=[col for col in ['Class', 'Subclass', 'Start', 'End', 'Length', 'Normalized Score', 'Actual Score', 'GC Content'] if col in available_columns]
+                default=[col for col in ['Class', 'Subclass', 'Start', 'End', 'Length', 'Actual Score', 'Score', 'GC Content'] if col in available_columns]
             )
             
             if display_columns:
