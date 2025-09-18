@@ -634,10 +634,7 @@ with tab_pages["Results"]:
                         <p style='margin: 0; font-size: 16px;'>Sequence Length (bp)</p>
                     </div>
                 </div>
-                <div style='margin-top: 15px; font-size: 14px; opacity: 0.9;'>
-                    <p style='margin: 0;'>* Coverage and density calculations exclude hybrid and cluster motifs</p>
-                    {"<p style='margin: 0;'>⚠️ " + str(excluded_count) + " motifs excluded: " + ", ".join(set(m.get('Class', 'Unknown') for m in excluded_motifs)) + "</p>" if excluded_count > 0 else ""}
-                </div>
+               
             </div>
             """, unsafe_allow_html=True)
             
