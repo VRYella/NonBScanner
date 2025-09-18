@@ -499,134 +499,113 @@ with tab_pages["Upload & Analyze"]:
         </style>
         """, unsafe_allow_html=True)
         
-        # Class Selection Interface
-        st.markdown("#### 🎯 Select Motif Classes & Subclasses")
-        
-        # Quick selection buttons
-        col1, col2, col3 = st.columns(3)
-        with col1:
-            if st.button("🎯 Select All", use_container_width=True):
-                st.session_state.selected_classes = list(CLASS_DEFINITIONS.keys())
-                for class_id in CLASS_DEFINITIONS.keys():
-                    st.session_state.selected_subclasses[class_id] = [sub["id"] for sub in CLASS_DEFINITIONS[class_id]["subclasses"]]
-                st.rerun()
-        
-        with col2:
-            if st.button("❌ Clear All", use_container_width=True):
-                st.session_state.selected_classes = []
-                st.session_state.selected_subclasses = {class_id: [] for class_id in CLASS_DEFINITIONS.keys()}
-                st.rerun()
-        
-        with col3:
-            if st.button("🎲 Core Classes", use_container_width=True):
-                # Select most commonly used classes
-                core_classes = ["Curved_DNA", "G-Quadruplex", "Z-DNA", "Slipped_DNA", "Cruciform"]
-                st.session_state.selected_classes = core_classes
-                for class_id in CLASS_DEFINITIONS.keys():
-                    if class_id in core_classes:
-                        st.session_state.selected_subclasses[class_id] = [sub["id"] for sub in CLASS_DEFINITIONS[class_id]["subclasses"]]
-                    else:
-                        st.session_state.selected_subclasses[class_id] = []
-                st.rerun()
-        
-        # Individual class selection with expandable subclasses
-        st.markdown("##### 📋 Individual Selection")
-        
-        for class_id, class_info in CLASS_DEFINITIONS.items():
-            # Create colorful container for each class
-            class_container = st.container()
-            with class_container:
-                # Main class checkbox with color indicator
-                col_check, col_expand = st.columns([4, 1])
-                
-                with col_check:
-                    class_selected = st.checkbox(
-                        f"🔬 {class_info['name']}", 
-                        key=f"class_{class_id}",
-                        value=class_id in st.session_state.selected_classes,
-                        help=class_info['description']
+     # ---------- Two-box class selector (Available <-> Selected) ----------
+# Ensure session state defaults (put this earlier in your file if not present)
+st.session_state.setdefault("selected_classes", [])
+st.session_state.setdefault("selected_subclasses", {cid: [] for cid in CLASS_DEFINITIONS})
+
+st.markdown("#### 🎯 Select Motif Classes — Two-box selector")
+
+# Quick actions row
+qa1, qa2, qa3 = st.columns([1,1,1])
+with qa1:
+    if st.button("🎯 Select All", use_container_width=True):
+        st.session_state["selected_classes"] = list(CLASS_DEFINITIONS.keys())
+        for cid in CLASS_DEFINITIONS:
+            st.session_state["selected_subclasses"][cid] = [s["id"] for s in CLASS_DEFINITIONS[cid]["subclasses"]]
+with qa2:
+    if st.button("❌ Clear All", use_container_width=True):
+        st.session_state["selected_classes"] = []
+        st.session_state["selected_subclasses"] = {cid: [] for cid in CLASS_DEFINITIONS}
+with qa3:
+    if st.button("🎲 Core Classes", use_container_width=True):
+        core = ["Curved_DNA", "G-Quadruplex", "Z-DNA", "Slipped_DNA", "Cruciform"]
+        core = [c for c in core if c in CLASS_DEFINITIONS]
+        st.session_state["selected_classes"] = core
+        for cid in CLASS_DEFINITIONS:
+            st.session_state["selected_subclasses"][cid] = [s["id"] for s in CLASS_DEFINITIONS[cid]["subclasses"]] if cid in core else []
+
+# Layout: two boxed columns + center controls
+left_col, mid_col, right_col = st.columns([1, 0.18, 1])
+
+# Style for boxes (simple)
+box_style = "padding:10px; border:1px solid #e6eef7; border-radius:6px; background:#fbfdff; min-height:160px;"
+
+# Left: Available classes
+with left_col:
+    st.markdown("**Available classes**")
+    st.markdown(f"<div style='{box_style}'>", unsafe_allow_html=True)
+    available = [cid for cid in CLASS_DEFINITIONS.keys() if cid not in st.session_state["selected_classes"]]
+    if available:
+        # show selectable list (multiselect with human-readable labels)
+        add_choice = st.multiselect(
+            "Choose classes to add",
+            options=available,
+            format_func=lambda x: CLASS_DEFINITIONS[x]["name"]
+        )
+        st.markdown("<br/>", unsafe_allow_html=True)
+        if st.button("Add →", use_container_width=True, key="add_btn"):
+            for cid in add_choice:
+                if cid not in st.session_state["selected_classes"]:
+                    st.session_state["selected_classes"].append(cid)
+                    # default subclasses empty; leave it to user to expand later
+                    st.session_state["selected_subclasses"].setdefault(cid, [])
+    else:
+        st.info("No available classes (all selected).")
+    st.markdown("</div>", unsafe_allow_html=True)
+
+# Middle: small instructions
+with mid_col:
+    st.markdown("")  # spacer
+    st.markdown("<div style='text-align:center; padding-top:40px'>➡️</div>", unsafe_allow_html=True)
+    st.markdown("<div style='text-align:center; color:#666; font-size:0.95rem'>Select → Add</div>", unsafe_allow_html=True)
+
+# Right: Selected classes with close buttons
+with right_col:
+    st.markdown("**Selected classes**")
+    st.markdown(f"<div style='{box_style}'>", unsafe_allow_html=True)
+    selected = st.session_state["selected_classes"]
+    if selected:
+        # show each selected class as a row with colored badge + close button
+        for cid in list(selected):  # list() to allow modification while iterating
+            info = CLASS_DEFINITIONS.get(cid, {"name": cid, "color": "#999"})
+            row1, row2 = st.columns([0.85, 0.15])
+            with row1:
+                st.markdown(
+                    f"<div style='padding:6px 8px; border-left:4px solid {info['color']}; background:{info['color']}22; border-radius:4px;'>"
+                    f"<strong>{info['name']}</strong> <span style='color:#666; font-size:0.85rem'>({cid})</span>"
+                    f"</div>",
+                    unsafe_allow_html=True
+                )
+            with row2:
+                if st.button("✖", key=f"remove_{cid}", help="Remove class", use_container_width=True):
+                    # remove class and its subclasses
+                    st.session_state["selected_classes"].remove(cid)
+                    st.session_state["selected_subclasses"][cid] = []
+                    # immediate UI update occurs since Streamlit reruns on button clicks
+            # Optional: let user choose subclasses per selected class inside small expander
+            with st.expander(f"Subclasses — {info['name']}", expanded=False):
+                subs = [s["id"] for s in info.get("subclasses", [])]
+                if subs:
+                    chosen_subs = st.multiselect(
+                        f"Choose subclasses for {info['name']}",
+                        options=subs,
+                        default=st.session_state["selected_subclasses"].get(cid, []),
+                        key=f"subs_{cid}"
                     )
-                    
-                with col_expand:
-                    expand_subclasses = st.checkbox("📋", key=f"expand_{class_id}", help="Show subclasses")
-                
-                # Update class selection
-                if class_selected and class_id not in st.session_state.selected_classes:
-                    st.session_state.selected_classes.append(class_id)
-                elif not class_selected and class_id in st.session_state.selected_classes:
-                    st.session_state.selected_classes.remove(class_id)
-                    # Also clear subclasses
-                    st.session_state.selected_subclasses[class_id] = []
-                
-                # Show subclasses if expanded and class is selected
-                if expand_subclasses and class_selected:
-                    st.markdown(f"""
-                    <div class="class-selector" style="border-left-color: {class_info['color']}; background: {class_info['color']}15;">
-                    """, unsafe_allow_html=True)
-                    
-                    # Select all/none for this class
-                    subcol1, subcol2 = st.columns(2)
-                    with subcol1:
-                        if st.button(f"All {class_info['name'][:8]}", key=f"all_sub_{class_id}", use_container_width=True):
-                            st.session_state.selected_subclasses[class_id] = [sub["id"] for sub in class_info["subclasses"]]
-                            st.rerun()
-                    with subcol2:
-                        if st.button(f"None {class_info['name'][:8]}", key=f"none_sub_{class_id}", use_container_width=True):
-                            st.session_state.selected_subclasses[class_id] = []
-                            st.rerun()
-                    
-                    # Individual subclass checkboxes
-                    for subclass in class_info["subclasses"]:
-                        subclass_selected = st.checkbox(
-                            f"└── {subclass['name']}", 
-                            key=f"subclass_{class_id}_{subclass['id']}",
-                            value=subclass["id"] in st.session_state.selected_subclasses.get(class_id, []),
-                            help=subclass['description']
-                        )
-                        
-                        # Update subclass selection
-                        if class_id not in st.session_state.selected_subclasses:
-                            st.session_state.selected_subclasses[class_id] = []
-                        
-                        if subclass_selected and subclass["id"] not in st.session_state.selected_subclasses[class_id]:
-                            st.session_state.selected_subclasses[class_id].append(subclass["id"])
-                        elif not subclass_selected and subclass["id"] in st.session_state.selected_subclasses[class_id]:
-                            st.session_state.selected_subclasses[class_id].remove(subclass["id"])
-                    
-                    st.markdown("</div>", unsafe_allow_html=True)
-        
-        # Selection Summary
-        selected_count = len(st.session_state.selected_classes)
-        total_subclasses = sum(len(st.session_state.selected_subclasses.get(class_id, [])) for class_id in st.session_state.selected_classes)
-        
-        st.markdown(f"""
-        <div class="selection-summary">
-        <h4>📊 Selection Summary</h4>
-        <ul>
-        <li><strong>Classes selected:</strong> {selected_count} of {len(CLASS_DEFINITIONS)}</li>
-        <li><strong>Subclasses selected:</strong> {total_subclasses}</li>
-        <li><strong>Scoring:</strong> Raw scores (algorithm-specific scales)</li>
-        <li><strong>Threshold:</strong> 0.0 (include all detected motifs)</li>
-        <li><strong>Overlaps:</strong> Not allowed within class, allowed between classes</li>
-        <li><strong>Hotspots:</strong> Detected (cluster analysis enabled)</li>
-        </ul>
-        </div>
-        """, unsafe_allow_html=True)
-        
-        # Show selected classes with colors
-        if st.session_state.selected_classes:
-            st.markdown("**Selected Classes:**")
-            cols = st.columns(3)
-            for i, class_id in enumerate(st.session_state.selected_classes):
-                class_info = CLASS_DEFINITIONS[class_id]
-                with cols[i % 3]:
-                    st.markdown(f"""
-                    <div style="background: {class_info['color']}30; border-left: 3px solid {class_info['color']}; padding: 5px; margin: 2px; border-radius: 3px; font-size: 0.8rem;">
-                    🔬 {class_info['name']}
-                    </div>
-                    """, unsafe_allow_html=True)
-        
-        st.markdown("---")
+                    st.session_state["selected_subclasses"][cid] = chosen_subs
+                else:
+                    st.write("_No subclasses defined_")
+            st.markdown("---")
+    else:
+        st.info("No classes selected.")
+    st.markdown("</div>", unsafe_allow_html=True)
+
+# Small selection summary
+total_classes = len(st.session_state["selected_classes"])
+total_subs = sum(len(v) for v in st.session_state["selected_subclasses"].values())
+st.markdown(f"**Summary:** {total_classes} classes selected, {total_subs} subclasses selected.")
+st.markdown("---")
 
         # Run button (primary) and status indicator
         if st.button("🔬 Run Motif Analysis", type="primary", use_container_width=True):
