@@ -1152,4 +1152,3 @@ Dr. Venkata Rajesh Yella<br>
 <a href='https://github.com/VRYella' target='_blank'>GitHub: VRYella</a>
 </div>
 """, unsafe_allow_html=True)
-"
