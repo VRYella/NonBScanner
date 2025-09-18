@@ -607,94 +607,94 @@ total_subs = sum(len(v) for v in st.session_state["selected_subclasses"].values(
 st.markdown(f"**Summary:** {total_classes} classes selected, {total_subs} subclasses selected.")
 st.markdown("---")
 
-        # Run button (primary) and status indicator
-        if st.button("🔬 Run Motif Analysis", type="primary", use_container_width=True):
-            # Validate selection
-            if not st.session_state.selected_classes:
-                st.error("❌ Please select at least one motif class to analyze.")
-                st.session_state.analysis_status = "Error"
-            elif not st.session_state.seqs:
-                st.error("❌ Please upload or input sequences before running analysis.")
-                st.session_state.analysis_status = "Error"
-            else:
-                st.session_state.analysis_status = "Running"
-                
-                # Set analysis parameters based on requirements
-                nonoverlap = True  # Keep overlaps disabled for specificity
-                report_hotspots = True  # Enable hotspot detection 
-                calc_conservation = False  # Disable to reduce computation time
-                threshold = 0.0  # Show all detected motifs (even 0 scores)
-                
-                validation_messages = []
+# Run button (primary) and status indicator
+if st.button("🔬 Run Motif Analysis", type="primary", use_container_width=True):
+    # Validate selection
+    if not st.session_state.selected_classes:
+        st.error("❌ Please select at least one motif class to analyze.")
+        st.session_state.analysis_status = "Error"
+    elif not st.session_state.seqs:
+        st.error("❌ Please upload or input sequences before running analysis.")
+        st.session_state.analysis_status = "Error"
+    else:
+        st.session_state.analysis_status = "Running"
+        
+        # Set analysis parameters based on requirements
+        nonoverlap = True  # Keep overlaps disabled for specificity
+        report_hotspots = True  # Enable hotspot detection 
+        calc_conservation = False  # Disable to reduce computation time
+        threshold = 0.0  # Show all detected motifs (even 0 scores)
+        
+        validation_messages = []
 
-                # Scientific validation check
+        # Scientific validation check
+        for i, seq in enumerate(st.session_state.seqs):
+            seq_name = st.session_state.names[i] if i < len(st.session_state.names) else f"Sequence_{i+1}"
+            valid_chars = set('ATCGN')
+            seq_chars = set(seq.upper())
+            if not seq_chars.issubset(valid_chars):
+                invalid_chars = seq_chars - valid_chars
+                validation_messages.append(f"⚠️ {seq_name}: Contains non-DNA characters: {invalid_chars}")
+            if len(seq) < 10:
+                validation_messages.append(f"⚠️ {seq_name}: Sequence too short (<10 bp) for reliable motif detection")
+            elif len(seq) > 1000000:
+                validation_messages.append(f"⚠️ {seq_name}: Sequence very long (>{len(seq):,} bp) - analysis may be slow")
+
+        if validation_messages:
+            for msg in validation_messages:
+                st.warning(msg)
+            if any("Contains non-DNA characters" in m for m in validation_messages):
+                st.error("❌ Analysis stopped due to invalid sequence content.")
+                st.session_state.analysis_status = "Error"
+        else:
+            # Run the orchestrator
+            motif_results = []
+            with st.spinner("🧬 Analyzing motifs with scientific algorithms..."):
                 for i, seq in enumerate(st.session_state.seqs):
-                    seq_name = st.session_state.names[i] if i < len(st.session_state.names) else f"Sequence_{i+1}"
-                    valid_chars = set('ATCGN')
-                    seq_chars = set(seq.upper())
-                    if not seq_chars.issubset(valid_chars):
-                        invalid_chars = seq_chars - valid_chars
-                        validation_messages.append(f"⚠️ {seq_name}: Contains non-DNA characters: {invalid_chars}")
-                    if len(seq) < 10:
-                        validation_messages.append(f"⚠️ {seq_name}: Sequence too short (<10 bp) for reliable motif detection")
-                    elif len(seq) > 1000000:
-                        validation_messages.append(f"⚠️ {seq_name}: Sequence very long (>{len(seq):,} bp) - analysis may be slow")
+                    sequence_name = st.session_state.names[i] if i < len(st.session_state.names) else f"Sequence_{i+1}"
+                    motifs = all_motifs_refactored(seq, sequence_name=sequence_name, nonoverlap=nonoverlap,
+                                                  report_hotspots=report_hotspots, calculate_conservation=calc_conservation)
 
-                if validation_messages:
-                    for msg in validation_messages:
-                        st.warning(msg)
-                    if any("Contains non-DNA characters" in m for m in validation_messages):
-                        st.error("❌ Analysis stopped due to invalid sequence content.")
-                        st.session_state.analysis_status = "Error"
-                else:
-                    # Run the orchestrator
-                    motif_results = []
-                    with st.spinner("🧬 Analyzing motifs with scientific algorithms..."):
-                        for i, seq in enumerate(st.session_state.seqs):
-                            sequence_name = st.session_state.names[i] if i < len(st.session_state.names) else f"Sequence_{i+1}"
-                            motifs = all_motifs_refactored(seq, sequence_name=sequence_name, nonoverlap=nonoverlap,
-                                                          report_hotspots=report_hotspots, calculate_conservation=calc_conservation)
+                    # Validate and filter - using raw scoring as requested
+                    validated_motifs = []
+                    for m in motifs:
+                        try:
+                            # Use raw/actual score instead of normalized as requested
+                            s = float(m.get('Actual_Score', m.get('Score', 0)))
+                        except Exception:
+                            s = 0.0
+                        if s >= threshold:
+                            validated_motifs.append(ensure_subclass(m))
+                    motif_results.append(validated_motifs)
 
-                            # Validate and filter - using raw scoring as requested
-                            validated_motifs = []
-                            for m in motifs:
-                                try:
-                                    # Use raw/actual score instead of normalized as requested
-                                    s = float(m.get('Actual_Score', m.get('Score', 0)))
-                                except Exception:
-                                    s = 0.0
-                                if s >= threshold:
-                                    validated_motifs.append(ensure_subclass(m))
-                            motif_results.append(validated_motifs)
+            st.session_state.results = motif_results
+            # Generate summary dataframe
+            summary = []
+            for i, motifs in enumerate(motif_results):
+                stats = get_basic_stats(st.session_state.seqs[i], motifs)
+                motif_types = Counter([m['Class'] if m['Class'] != "Z-DNA" or m.get("Subclass") != "eGZ (Extruded-G)" else "eGZ (Extruded-G)" for m in motifs])
+                summary.append({
+                    "Sequence Name": st.session_state.names[i],
+                    "Length (bp)": stats['Length'],
+                    "GC %": stats['GC%'],
+                    "AT %": stats['AT%'],
+                    "A Count": stats['A'],
+                    "T Count": stats['T'],
+                    "G Count": stats['G'],
+                    "C Count": stats['C'],
+                    "Motif Count": len(motifs),
+                    "Motif Coverage (%)": stats.get("Motif Coverage %", 0),
+                    "Motif Classes": ", ".join(f"{k} ({v})" for k, v in motif_types.items())
+                })
 
-                    st.session_state.results = motif_results
-                    # Generate summary dataframe
-                    summary = []
-                    for i, motifs in enumerate(motif_results):
-                        stats = get_basic_stats(st.session_state.seqs[i], motifs)
-                        motif_types = Counter([m['Class'] if m['Class'] != "Z-DNA" or m.get("Subclass") != "eGZ (Extruded-G)" else "eGZ (Extruded-G)" for m in motifs])
-                        summary.append({
-                            "Sequence Name": st.session_state.names[i],
-                            "Length (bp)": stats['Length'],
-                            "GC %": stats['GC%'],
-                            "AT %": stats['AT%'],
-                            "A Count": stats['A'],
-                            "T Count": stats['T'],
-                            "G Count": stats['G'],
-                            "C Count": stats['C'],
-                            "Motif Count": len(motifs),
-                            "Motif Coverage (%)": stats.get("Motif Coverage %", 0),
-                            "Motif Classes": ", ".join(f"{k} ({v})" for k, v in motif_types.items())
-                        })
+            st.session_state.summary_df = pd.DataFrame(summary)
+            st.success("✅ Analysis complete! Results are available below and in the 'Analysis Results and Visualization' tab.")
+            st.session_state.analysis_status = "Complete"
 
-                    st.session_state.summary_df = pd.DataFrame(summary)
-                    st.success("✅ Analysis complete! Results are available below and in the 'Analysis Results and Visualization' tab.")
-                    st.session_state.analysis_status = "Complete"
-
-        # Show quick summary table if available
-        if st.session_state.get('summary_df') is not None:
-            st.markdown("#### Analysis Summary")
-            st.dataframe(st.session_state.summary_df)
+    # Show quick summary table if available
+    if st.session_state.get('summary_df') is not None:
+        st.markdown("#### Analysis Summary")
+        st.dataframe(st.session_state.summary_df)
 
     # End of Upload & Analyze tab
     st.markdown("---")
