@@ -284,22 +284,17 @@ with tab_pages["Home"]:
         <div style='font-family:Montserrat, Arial; font-size:1.14rem; color:#222; line-height:1.7; padding:18px; background:#f8f9fa; border-radius:14px; box-shadow:0 2px 8px #eee;'>
         <b>Non-canonical DNA structures</b> play key roles in genome stability, regulation, and evolution.<br>
         This application detects and analyzes <b>10 major classes with 22+ subclasses</b> of Non-B DNA motifs in any DNA sequence or multi-FASTA file.<br>
-        <b>Enhanced Features:</b><br>
-        <span style='color:#1565c0;'>
-            🎯 <b>Smart Classification:</b> Evidence-based motif length limits and scoring<br>
-            📈 <b>Advanced Visualization:</b> Interactive plots and comprehensive analysis tools
-        </span><br>
         <b>Motif Classes (11 classes, 22+ subclasses):</b><br>
         <span style='color:#1565c0;'>
             <b>1. Curved DNA</b> (Global curvature, Local Curvature),<br>
             <b>2. Slipped DNA</b> (Direct Repeat, STR),<br>
-            <b>3. Cruciform DNA</b> (IR/HairPin),<br>
+            <b>3. Cruciform DNA</b> (Inverted Repeats),<br>
             <b>4. R-loop</b> (R-loop formation sites),<br>
             <b>5. Triplex</b> (Triplex, Sticky DNA),<br>
             <b>6. G-Quadruplex Family</b> (Multimeric G4, Canonical G4, Relaxed G4, Bulged G4, Bipartite G4, Imperfect G4, G-Triplex intermediate),<br>
             <b>7. i-Motif Family</b> (Canonical i-motif, Relaxed i-motif, AC-motif),<br>
             <b>8. Z-DNA</b> (Z-DNA, eGZ (Extruded-G) DNA),<br>
-            <b>9. A-philic DNA</b> (High-confidence A-philic, Moderate A-philic),<br>
+            <b>9. A-philic DNA</b> (A-philic DNA),<br>
             <b>10. Hybrid</b> (dynamic overlaps),<br>
             <b>11. Non-B DNA Clusters</b> (dynamic clusters).
         </span>
@@ -308,26 +303,32 @@ with tab_pages["Home"]:
         </div>
         """, unsafe_allow_html=True)
 
-# ---------- UPLOAD & ANALYZE ----------
+# Updated Streamlit layout: Input Method + Sequence Preview + Analysis side-by-side
+#  "Upload & Analyze" 
+# It expects helper functions and constants to exist in the module:
+# parse_fasta, get_basic_stats, EXAMPLE_FASTA, EXAMPLE_MULTI_FASTA, parse_fasta, all_motifs_refactored,
+# ensure_subclass, MOTIF_ORDER, wrap, Entrez, SeqIO, Counter, pd, st
+
 with tab_pages["Upload & Analyze"]:
     st.markdown("<h2>Sequence Upload and Motif Analysis</h2>", unsafe_allow_html=True)
     st.markdown('<span style="font-family:Montserrat,Arial; font-size:1.12rem;">Supports multi-FASTA and single FASTA. Paste, upload, select example, or fetch from NCBI.</span>', unsafe_allow_html=True)
     st.caption("Supported formats: .fa, .fasta, .txt | Limit: 200MB/file.")
 
-    # Optimized default parameters (removing unnecessary configuration switches)
-    # Use optimal settings for best performance and comprehensive analysis
-
     st.markdown("---")
-    
-    # Input method selection with modern styling
-    st.markdown("### 📁 Input Method")
-    input_method = st.radio("Choose your input method:",
-        ["📂 Upload FASTA File", "✏️ Paste Sequence", "🧪 Example Data", "🌐 NCBI Fetch"],
-        horizontal=True
-    )
-    
-    seqs, names = [], []
-    if input_method == "📂 Upload FASTA File":
+
+    # Create two main columns: left = Input & Preview, right = Analysis controls & Summary
+    col_left, col_right = st.columns([1, 1], gap="large")
+
+    # ----- LEFT COLUMN: Input Method + Sequence Preview -----
+    with col_left:
+        st.markdown("### 📁 Input Method")
+        input_method = st.radio("Choose your input method:",
+                                ["📂 Upload FASTA File", "✏️ Paste Sequence", "🧪 Example Data", "🌐 NCBI Fetch"],
+                                horizontal=True)
+
+        seqs, names = [], []
+
+        if input_method == "📂 Upload FASTA File":
             fasta_file = st.file_uploader("Drag and drop FASTA/multi-FASTA file here", type=["fa", "fasta", "txt"])
             if fasta_file:
                 content = fasta_file.read().decode("utf-8")
@@ -355,51 +356,13 @@ with tab_pages["Upload & Analyze"]:
                         st.caption(f"...and {len(seqs)-3} more.")
                 else:
                     st.warning("No sequences found.")
-                
-    elif input_method == "✏️ Paste Sequence":
-        seq_input = st.text_area("Paste single or multi-FASTA here:", height=150, 
-                                placeholder="Paste your DNA sequence(s) here...")
-        if seq_input:
-            seqs, names = [], []
-            cur_seq, cur_name = "", ""
-            for line in seq_input.splitlines():
-                if line.startswith(">"):
-                    if cur_seq:
-                        seqs.append(parse_fasta(cur_seq))
-                        names.append(cur_name if cur_name else f"Seq{len(seqs)}")
-                    cur_name = line.strip().lstrip(">")
-                    cur_seq = ""
-                else:
-                    cur_seq += line.strip()
-            if cur_seq:
-                seqs.append(parse_fasta(cur_seq))
-                names.append(cur_name if cur_name else f"Seq{len(seqs)}")
-            if seqs:
-                st.success(f"✅ Pasted {len(seqs)} sequences.")
-                for i, seq in enumerate(seqs[:3]):
-                    st.markdown(f"**{names[i]}**: <span style='color:#576574'>{len(seq):,} bp</span>", unsafe_allow_html=True)
-                    stats = get_basic_stats(seq)
-                    st.markdown(f"GC %: {stats['GC%']} | AT %: {stats['AT%']} | A: {stats['A']} | T: {stats['T']} | G: {stats['G']} | C: {stats['C']}")
-                if len(seqs) > 3:
-                    st.caption(f"...and {len(seqs)-3} more.")
-            else:
-                st.warning("No sequences found.")
-                
-    elif input_method == "🧪 Example Data":
-        ex_type = st.radio("Example Type:", ["Single Example", "Multi-FASTA Example"], horizontal=True)
-        if ex_type == "Single Example":
-            if st.button("🔬 Load Single Example"):
-                seqs = [parse_fasta(EXAMPLE_FASTA)]
-                names = ["Example Sequence"]
-                st.success("✅ Single example sequence loaded.")
-                stats = get_basic_stats(seqs[0])
-                st.code(EXAMPLE_FASTA, language="fasta")
-                st.markdown(f"GC %: {stats['GC%']} | AT %: {stats['AT%']} | A: {stats['A']} | T: {stats['T']} | G: {stats['G']} | C: {stats['C']}")
-        else:
-            if st.button("🔬 Load Multi-FASTA Example"):
+
+        elif input_method == "✏️ Paste Sequence":
+            seq_input = st.text_area("Paste single or multi-FASTA here:", height=150, placeholder="Paste your DNA sequence(s) here...")
+            if seq_input:
                 seqs, names = [], []
                 cur_seq, cur_name = "", ""
-                for line in EXAMPLE_MULTI_FASTA.splitlines():
+                for line in seq_input.splitlines():
                     if line.startswith(">"):
                         if cur_seq:
                             seqs.append(parse_fasta(cur_seq))
@@ -411,180 +374,200 @@ with tab_pages["Upload & Analyze"]:
                 if cur_seq:
                     seqs.append(parse_fasta(cur_seq))
                     names.append(cur_name if cur_name else f"Seq{len(seqs)}")
-                st.success(f"✅ Multi-FASTA example loaded with {len(seqs)} sequences.")
-                for i, seq in enumerate(seqs[:3]):
-                    stats = get_basic_stats(seq)
-                    st.markdown(f"**{names[i]}**: <span style='color:#576574'>{len(seq):,} bp</span>", unsafe_allow_html=True)
-                    st.markdown(f"GC %: {stats['GC%']} | AT %: {stats['AT%']} | A: {stats['A']} | T: {stats['T']} | G: {stats['G']} | C: {stats['C']}")
-                st.code(EXAMPLE_MULTI_FASTA, language="fasta")
-                
-    elif input_method == "🌐 NCBI Fetch":
-        db = st.radio("NCBI Database", ["nucleotide", "gene"], horizontal=True, 
-                      help="Only nucleotide and gene databases are applicable for DNA motif analysis")
-        query_type = st.radio("Query Type", ["Accession", "Gene Name", "Custom Query"], horizontal=True)
-        motif_examples = {
-            "G-quadruplex": "NR_003287.2 (human telomerase RNA)",
-            "Z-DNA": "NM_001126112.2 (human ADAR1 gene)",
-            "R-loop": "NR_024540.1 (human SNRPN gene)",
-            "eGZ-motif": "CGG repeat region",
-            "AC-motif": "A-rich/C-rich consensus region"
-        }
-        with st.expander("Motif Example Queries"):
-            for motif, example in motif_examples.items():
-                st.write(f"**{motif}**: `{example}`")
-        query = st.text_input("Enter query (accession, gene, etc.):")
-        rettype = st.radio("Return Format", ["fasta", "gb"], horizontal=True)
-        retmax = st.number_input("Max Records", min_value=1, max_value=20, value=3)
-        if st.button("Fetch from NCBI"):
-            if query:
-                with st.spinner("Contacting NCBI..."):
-                    handle = Entrez.efetch(db=db, id=query, rettype=rettype, retmode="text")
-                    records = list(SeqIO.parse(handle, rettype))
-                    handle.close()
-                    seqs = [str(rec.seq).upper().replace("U", "T") for rec in records]
-                    names = [rec.id for rec in records]
                 if seqs:
-                    st.success(f"Fetched {len(seqs)} sequences.")
+                    st.success(f"✅ Pasted {len(seqs)} sequences.")
                     for i, seq in enumerate(seqs[:3]):
                         stats = get_basic_stats(seq)
-                        st.markdown(f"<b>{names[i]}</b>: <span style='color:#576574'>{len(seq):,} bp</span>", unsafe_allow_html=True)
+                        st.markdown(f"**{names[i]}**: <span style='color:#576574'>{len(seq):,} bp</span>", unsafe_allow_html=True)
                         st.markdown(f"GC %: {stats['GC%']} | AT %: {stats['AT%']} | A: {stats['A']} | T: {stats['T']} | G: {stats['G']} | C: {stats['C']}")
+                    if len(seqs) > 3:
+                        st.caption(f"...and {len(seqs)-3} more.")
+                else:
+                    st.warning("No sequences found.")
+
+        elif input_method == "🧪 Example Data":
+            ex_type = st.radio("Example Type:", ["Single Example", "Multi-FASTA Example"], horizontal=True)
+            if ex_type == "Single Example":
+                if st.button("🔬 Load Single Example"):
+                    seqs = [parse_fasta(EXAMPLE_FASTA)]
+                    names = ["Example Sequence"]
+                    st.success("✅ Single example sequence loaded.")
+                    stats = get_basic_stats(seqs[0])
+                    st.code(EXAMPLE_FASTA, language="fasta")
+                    st.markdown(f"GC %: {stats['GC%']} | AT %: {stats['AT%']} | A: {stats['A']} | T: {stats['T']} | G: {stats['G']} | C: {stats['C']}")
             else:
-                st.warning("Enter a query before fetching.")
+                if st.button("🔬 Load Multi-FASTA Example"):
+                    seqs, names = [], []
+                    cur_seq, cur_name = "", ""
+                    for line in EXAMPLE_MULTI_FASTA.splitlines():
+                        if line.startswith(">"):
+                            if cur_seq:
+                                seqs.append(parse_fasta(cur_seq))
+                                names.append(cur_name if cur_name else f"Seq{len(seqs)}")
+                            cur_name = line.strip().lstrip(">")
+                            cur_seq = ""
+                        else:
+                            cur_seq += line.strip()
+                    if cur_seq:
+                        seqs.append(parse_fasta(cur_seq))
+                        names.append(cur_name if cur_name else f"Seq{len(seqs)}")
+                    st.success(f"✅ Multi-FASTA example loaded with {len(seqs)} sequences.")
+                    for i, seq in enumerate(seqs[:3]):
+                        stats = get_basic_stats(seq)
+                        st.markdown(f"**{names[i]}**: <span style='color:#576574'>{len(seq):,} bp</span>", unsafe_allow_html=True)
+                        st.markdown(f"GC %: {stats['GC%']} | AT %: {stats['AT%']} | A: {stats['A']} | T: {stats['T']} | G: {stats['G']} | C: {stats['C']}")
+                    st.code(EXAMPLE_MULTI_FASTA, language="fasta")
 
-    if seqs:
-        st.session_state.seqs = seqs
-        st.session_state.names = names
-        st.session_state.results = []
+        elif input_method == "🌐 NCBI Fetch":
+            db = st.radio("NCBI Database", ["nucleotide", "gene"], horizontal=True,
+                          help="Only nucleotide and gene databases are applicable for DNA motif analysis")
+            query_type = st.radio("Query Type", ["Accession", "Gene Name", "Custom Query"], horizontal=True)
+            motif_examples = {
+                "G-quadruplex": "NR_003287.2 (human telomerase RNA)",
+                "Z-DNA": "NM_001126112.2 (human ADAR1 gene)",
+                "R-loop": "NR_024540.1 (human SNRPN gene)",
+                "eGZ-motif": "CGG repeat region",
+                "AC-motif": "A-rich/C-rich consensus region"
+            }
+            with st.expander("Motif Example Queries"):
+                for motif, example in motif_examples.items():
+                    st.write(f"**{motif}**: `{example}`")
+            query = st.text_input("Enter query (accession, gene, etc.):")
+            rettype = st.radio("Return Format", ["fasta", "gb"], horizontal=True)
+            retmax = st.number_input("Max Records", min_value=1, max_value=20, value=3)
+            if st.button("Fetch from NCBI"):
+                if query:
+                    with st.spinner("Contacting NCBI..."):
+                        handle = Entrez.efetch(db=db, id=query, rettype=rettype, retmode="text")
+                        records = list(SeqIO.parse(handle, rettype))
+                        handle.close()
+                        seqs = [str(rec.seq).upper().replace("U", "T") for rec in records]
+                        names = [rec.id for rec in records]
+                    if seqs:
+                        st.success(f"Fetched {len(seqs)} sequences.")
+                        for i, seq in enumerate(seqs[:3]):
+                            stats = get_basic_stats(seq)
+                            st.markdown(f"<b>{names[i]}</b>: <span style='color:#576574'>{len(seq):,} bp</span>", unsafe_allow_html=True)
+                            st.markdown(f"GC %: {stats['GC%']} | AT %: {stats['AT%']} | A: {stats['A']} | T: {stats['T']} | G: {stats['G']} | C: {stats['C']}")
+                else:
+                    st.warning("Enter a query before fetching.")
 
-    if st.session_state.seqs:
-        st.markdown("### 📊 Sequence Preview")
-        for i, seq in enumerate(st.session_state.seqs[:2]):
-            stats = get_basic_stats(seq)
-            st.markdown(f"**{st.session_state.names[i]}** ({len(seq):,} bp) | GC %: {stats['GC%']} | AT %: {stats['AT%']} | A: {stats['A']} | T: {stats['T']} | G: {stats['G']} | C: {stats['C']}", unsafe_allow_html=True)
-            st.code(wrap(seq[:400]), language="fasta")
-        if len(st.session_state.seqs) > 2:
-            st.caption(f"...and {len(st.session_state.seqs)-2} more.")
+        # Persist sequences to session state if any found from input
+        if seqs:
+            st.session_state.seqs = seqs
+            st.session_state.names = names
+            st.session_state.results = []
 
-        # Enhanced analysis button with configuration summary
-        st.markdown("---")
-        col1, col2 = st.columns([3, 1])
-        
-        with col1:
-            st.markdown("### 🚀 Run Analysis")
-            config_summary = f"""
-            **Configuration Summary:**
-            - Motifs: {len(MOTIF_ORDER)} classes selected (comprehensive analysis)
-            - Scoring: Normalized scores (0-1 scale) for fair comparison
-            - Threshold: 0.0 (include all detected motifs)
-            - Overlaps: Not allowed within motif class, allowed between classes
-            - Hotspots: Detected (cluster analysis enabled)
-            """
-            st.markdown(config_summary)
-        
-        with col2:
-            if st.button("🔬 Run Motif Analysis", type="primary", use_container_width=True):
-                st.session_state.analysis_status = "Running"
-                
-                # Scientific validation check
-                with st.spinner("🔬 Running scientific validation..."):
-                    validation_passed = True
-                    validation_messages = []
-                    
-                    # Validate sequence content
+        # Sequence Preview lives under the input column for immediate feedback
+        if st.session_state.get('seqs'):
+            st.markdown("### 📊 Sequence Preview")
+            for i, seq in enumerate(st.session_state.seqs[:2]):
+                stats = get_basic_stats(seq)
+                st.markdown(f"**{st.session_state.names[i]}** ({len(seq):,} bp) | GC %: {stats['GC%']} | AT %: {stats['AT%']} | A: {stats['A']} | T: {stats['T']} | G: {stats['G']} | C: {stats['C']}", unsafe_allow_html=True)
+                st.code(wrap(seq[:400]), language="fasta")
+            if len(st.session_state.seqs) > 2:
+                st.caption(f"...and {len(st.session_state.seqs)-2} more.")
+
+    # ----- RIGHT COLUMN: Analysis Controls + Run Button + Summary Table -----
+    with col_right:
+        st.markdown("### 🚀 Analysis & Run")
+
+        config_summary = f"""
+        **Configuration Summary:**
+        - Motifs: {len(MOTIF_ORDER)} classes selected (comprehensive analysis)
+        - Scoring: Normalized scores (0-1 scale) for fair comparison
+        - Threshold: 0.0 (include all detected motifs)
+        - Overlaps: Not allowed within motif class, allowed between classes
+        - Hotspots: Detected (cluster analysis enabled)
+        """
+        st.markdown(config_summary)
+
+        # Compact control group for advanced options (kept collapsed by default)
+        with st.expander("Advanced options", expanded=False):
+            nonoverlap = st.checkbox("Prevent overlaps within a motif class", value=False)
+            report_hotspots = st.checkbox("Detect hotspots (clusters)", value=True)
+            calc_conservation = st.checkbox("Calculate conservation (slower)", value=False)
+            threshold = st.slider("Normalized score threshold", min_value=0.0, max_value=1.0, value=0.0)
+
+        # Run button (primary) and status indicator
+        if st.button("🔬 Run Motif Analysis", type="primary", use_container_width=True):
+            st.session_state.analysis_status = "Running"
+            validation_messages = []
+
+            # Scientific validation check
+            for i, seq in enumerate(st.session_state.seqs):
+                seq_name = st.session_state.names[i] if i < len(st.session_state.names) else f"Sequence_{i+1}"
+                valid_chars = set('ATCGN')
+                seq_chars = set(seq.upper())
+                if not seq_chars.issubset(valid_chars):
+                    invalid_chars = seq_chars - valid_chars
+                    validation_messages.append(f"⚠️ {seq_name}: Contains non-DNA characters: {invalid_chars}")
+                if len(seq) < 10:
+                    validation_messages.append(f"⚠️ {seq_name}: Sequence too short (<10 bp) for reliable motif detection")
+                elif len(seq) > 1000000:
+                    validation_messages.append(f"⚠️ {seq_name}: Sequence very long (>{len(seq):,} bp) - analysis may be slow")
+
+            if validation_messages:
+                for msg in validation_messages:
+                    st.warning(msg)
+                if any("Contains non-DNA characters" in m for m in validation_messages):
+                    st.error("❌ Analysis stopped due to invalid sequence content.")
+                    st.session_state.analysis_status = "Error"
+            else:
+                # Run the orchestrator
+                motif_results = []
+                with st.spinner("🧬 Analyzing motifs with scientific algorithms..."):
                     for i, seq in enumerate(st.session_state.seqs):
-                        seq_name = st.session_state.names[i] if i < len(st.session_state.names) else f"Sequence_{i+1}"
-                        
-                        # Check for valid DNA sequence
-                        valid_chars = set('ATCGN')
-                        seq_chars = set(seq.upper())
-                        if not seq_chars.issubset(valid_chars):
-                            invalid_chars = seq_chars - valid_chars
-                            validation_messages.append(f"⚠️ {seq_name}: Contains non-DNA characters: {invalid_chars}")
-                        
-                        # Check sequence length
-                        if len(seq) < 10:
-                            validation_messages.append(f"⚠️ {seq_name}: Sequence too short (<10 bp) for reliable motif detection")
-                        elif len(seq) > 1000000:  # 1 Mb limit
-                            validation_messages.append(f"⚠️ {seq_name}: Sequence very long (>{len(seq):,} bp) - analysis may be slow")
-                    
-                    # Display validation messages if any
-                    if validation_messages:
-                        for msg in validation_messages:
-                            if "⚠️" in msg:
-                                st.warning(msg)
-                            else:
-                                st.error(msg)
-                        
-                        if any("Contains non-DNA characters" in msg for msg in validation_messages):
-                            st.error("❌ Analysis stopped due to invalid sequence content.")
-                            validation_passed = False
-                
-                if validation_passed:
-                    with st.spinner("🧬 Analyzing motifs with scientific algorithms..."):
-                        motif_results = []
-                        
-                        for i, seq in enumerate(st.session_state.seqs):
-                            # Get sequence name from names list
-                            sequence_name = st.session_state.names[i] if i < len(st.session_state.names) else f"Sequence_{i+1}"
-                            
-                            # Run motif analysis using optimized orchestrator
-                            motifs = all_motifs_refactored(
-                                seq, 
-                                sequence_name=sequence_name,
-                                nonoverlap=False,  # Allow overlaps for complete analysis
-                                report_hotspots=True,  # Enable hotspot detection
-                                calculate_conservation=False  # Conservation analysis disabled for speed
-                            )
-                            
-                            # Scientific accuracy check: validate scores
-                            validated_motifs = []
-                            for motif in motifs:
-                                # Ensure all scores are within expected ranges
-                                normalized_score = motif.get('Normalized_Score', 0)
-                                if isinstance(normalized_score, (int, float)):
-                                    if 0 <= normalized_score <= 1:
-                                        validated_motifs.append(motif)
-                                    else:
-                                        # Log but don't include invalid scores
-                                        st.warning(f"Invalid normalized score {normalized_score} for motif at position {motif.get('Start', 'unknown')}")
-                                else:
-                                    validated_motifs.append(motif)
-                            
-                            # Apply optimal score threshold (0.0 - include all detected motifs)
-                            validated_motifs = [m for m in motifs if float(m.get('Normalized_Score', 0)) >= 0.0]
-                            
-                            # PATCH: Ensure every motif has a 'Subclass'
-                            validated_motifs = [ensure_subclass(m) for m in validated_motifs]
-                            motif_results.append(validated_motifs)
-                        
-                        st.session_state.results = motif_results
+                        sequence_name = st.session_state.names[i] if i < len(st.session_state.names) else f"Sequence_{i+1}"
+                        motifs = all_motifs_refactored(seq, sequence_name=sequence_name, nonoverlap=nonoverlap,
+                                                      report_hotspots=report_hotspots, calculate_conservation=calc_conservation)
 
-                # Generate enhanced summary
-                with st.spinner("📊 Generating summary..."):
-                    summary = []
-                    for i, motifs in enumerate(motif_results):
-                        stats = get_basic_stats(st.session_state.seqs[i], motifs)
-                        motif_types = Counter([m['Class'] if m['Class'] != "Z-DNA" or m.get("Subclass") != "eGZ (Extruded-G)" else "eGZ (Extruded-G)" for m in motifs])
-                        
-                        summary.append({
-                            "Sequence Name": st.session_state.names[i],
-                            "Length (bp)": stats['Length'],
-                            "GC %": stats['GC%'],
-                            "AT %": stats['AT%'],
-                            "A Count": stats['A'],
-                            "T Count": stats['T'],
-                            "G Count": stats['G'],
-                            "C Count": stats['C'],
-                            "Motif Count": len(motifs),
-                            "Motif Coverage (%)": stats["Motif Coverage %"],
-                            "Motif Classes": ", ".join(f"{k} ({v})" for k, v in motif_types.items())
-                        })
-                    
-                    st.session_state.summary_df = pd.DataFrame(summary)
-                
-                st.success("✅ Analysis complete! See 'Analysis Results and Visualization' tab for details.")
+                        # Validate and filter
+                        validated_motifs = []
+                        for m in motifs:
+                            try:
+                                s = float(m.get('Normalized_Score', 0))
+                            except Exception:
+                                s = 0.0
+                            if s >= threshold:
+                                validated_motifs.append(ensure_subclass(m))
+                        motif_results.append(validated_motifs)
+
+                st.session_state.results = motif_results
+                # Generate summary dataframe
+                summary = []
+                for i, motifs in enumerate(motif_results):
+                    stats = get_basic_stats(st.session_state.seqs[i], motifs)
+                    motif_types = Counter([m['Class'] if m['Class'] != "Z-DNA" or m.get("Subclass") != "eGZ (Extruded-G)" else "eGZ (Extruded-G)" for m in motifs])
+                    summary.append({
+                        "Sequence Name": st.session_state.names[i],
+                        "Length (bp)": stats['Length'],
+                        "GC %": stats['GC%'],
+                        "AT %": stats['AT%'],
+                        "A Count": stats['A'],
+                        "T Count": stats['T'],
+                        "G Count": stats['G'],
+                        "C Count": stats['C'],
+                        "Motif Count": len(motifs),
+                        "Motif Coverage (%)": stats.get("Motif Coverage %", 0),
+                        "Motif Classes": ", ".join(f"{k} ({v})" for k, v in motif_types.items())
+                    })
+
+                st.session_state.summary_df = pd.DataFrame(summary)
+                st.success("✅ Analysis complete! Results are available below and in the 'Analysis Results and Visualization' tab.")
                 st.session_state.analysis_status = "Complete"
+
+        # Show quick summary table if available
+        if st.session_state.get('summary_df') is not None:
+            st.markdown("#### Analysis Summary")
+            st.dataframe(st.session_state.summary_df)
+
+    # End of Upload & Analyze tab
+    st.markdown("---")
+
+# Notes: This layout keeps input/preview on the left for quick sequence inspection
+# and the analysis controls on the right to allow side-by-side interaction.
+# Adjust column widths by changing the st.columns([1, 1]) ratio if you want more space for one side.
 
 # ---------- RESULTS ----------
 with tab_pages["Results"]:
