@@ -477,7 +477,6 @@ with tab_pages["Upload & Analyze"]:
         st.markdown("### 🚀 Analysis & Run")
         
         # ========== SUCCINCT MOTIF CLASS SELECTOR ========== 
-        st.markdown("#### 🎯 Select Motif Classes")
         
         # Quick action buttons
         qa1, qa2, qa3 = st.columns([1,1,1])
