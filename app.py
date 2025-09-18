@@ -476,233 +476,141 @@ with tab_pages["Upload & Analyze"]:
     with col_right:
         st.markdown("### 🚀 Analysis & Run")
         
-        # Add custom CSS for colorful selection interface
-        st.markdown("""
-        <style>
-        .class-selector {
-            border-radius: 8px;
-            padding: 10px;
-            margin: 5px 0;
-            border-left: 4px solid;
-        }
-        .subclass-item {
-            margin-left: 20px;
-            padding: 3px 0;
-            font-size: 0.9rem;
-        }
-        .selection-summary {
-            background: #f0f2f6;
-            border-radius: 6px;
-            padding: 10px;
-            margin: 10px 0;
-        }
-        </style>
-        """, unsafe_allow_html=True)
+        # ========== SUCCINCT MOTIF CLASS SELECTOR ========== 
+        st.markdown("#### 🎯 Select Motif Classes")
         
-     # ---------- Two-box class selector (Available <-> Selected) ----------
-# Ensure session state defaults (put this earlier in your file if not present)
-st.session_state.setdefault("selected_classes", [])
-st.session_state.setdefault("selected_subclasses", {cid: [] for cid in CLASS_DEFINITIONS})
-
-st.markdown("#### 🎯 Select Motif Classes — Two-box selector")
-
-# Quick actions row
-qa1, qa2, qa3 = st.columns([1,1,1])
-with qa1:
-    if st.button("🎯 Select All", use_container_width=True):
-        st.session_state["selected_classes"] = list(CLASS_DEFINITIONS.keys())
-        for cid in CLASS_DEFINITIONS:
-            st.session_state["selected_subclasses"][cid] = [s["id"] for s in CLASS_DEFINITIONS[cid]["subclasses"]]
-with qa2:
-    if st.button("❌ Clear All", use_container_width=True):
-        st.session_state["selected_classes"] = []
-        st.session_state["selected_subclasses"] = {cid: [] for cid in CLASS_DEFINITIONS}
-with qa3:
-    if st.button("🎲 Core Classes", use_container_width=True):
-        core = ["Curved_DNA", "G-Quadruplex", "Z-DNA", "Slipped_DNA", "Cruciform"]
-        core = [c for c in core if c in CLASS_DEFINITIONS]
-        st.session_state["selected_classes"] = core
-        for cid in CLASS_DEFINITIONS:
-            st.session_state["selected_subclasses"][cid] = [s["id"] for s in CLASS_DEFINITIONS[cid]["subclasses"]] if cid in core else []
-
-# Layout: two boxed columns + center controls
-left_col, mid_col, right_col = st.columns([1, 0.18, 1])
-
-# Style for boxes (simple)
-box_style = "padding:10px; border:1px solid #e6eef7; border-radius:6px; background:#fbfdff; min-height:160px;"
-
-# Left: Available classes
-with left_col:
-    st.markdown("**Available classes**")
-    st.markdown(f"<div style='{box_style}'>", unsafe_allow_html=True)
-    available = [cid for cid in CLASS_DEFINITIONS.keys() if cid not in st.session_state["selected_classes"]]
-    if available:
-        # show selectable list (multiselect with human-readable labels)
-        add_choice = st.multiselect(
-            "Choose classes to add",
-            options=available,
-            format_func=lambda x: CLASS_DEFINITIONS[x]["name"]
+        # Quick action buttons
+        qa1, qa2, qa3 = st.columns([1,1,1])
+        with qa1:
+            if st.button("🎯 All", use_container_width=True, help="Select all classes", key="select_all_classes"):
+                st.session_state["selected_classes"] = list(CLASS_DEFINITIONS.keys())
+        with qa2:
+            if st.button("❌ Clear", use_container_width=True, help="Clear selection", key="clear_all_classes"):
+                st.session_state["selected_classes"] = []
+        with qa3:
+            if st.button("🎲 Core", use_container_width=True, help="Select core classes", key="select_core_classes"):
+                core = ["Curved_DNA", "G-Quadruplex", "Z-DNA", "Slipped_DNA", "Cruciform"]
+                st.session_state["selected_classes"] = [c for c in core if c in CLASS_DEFINITIONS]
+        
+        # Compact multi-select for motif classes
+        selected_classes = st.multiselect(
+            "Choose motif classes to analyze:",
+            options=list(CLASS_DEFINITIONS.keys()),
+            default=st.session_state.get("selected_classes", []),
+            format_func=lambda x: f"{CLASS_DEFINITIONS[x]['name']} ({len(CLASS_DEFINITIONS[x]['subclasses'])} subclasses)",
+            help="Select one or more motif classes for analysis"
         )
-        st.markdown("<br/>", unsafe_allow_html=True)
-        if st.button("Add →", use_container_width=True, key="add_btn"):
-            for cid in add_choice:
-                if cid not in st.session_state["selected_classes"]:
-                    st.session_state["selected_classes"].append(cid)
-                    # default subclasses empty; leave it to user to expand later
-                    st.session_state["selected_subclasses"].setdefault(cid, [])
-    else:
-        st.info("No available classes (all selected).")
-    st.markdown("</div>", unsafe_allow_html=True)
-
-# Middle: small instructions
-with mid_col:
-    st.markdown("")  # spacer
-    st.markdown("<div style='text-align:center; padding-top:40px'>➡️</div>", unsafe_allow_html=True)
-    st.markdown("<div style='text-align:center; color:#666; font-size:0.95rem'>Select → Add</div>", unsafe_allow_html=True)
-
-# Right: Selected classes with close buttons
-with right_col:
-    st.markdown("**Selected classes**")
-    st.markdown(f"<div style='{box_style}'>", unsafe_allow_html=True)
-    selected = st.session_state["selected_classes"]
-    if selected:
-        # show each selected class as a row with colored badge + close button
-        for cid in list(selected):  # list() to allow modification while iterating
-            info = CLASS_DEFINITIONS.get(cid, {"name": cid, "color": "#999"})
-            row1, row2 = st.columns([0.85, 0.15])
-            with row1:
-                st.markdown(
-                    f"<div style='padding:6px 8px; border-left:4px solid {info['color']}; background:{info['color']}22; border-radius:4px;'>"
-                    f"<strong>{info['name']}</strong> <span style='color:#666; font-size:0.85rem'>({cid})</span>"
-                    f"</div>",
-                    unsafe_allow_html=True
-                )
-            with row2:
-                if st.button("✖", key=f"remove_{cid}", help="Remove class", use_container_width=True):
-                    # remove class and its subclasses
-                    st.session_state["selected_classes"].remove(cid)
-                    st.session_state["selected_subclasses"][cid] = []
-                    # immediate UI update occurs since Streamlit reruns on button clicks
-            # Optional: let user choose subclasses per selected class inside small expander
-            with st.expander(f"Subclasses — {info['name']}", expanded=False):
-                subs = [s["id"] for s in info.get("subclasses", [])]
-                if subs:
-                    chosen_subs = st.multiselect(
-                        f"Choose subclasses for {info['name']}",
-                        options=subs,
-                        default=st.session_state["selected_subclasses"].get(cid, []),
-                        key=f"subs_{cid}"
-                    )
-                    st.session_state["selected_subclasses"][cid] = chosen_subs
-                else:
-                    st.write("_No subclasses defined_")
-            st.markdown("---")
-    else:
-        st.info("No classes selected.")
-    st.markdown("</div>", unsafe_allow_html=True)
-
-# Small selection summary
-total_classes = len(st.session_state["selected_classes"])
-total_subs = sum(len(v) for v in st.session_state["selected_subclasses"].values())
-st.markdown(f"**Summary:** {total_classes} classes selected, {total_subs} subclasses selected.")
-st.markdown("---")
-
-# Run button (primary) and status indicator
-if st.button("🔬 Run Motif Analysis", type="primary", use_container_width=True):
-    # Validate selection
-    if not st.session_state.selected_classes:
-        st.error("❌ Please select at least one motif class to analyze.")
-        st.session_state.analysis_status = "Error"
-    elif not st.session_state.seqs:
-        st.error("❌ Please upload or input sequences before running analysis.")
-        st.session_state.analysis_status = "Error"
-    else:
-        st.session_state.analysis_status = "Running"
+        st.session_state["selected_classes"] = selected_classes
         
-        # Set analysis parameters based on requirements
-        nonoverlap = True  # Keep overlaps disabled for specificity
-        report_hotspots = True  # Enable hotspot detection 
-        calc_conservation = False  # Disable to reduce computation time
-        threshold = 0.0  # Show all detected motifs (even 0 scores)
-        
-        validation_messages = []
-
-        # Scientific validation check
-        for i, seq in enumerate(st.session_state.seqs):
-            seq_name = st.session_state.names[i] if i < len(st.session_state.names) else f"Sequence_{i+1}"
-            valid_chars = set('ATCGN')
-            seq_chars = set(seq.upper())
-            if not seq_chars.issubset(valid_chars):
-                invalid_chars = seq_chars - valid_chars
-                validation_messages.append(f"⚠️ {seq_name}: Contains non-DNA characters: {invalid_chars}")
-            if len(seq) < 10:
-                validation_messages.append(f"⚠️ {seq_name}: Sequence too short (<10 bp) for reliable motif detection")
-            elif len(seq) > 1000000:
-                validation_messages.append(f"⚠️ {seq_name}: Sequence very long (>{len(seq):,} bp) - analysis may be slow")
-
-        if validation_messages:
-            for msg in validation_messages:
-                st.warning(msg)
-            if any("Contains non-DNA characters" in m for m in validation_messages):
-                st.error("❌ Analysis stopped due to invalid sequence content.")
-                st.session_state.analysis_status = "Error"
+        # Show selection summary
+        if selected_classes:
+            total_subclasses = sum(len(CLASS_DEFINITIONS[cls]["subclasses"]) for cls in selected_classes)
+            st.success(f"✅ {len(selected_classes)} classes selected ({total_subclasses} subclasses)")
         else:
-            # Run the orchestrator
-            motif_results = []
-            with st.spinner("🧬 Analyzing motifs with scientific algorithms..."):
-                for i, seq in enumerate(st.session_state.seqs):
-                    sequence_name = st.session_state.names[i] if i < len(st.session_state.names) else f"Sequence_{i+1}"
-                    motifs = all_motifs_refactored(seq, sequence_name=sequence_name, nonoverlap=nonoverlap,
-                                                  report_hotspots=report_hotspots, calculate_conservation=calc_conservation)
+            st.warning("⚠️ No classes selected")
+        
+        
+        # ========== RUN ANALYSIS BUTTON ========== 
+        if st.button("🔬 Run Motif Analysis", type="primary", use_container_width=True, key="run_motif_analysis_main"):
+            # Validate selection
+            if not st.session_state.selected_classes:
+                st.error("❌ Please select at least one motif class to analyze.")
+                st.session_state.analysis_status = "Error"
+            elif not st.session_state.seqs:
+                st.error("❌ Please upload or input sequences before running analysis.")
+                st.session_state.analysis_status = "Error"
+            else:
+                st.session_state.analysis_status = "Running"
+                
+                # Set analysis parameters based on requirements
+                nonoverlap = True  # Keep overlaps disabled for specificity
+                report_hotspots = True  # Enable hotspot detection 
+                calculate_conservation = False  # Disable to reduce computation time
+                threshold = 0.0  # Show all detected motifs (even 0 scores)
+                
+                validation_messages = []
 
-                    # Validate and filter - using raw scoring as requested
-                    validated_motifs = []
-                    for m in motifs:
-                        try:
-                            # Use raw/actual score instead of normalized as requested
-                            s = float(m.get('Actual_Score', m.get('Score', 0)))
-                        except Exception:
-                            s = 0.0
-                        if s >= threshold:
-                            validated_motifs.append(ensure_subclass(m))
-                    motif_results.append(validated_motifs)
+                # Scientific validation check
+                if CONFIG_AVAILABLE and st.session_state.get('selected_classes'):
+                    for class_id in st.session_state.selected_classes:
+                        limits = get_motif_limits(class_id)
+                        if limits:
+                            validation_messages.append(f"✓ {class_id}: Length limits {limits}")
+                
+                st.info("⏳ Running analysis...")
+                
+                try:
+                    # Filter which classes to analyze based on selection
+                    analysis_classes = st.session_state.selected_classes if st.session_state.selected_classes else None
+                    
+                    # Run analysis on each sequence
+                    all_results = []
+                    all_hotspots = []
+                    
+                    with st.progress(0, text="Analyzing sequences..."):
+                        for i, (seq, name) in enumerate(zip(st.session_state.seqs, st.session_state.names)):
+                            progress = (i + 1) / len(st.session_state.seqs)
+                            
+                            # Run the core analysis
+                            results = all_motifs_refactored(
+                                seq, name,
+                                nonoverlap=nonoverlap,
+                                report_hotspots=report_hotspots,
+                                calculate_conservation=calculate_conservation
+                            )
+                            
+                            # Filter results by selected classes if specified
+                            if analysis_classes:
+                                filtered_results = []
+                                for motif in results:
+                                    motif_class = motif.get('Class', motif.get('Type', 'Unknown'))
+                                    if motif_class in analysis_classes:
+                                        filtered_results.append(motif)
+                                results = filtered_results
+                            
+                            # Ensure all motifs have required fields
+                            results = [ensure_subclass(motif) for motif in results]
+                            all_results.append(results)
+                            
+                            # Handle hotspots if present
+                            if isinstance(results, tuple) and len(results) == 2:
+                                motifs, hotspots = results
+                                all_results[-1] = motifs
+                                all_hotspots.extend(hotspots)
+                            
+                            st.progress(progress, text=f"Analyzed {i+1}/{len(st.session_state.seqs)} sequences")
+                    
+                    # Store results
+                    st.session_state.results = all_results
+                    st.session_state.hotspots = all_hotspots
+                    
+                    # Generate summary
+                    summary = []
+                    for i, results in enumerate(all_results):
+                        stats = get_basic_stats(st.session_state.seqs[i])
+                        summary.append({
+                            'Sequence': st.session_state.names[i],
+                            'Length': stats['Length'],
+                            'GC Content': f"{stats['GC%']:.1f}%",
+                            'Motifs Found': len(results),
+                            'Unique Types': len(set(m.get('Type', 'Unknown') for m in results)),
+                            'Avg Score': f"{np.mean([m.get('Score', 0) for m in results]):.3f}" if results else "0.000"
+                        })
+                    
+                    st.session_state.summary_df = pd.DataFrame(summary)
+                    st.success("✅ Analysis complete! Results are available below and in the 'Analysis Results and Visualization' tab.")
+                    st.session_state.analysis_status = "Complete"
+                    
+                except Exception as e:
+                    st.error(f"❌ Analysis failed: {str(e)}")
+                    st.session_state.analysis_status = "Error"
 
-            st.session_state.results = motif_results
-            # Generate summary dataframe
-            summary = []
-            for i, motifs in enumerate(motif_results):
-                stats = get_basic_stats(st.session_state.seqs[i], motifs)
-                motif_types = Counter([m['Class'] if m['Class'] != "Z-DNA" or m.get("Subclass") != "eGZ (Extruded-G)" else "eGZ (Extruded-G)" for m in motifs])
-                summary.append({
-                    "Sequence Name": st.session_state.names[i],
-                    "Length (bp)": stats['Length'],
-                    "GC %": stats['GC%'],
-                    "AT %": stats['AT%'],
-                    "A Count": stats['A'],
-                    "T Count": stats['T'],
-                    "G Count": stats['G'],
-                    "C Count": stats['C'],
-                    "Motif Count": len(motifs),
-                    "Motif Coverage (%)": stats.get("Motif Coverage %", 0),
-                    "Motif Classes": ", ".join(f"{k} ({v})" for k, v in motif_types.items())
-                })
-
-            st.session_state.summary_df = pd.DataFrame(summary)
-            st.success("✅ Analysis complete! Results are available below and in the 'Analysis Results and Visualization' tab.")
-            st.session_state.analysis_status = "Complete"
-
-    # Show quick summary table if available
-    if st.session_state.get('summary_df') is not None:
-        st.markdown("#### Analysis Summary")
-        st.dataframe(st.session_state.summary_df)
-
+        # Show quick summary table if available
+        if st.session_state.get('summary_df') is not None:
+            st.markdown("#### Analysis Summary")
+            st.dataframe(st.session_state.summary_df)
     # End of Upload & Analyze tab
     st.markdown("---")
-
-# Notes: This layout keeps input/preview on the left for quick sequence inspection
-# and the analysis controls on the right to allow side-by-side interaction.
-# Adjust column widths by changing the st.columns([1, 1]) ratio if you want more space for one side.
-
 # ---------- RESULTS ----------
 with tab_pages["Results"]:
     st.markdown('<h2>Analysis Results and Visualization</h2>', unsafe_allow_html=True)
