@@ -482,12 +482,7 @@ with tab_pages["Upload & Analyze"]:
         """
         st.markdown(config_summary)
 
-        # Compact control group for advanced options (kept collapsed by default)
-        with st.expander("Advanced options", expanded=False):
-            nonoverlap = st.checkbox("Prevent overlaps within a motif class", value=False)
-            report_hotspots = st.checkbox("Detect hotspots (clusters)", value=True)
-            calc_conservation = st.checkbox("Calculate conservation (slower)", value=False)
-            threshold = st.slider("Normalized score threshold", min_value=0.0, max_value=1.0, value=0.0)
+        
 
         # Run button (primary) and status indicator
         if st.button("🔬 Run Motif Analysis", type="primary", use_container_width=True):
