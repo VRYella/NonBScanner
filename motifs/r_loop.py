@@ -15,8 +15,8 @@ RLOOP_PATTERNS = get_patterns_for_motif('r_loop')
 
 # RLFS models for R-loop prediction - using patterns from registry
 RLFS_MODELS = {
-    "m1": RLOOP_PATTERNS['rlfs_m1'][0][0] if RLOOP_PATTERNS.get('rlfs_m1') else r"G{3,}[ATGC]{1,10}?G{3,}(?:[ATGC]{1,10}?G{3,}){1,}",
-    "m2": RLOOP_PATTERNS['rlfs_m2'][0][0] if RLOOP_PATTERNS.get('rlfs_m2') else r"G{4,}(?:[ATGC]{1,10}?G{4,}){1,}",
+    "m1": RLOOP_PATTERNS['rlfs_model1'][0][0] if RLOOP_PATTERNS.get('rlfs_model1') else r"G{3,}[ACGT]{1,10}G{3,}(?:[ACGT]{1,10}G{3,}){1,}",
+    "m2": RLOOP_PATTERNS['rlfs_model2'][0][0] if RLOOP_PATTERNS.get('rlfs_model2') else r"G{4,}(?:[ACGT]{1,10}G{4,}){1,}",
 }
 
 
