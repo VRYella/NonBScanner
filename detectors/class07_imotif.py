@@ -4,15 +4,15 @@ Subclasses: Canonical i-motif (7.1), Relaxed i-motif (7.2), AC-motif (7.3)
 """
 
 import re; import hyperscan  # pip install hyperscan
-from .base_motif import wrap, standardize_motif_output
-from .hyperscan_manager import optimized_hs_find
+from motifs.base_motif import wrap, standardize_motif_output
+from motifs.hyperscan_manager import optimized_hs_find
 import sys, os
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
-from regex_registry import get_patterns_for_motif
+from core.regex_registry import get_patterns_for_motif
 
 # === Load patterns from central registry ===
 IMOTIF_PATTERNS = get_patterns_for_motif('i_motif')
-from regex_registry import get_patterns_for_motif
+from core.regex_registry import get_patterns_for_motif
 
 # --- i-motif scoring using G4Hunter-style algorithm (adapted for C-tracts) ---
 def imotif_score(seq):

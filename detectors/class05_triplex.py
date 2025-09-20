@@ -4,10 +4,10 @@ Subclasses: Triplex (5.1), Sticky DNA (5.2)
 """
 
 import hyperscan, re
-from .base_motif import wrap, standardize_motif_output
+from motifs.base_motif import wrap, standardize_motif_output
 import sys, os
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
-from regex_registry import get_patterns_for_motif
+from core.regex_registry import get_patterns_for_motif
 
 # === Load patterns from central registry ===
 TRIPLEX_PATTERNS = get_patterns_for_motif('triplex')

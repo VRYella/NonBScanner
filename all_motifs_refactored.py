@@ -55,34 +55,23 @@ import multiprocessing
 # Add current directory to path for imports
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
-# Import motif detection functions
+# Import motif detection functions from the unified detector registry
 try:
-    from motifs.curved_dna import find_curved_DNA
-    from motifs.slipped_dna import find_slipped_dna
-    from motifs.cruciform_dna import find_cruciform
-    from motifs.r_loop import find_r_loop
-    from motifs.triplex import find_triplex
-    from motifs.g_quadruplex import find_g_quadruplex
-    from motifs.i_motif import find_i_motif
-    from motifs.z_dna import find_z_dna
-    from motifs.a_philic_dna import find_a_philic_dna  # NEW: Class 9
-    from motifs.hybrid import find_hybrid
-    from motifs.cluster import find_cluster
+    from detectors import DETECTOR_REGISTRY, get_available_detectors
     from motifs.base_motif import standardize_motif_output, validate_motif, select_best_nonoverlapping_motifs
+    
+    # Get detector functions from registry
+    detector_functions = {}
+    for class_name, detector_func in DETECTOR_REGISTRY.items():
+        if detector_func:
+            detector_functions[class_name] = detector_func
+    
+    print(f"✓ Loaded {len(detector_functions)} detector functions from registry")
+    
 except ImportError as e:
-    print(f"Warning: Could not import motif modules: {e}")
-    # Fallback functions
-    def find_curved_DNA(seq, name): return []
-    def find_slipped_dna(seq, name): return []
-    def find_cruciform(seq, name): return []
-    def find_r_loop(seq, name): return []
-    def find_triplex(seq, name): return []
-    def find_g_quadruplex(seq, name): return []
-    def find_i_motif(seq, name): return []
-    def find_z_dna(seq, name): return []
-    def find_a_philic_dna(seq, name): return []  # NEW: Class 9 fallback
-    def find_hybrid(motifs, seq, name): return []
-    def find_cluster(motifs, seq_len, name): return []
+    print(f"Warning: Could not import detector modules: {e}")
+    # Fallback empty registry
+    detector_functions = {}
     def standardize_motif_output(motif, name, idx): return motif
     def validate_motif(motif, seq_len): return True
     def select_best_nonoverlapping_motifs(motifs): return motifs
@@ -236,17 +225,14 @@ def all_motifs_refactored(seq: str,
             pass  # Continue if caching fails
     
     # Define motif detectors for Classes 1-9 (parallel execution)
-    detectors = [
-        (find_curved_DNA, "Curved DNA"),
-        (find_slipped_dna, "Slipped DNA"), 
-        (find_cruciform, "Cruciform DNA"),
-        (find_r_loop, "R-loop"),
-        (find_triplex, "Triplex"),
-        (find_g_quadruplex, "G-Quadruplex"),
-        (find_i_motif, "i-motif"),
-        (find_z_dna, "Z-DNA"),
-        (find_a_philic_dna, "A-philic DNA")  # NEW: Class 9
-    ]
+    # Use detector registry for standardized access
+    detectors = []
+    for class_name, detector_func in detector_functions.items():
+        # Skip Hybrid and Cluster as they need special handling
+        if class_name not in ['Hybrid', 'Cluster']:
+            detectors.append((detector_func, class_name))
+    
+    print(f"✓ Using {len(detectors)} detectors for parallel execution")
     
     # Prepare arguments for parallel execution
     detector_args = [(func, seq, sequence_name, name) for func, name in detectors]
@@ -318,22 +304,23 @@ def all_motifs_refactored(seq: str,
     
     # Add hybrids (Class 10) - requires all motifs from Classes 1-9
     try:
-        hybrid_motifs = find_hybrid(all_motifs, seq, sequence_name)
-        standardized_hybrids = []
-        for motif in hybrid_motifs:
-            # Check if motif is already standardized
-            if 'Normalized_Score' in motif and 'Actual_Score' in motif and 'Scoring_Method' in motif:
-                # Already standardized, just update classification if needed
-                classified = update_motif_with_ids(motif.copy())
-                # Ensure sequence name is correct
-                classified['Sequence_Name'] = sequence_name
-                standardized_hybrids.append(classified)
-            else:
-                # Not standardized yet, apply full standardization
-                clean_motif = {k: v for k, v in motif.items() if k not in ['Sequence_Name']}
-                standardized = standardize_motif_output(clean_motif, sequence_name)
-                classified = update_motif_with_ids(standardized)
-                standardized_hybrids.append(classified)
+        if 'Hybrid' in detector_functions:
+            hybrid_motifs = detector_functions['Hybrid'](all_motifs, seq, sequence_name)
+            standardized_hybrids = []
+            for motif in hybrid_motifs:
+                # Check if motif is already standardized
+                if 'Normalized_Score' in motif and 'Actual_Score' in motif and 'Scoring_Method' in motif:
+                    # Already standardized, just update classification if needed
+                    classified = update_motif_with_ids(motif.copy())
+                    # Ensure sequence name is correct
+                    classified['Sequence_Name'] = sequence_name
+                    standardized_hybrids.append(classified)
+                else:
+                    # Not standardized yet, apply full standardization
+                    clean_motif = {k: v for k, v in motif.items() if k not in ['Sequence_Name']}
+                    standardized = standardize_motif_output(clean_motif, sequence_name)
+                    classified = update_motif_with_ids(standardized)
+                    standardized_hybrids.append(classified)
         
         all_motifs.extend(standardized_hybrids)
         print(f"✓ Hybrid (Class 10): {len(standardized_hybrids)} motifs found")
@@ -351,22 +338,23 @@ def all_motifs_refactored(seq: str,
     # Add clusters (Class 11) - requires all motifs including hybrids
     if report_hotspots:
         try:
-            cluster_motifs = find_cluster(all_motifs, len(seq), sequence_name)
-            standardized_clusters = []
-            for motif in cluster_motifs:
-                # Check if motif is already standardized
-                if 'Normalized_Score' in motif and 'Actual_Score' in motif and 'Scoring_Method' in motif:
-                    # Already standardized, just update classification if needed
-                    classified = update_motif_with_ids(motif.copy())
-                    # Ensure sequence name is correct
-                    classified['Sequence_Name'] = sequence_name
-                    standardized_clusters.append(classified)
-                else:
-                    # Not standardized yet, apply full standardization
-                    clean_motif = {k: v for k, v in motif.items() if k not in ['Sequence_Name']}
-                    standardized = standardize_motif_output(clean_motif, sequence_name)
-                    classified = update_motif_with_ids(standardized)
-                    standardized_clusters.append(classified)
+            if 'Cluster' in detector_functions:
+                cluster_motifs = detector_functions['Cluster'](all_motifs, len(seq), sequence_name)
+                standardized_clusters = []
+                for motif in cluster_motifs:
+                    # Check if motif is already standardized
+                    if 'Normalized_Score' in motif and 'Actual_Score' in motif and 'Scoring_Method' in motif:
+                        # Already standardized, just update classification if needed
+                        classified = update_motif_with_ids(motif.copy())
+                        # Ensure sequence name is correct
+                        classified['Sequence_Name'] = sequence_name
+                        standardized_clusters.append(classified)
+                    else:
+                        # Not standardized yet, apply full standardization
+                        clean_motif = {k: v for k, v in motif.items() if k not in ['Sequence_Name']}
+                        standardized = standardize_motif_output(clean_motif, sequence_name)
+                        classified = update_motif_with_ids(standardized)
+                        standardized_clusters.append(classified)
             
             all_motifs.extend(standardized_clusters)
             print(f"✓ Cluster (Class 11): {len(standardized_clusters)} motifs found")

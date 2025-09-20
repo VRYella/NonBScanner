@@ -111,6 +111,13 @@ ScoreMethod, Score (RAW), NormScore, and subclass-specific details (e.g., Unit/C
 ArmLen/Spacer for DR). These scores are designed to be **independent** (raw, interpretable) and
 **comparable** (normalized, 0–1) across loci and genomes.
 """
+import sys
+import os
+
+# Add paths for imports
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+
 """
 Slipped DNA Motif Detection (Class 2) with Hyperscan acceleration.
 
@@ -148,7 +155,7 @@ OUTPUT: 1-based coordinates with detailed motif characterization for genomic pip
 
 import hyperscan, re
 from collections import Counter
-from .base_motif import wrap, standardize_motif_output
+from motifs.base_motif import wrap, standardize_motif_output
 try:
     from ..core.regex_registry import get_patterns_for_motif
 except ImportError:

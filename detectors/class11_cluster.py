@@ -1,9 +1,18 @@
 """
-Non-B DNA Cluster Regions Detection (Class 10)
+Non-B DNA Cluster Regions Detection (Class 11)
 Dynamic: any combination of ≥3 motif classes, each occurring 3+ times in 100 nt; no static subclass list
 """
 
-from .base_motif import standardize_motif_output
+import sys
+import os
+
+# Add paths for imports
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+try:
+    from motifs.base_motif import standardize_motif_output
+except ImportError:
+    def standardize_motif_output(motif, name, idx): return motif
 
 
 def find_hotspots(motif_hits, seq_len, window=100, min_count=3) -> list:
@@ -54,8 +63,13 @@ def merge_hotspots(hotspots) -> list:
     return merged
 
 
+def find_motif_clusters(motif_hits, seq_len: int, sequence_name: str = "") -> list:
+    """Main function to find Non-B DNA cluster regions - interface for detector registry"""
+    return find_cluster(motif_hits, seq_len, sequence_name)
+
+
 def find_cluster(motif_hits, seq_len: int, sequence_name: str = "") -> list:
-    """Main function to find Non-B DNA cluster regions"""
+    """Find Non-B DNA cluster regions"""
     hotspots = find_hotspots(motif_hits, seq_len)
     
     # Standardize output format
