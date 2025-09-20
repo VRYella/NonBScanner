@@ -55,34 +55,20 @@ import multiprocessing
 # Add current directory to path for imports
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
-# Import motif detection functions
+# Import detector registry as single source of truth
 try:
-    from motifs.curved_dna import find_curved_DNA
-    from motifs.slipped_dna import find_slipped_dna
-    from motifs.cruciform_dna import find_cruciform
-    from motifs.r_loop import find_r_loop
-    from motifs.triplex import find_triplex
-    from motifs.g_quadruplex import find_g_quadruplex
-    from motifs.i_motif import find_i_motif
-    from motifs.z_dna import find_z_dna
-    from motifs.a_philic_dna import find_a_philic_dna  # NEW: Class 9
-    from motifs.hybrid import find_hybrid
-    from motifs.cluster import find_cluster
+    from detectors import DETECTOR_REGISTRY
+    print(f"✓ Loaded {len(DETECTOR_REGISTRY)} detectors from registry")
+except ImportError as e:
+    print(f"Warning: Could not import detector registry: {e}")
+    DETECTOR_REGISTRY = {}
+
+# Import utility functions
+try:
     from motifs.base_motif import standardize_motif_output, validate_motif, select_best_nonoverlapping_motifs
 except ImportError as e:
-    print(f"Warning: Could not import motif modules: {e}")
+    print(f"Warning: Could not import base motif utilities: {e}")
     # Fallback functions
-    def find_curved_DNA(seq, name): return []
-    def find_slipped_dna(seq, name): return []
-    def find_cruciform(seq, name): return []
-    def find_r_loop(seq, name): return []
-    def find_triplex(seq, name): return []
-    def find_g_quadruplex(seq, name): return []
-    def find_i_motif(seq, name): return []
-    def find_z_dna(seq, name): return []
-    def find_a_philic_dna(seq, name): return []  # NEW: Class 9 fallback
-    def find_hybrid(motifs, seq, name): return []
-    def find_cluster(motifs, seq_len, name): return []
     def standardize_motif_output(motif, name, idx): return motif
     def validate_motif(motif, seq_len): return True
     def select_best_nonoverlapping_motifs(motifs): return motifs
@@ -235,17 +221,17 @@ def all_motifs_refactored(seq: str,
         except Exception:
             pass  # Continue if caching fails
     
-    # Define motif detectors for Classes 1-9 (parallel execution)
+    # Define motif detectors using registry (Classes 1-9 for parallel execution)
+    # Exclude Hybrid and Cluster as they need all motifs as input
+    parallel_detector_names = [
+        'Curved_DNA', 'Slipped_DNA', 'Cruciform', 'R-Loop', 'Triplex',
+        'G-Quadruplex', 'i-Motif', 'Z-DNA', 'A-philic_DNA'
+    ]
+    
     detectors = [
-        (find_curved_DNA, "Curved DNA"),
-        (find_slipped_dna, "Slipped DNA"), 
-        (find_cruciform, "Cruciform DNA"),
-        (find_r_loop, "R-loop"),
-        (find_triplex, "Triplex"),
-        (find_g_quadruplex, "G-Quadruplex"),
-        (find_i_motif, "i-motif"),
-        (find_z_dna, "Z-DNA"),
-        (find_a_philic_dna, "A-philic DNA")  # NEW: Class 9
+        (DETECTOR_REGISTRY[name], name) 
+        for name in parallel_detector_names 
+        if name in DETECTOR_REGISTRY and DETECTOR_REGISTRY[name] is not None
     ]
     
     # Prepare arguments for parallel execution
@@ -318,7 +304,11 @@ def all_motifs_refactored(seq: str,
     
     # Add hybrids (Class 10) - requires all motifs from Classes 1-9
     try:
-        hybrid_motifs = find_hybrid(all_motifs, seq, sequence_name)
+        hybrid_detector = DETECTOR_REGISTRY.get('Hybrid')
+        if hybrid_detector:
+            hybrid_motifs = hybrid_detector(all_motifs, seq, sequence_name)
+        else:
+            hybrid_motifs = []
         standardized_hybrids = []
         for motif in hybrid_motifs:
             # Check if motif is already standardized
@@ -351,7 +341,11 @@ def all_motifs_refactored(seq: str,
     # Add clusters (Class 11) - requires all motifs including hybrids
     if report_hotspots:
         try:
-            cluster_motifs = find_cluster(all_motifs, len(seq), sequence_name)
+            cluster_detector = DETECTOR_REGISTRY.get('Cluster')
+            if cluster_detector:
+                cluster_motifs = cluster_detector(all_motifs, len(seq), sequence_name)
+            else:
+                cluster_motifs = []
             standardized_clusters = []
             for motif in cluster_motifs:
                 # Check if motif is already standardized
