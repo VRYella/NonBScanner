@@ -27,11 +27,11 @@ OUTPUT FORMAT: 1-based coordinates suitable for genomic analysis pipelines.
 """
 
 import re; import numpy as np; import hyperscan  # pip install hyperscan
-from .base_motif import overlapping_finditer, wrap, standardize_motif_output
-from .hyperscan_manager import optimized_hs_find
+from motifs.base_motif import overlapping_finditer, wrap, standardize_motif_output
+from motifs.hyperscan_manager import optimized_hs_find
 import sys, os
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
-from regex_registry import get_patterns_for_motif
+from core.regex_registry import get_patterns_for_motif
 
 # === G4Hunter Scoring Algorithm (Bedrat et al. 2016) ===
 def g4hunter_score(seq):
