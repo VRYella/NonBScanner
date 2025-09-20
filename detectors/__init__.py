@@ -2,7 +2,7 @@
 NBDFinder Detector Modules
 =========================
 
-Individual detector modules for each of the 10 major Non-B DNA motif classes.
+Individual detector modules for each of the 11 major Non-B DNA motif classes.
 Each module provides specialized detection algorithms optimized for specific
 structural features and biological contexts.
 
@@ -15,8 +15,9 @@ Detector Classes:
 - Class 06: G4 Family (G-quadruplex structures and variants)
 - Class 07: i-Motif (C-rich structures complementary to G4)
 - Class 08: Z-DNA (Left-handed double helix)
-- Class 09: Hybrid (Overlapping/composite motifs)
-- Class 10: Cluster (High-density motif regions)
+- Class 09: A-philic DNA (A-rich structural motifs)
+- Class 10: Hybrid (Overlapping/composite motifs)
+- Class 11: Cluster (High-density motif regions)
 """
 
 # Import main detection functions from each class
@@ -26,12 +27,12 @@ except ImportError:
     detect_curved_dna = None
 
 try:
-    from .class02_slipped import find_slipped_DNA as detect_slipped_dna
+    from .class02_slipped import find_slipped_dna as detect_slipped_dna
 except ImportError:
     detect_slipped_dna = None
 
 try:
-    from .class03_cruciform import find_cruciform_DNA as detect_cruciform
+    from .class03_cruciform import find_cruciform as detect_cruciform
 except ImportError:
     detect_cruciform = None
 
@@ -41,7 +42,7 @@ except ImportError:
     detect_rloop = None
 
 try:
-    from .class05_triplex import find_triplex_DNA as detect_triplex
+    from .class05_triplex import find_triplex as detect_triplex
 except ImportError:
     detect_triplex = None
 
@@ -61,27 +62,33 @@ except ImportError:
     detect_zdna = None
 
 try:
-    from .class09_hybrid import find_hybrid_motifs as detect_hybrid
+    from .class09_a_philic import find_a_philic as detect_a_philic
+except ImportError:
+    detect_a_philic = None
+
+try:
+    from .class10_hybrid import find_hybrid as detect_hybrid
 except ImportError:
     detect_hybrid = None
 
 try:
-    from .class10_cluster import find_motif_clusters as detect_cluster
+    from .class11_cluster import find_cluster as detect_cluster
 except ImportError:
     detect_cluster = None
 
 # Detector registry mapping class names to functions
 DETECTOR_REGISTRY = {
-    'Curved_DNA': detect_curved_dna,
-    'Slipped_DNA': detect_slipped_dna,
-    'Cruciform': detect_cruciform,
-    'R-Loop': detect_rloop,
-    'Triplex': detect_triplex,
-    'G-Quadruplex': detect_g4_family,
-    'i-Motif': detect_imotif,
-    'Z-DNA': detect_zdna,
-    'Hybrid': detect_hybrid,
-    'Cluster': detect_cluster,
+    'Curved_DNA': detect_curved_dna,           # Class 1
+    'Slipped_DNA': detect_slipped_dna,         # Class 2
+    'Cruciform': detect_cruciform,             # Class 3
+    'R-Loop': detect_rloop,                    # Class 4
+    'Triplex': detect_triplex,                 # Class 5
+    'G-Quadruplex': detect_g4_family,          # Class 6
+    'i-Motif': detect_imotif,                  # Class 7
+    'Z-DNA': detect_zdna,                      # Class 8
+    'A-philic_DNA': detect_a_philic,           # Class 9 (NEW)
+    'Hybrid': detect_hybrid,                   # Class 10 (renumbered)
+    'Cluster': detect_cluster,                 # Class 11 (renumbered)
 }
 
 # Filter out None values (failed imports)
@@ -126,8 +133,9 @@ Class05Triplex = detect_triplex
 Class06G4Family = detect_g4_family
 Class07IMotif = detect_imotif
 Class08ZDna = detect_zdna
-Class09Hybrid = detect_hybrid
-Class10Cluster = detect_cluster
+Class09APhilic = detect_a_philic
+Class10Hybrid = detect_hybrid
+Class11Cluster = detect_cluster
 
 __all__ = [
     # Detection functions
@@ -139,6 +147,7 @@ __all__ = [
     'detect_g4_family',
     'detect_imotif',
     'detect_zdna',
+    'detect_a_philic',
     'detect_hybrid',
     'detect_cluster',
     
@@ -157,6 +166,7 @@ __all__ = [
     'Class06G4Family',
     'Class07IMotif',
     'Class08ZDna',
-    'Class09Hybrid',
-    'Class10Cluster',
+    'Class09APhilic',
+    'Class10Hybrid',
+    'Class11Cluster',
 ]

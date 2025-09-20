@@ -4,10 +4,10 @@ Subclasses: R-loop (4.1)
 """
 
 import re
-from .base_motif import gc_content, wrap, standardize_motif_output
+from motifs.base_motif import gc_content, wrap, standardize_motif_output
 import sys, os
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
-from regex_registry import get_patterns_for_motif
+from core.regex_registry import get_patterns_for_motif
 
 # === Load patterns from central registry ===
 RLOOP_PATTERNS = get_patterns_for_motif('r_loop')

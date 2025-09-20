@@ -3,7 +3,7 @@ Non-B DNA Cluster Regions Detection (Class 10)
 Dynamic: any combination of ≥3 motif classes, each occurring 3+ times in 100 nt; no static subclass list
 """
 
-from .base_motif import standardize_motif_output
+from motifs.base_motif import standardize_motif_output
 
 
 def find_hotspots(motif_hits, seq_len, window=100, min_count=3) -> list:

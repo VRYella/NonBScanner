@@ -148,9 +148,9 @@ OUTPUT: 1-based coordinates with detailed motif characterization for genomic pip
 
 import hyperscan, re
 from collections import Counter
-from .base_motif import wrap, standardize_motif_output
+from motifs.base_motif import wrap, standardize_motif_output
 try:
-    from ..core.regex_registry import get_patterns_for_motif
+    from core.regex_registry import get_patterns_for_motif
 except ImportError:
     # Fallback function if registry is not available
     def get_patterns_for_motif(motif_type):
