@@ -287,7 +287,7 @@ with tab_pages["Home"]:
         st.markdown("""
         <div style='font-family:Montserrat, Arial; font-size:1.14rem; color:#222; line-height:1.7; padding:18px; background:#f8f9fa; border-radius:14px; box-shadow:0 2px 8px #eee;'>
         <b>Non-canonical DNA structures</b> play key roles in genome stability, regulation, and evolution.<br>
-        This application detects and analyzes <b>10 major classes with 22+ subclasses</b> of Non-B DNA motifs in any DNA sequence or multi-FASTA file.<br>
+        This application detects and analyzes <b>11 major classes with 22+ subclasses</b> of Non-B DNA motifs in any DNA sequence or multi-FASTA file.<br>
         <b>Motif Classes (11 classes, 22+ subclasses):</b><br>
         <span style='color:#1565c0;'>
             <b>1. Curved DNA</b> (Global curvature, Local Curvature),<br>

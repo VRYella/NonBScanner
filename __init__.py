@@ -23,7 +23,7 @@ __email__ = "vryella@example.com"
 
 # Main API imports (optional, to avoid import loops)
 try:
-    from .orchestrators.all_motifs import detect_all_motifs
+    from .all_motifs_refactored import all_motifs_refactored as detect_all_motifs
 except ImportError:
     detect_all_motifs = None
 
@@ -40,7 +40,7 @@ except ImportError:
 from .detectors import (
     Class01Curved, Class02Slipped, Class03Cruciform, Class04RLoop,
     Class05Triplex, Class06G4Family, Class07IMotif, Class08ZDna,
-    Class09Hybrid, Class10Cluster
+    Class09APhilic, Class10Hybrid, Class11Cluster
 )
 
 __all__ = [
@@ -65,8 +65,9 @@ __all__ = [
     'Class06G4Family',
     'Class07IMotif',
     'Class08ZDna',
-    'Class09Hybrid',
-    'Class10Cluster',
+    'Class09APhilic',
+    'Class10Hybrid',
+    'Class11Cluster',
     
     # Metadata
     '__version__',
