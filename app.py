@@ -57,7 +57,7 @@ st.markdown("""
     }
     /* Tabs: medium-large, bold, clean */
     .stTabs [data-baseweb="tab-list"] {
-        width: 120vw !important;
+        width: 95vw !important;
         justify-content: stretch !important;
         border-bottom: 2px solid #1565c0;
         background: linear-gradient(90deg,#eaf3fa 0%,#f7fafd 100%) !important;
@@ -66,7 +66,7 @@ st.markdown("""
     }
     .stTabs [data-baseweb="tab"] {
         font-size: 1.75rem !important;
-        font-weight: 700 !important;
+        font-weight: 750 !important;
         flex: 1 1 0%;
         min-width: 0 !important;
         padding: 15px 0 15px 0 !important;
