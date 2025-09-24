@@ -47,6 +47,134 @@ from core.regex_registry import get_patterns_for_motif
 # === Load patterns from central registry ===
 ZDNA_PATTERNS = get_patterns_for_motif('z_dna')
 
+# === Z-DNA 10-mer Pattern Database ===
+ZDNA_10MER_SCORES = {
+    "AACGCGCGCG": 50.25,
+    "ACCGCGCGCG": 50.25,
+    "ACGCCGCGCG": 50.25,
+    "ACGCGCCGCG": 50.25,
+    "ACGCGCGCCG": 50.25,
+    "ACGCGCGCGA": 50.25,
+    "ACGCGCGCGC": 57.25,
+    "ACGCGCGCGG": 50.25,
+    "ACGCGCGCGT": 51.5,
+    "ACGCGGCGCG": 50.25,
+    "ACGGCGCGCG": 50.25,
+    "AGCGCGCGCA": 50.25,
+    "AGCGCGCGCG": 56,
+    "ATCGCGCGCG": 50,
+    "ATGCGCGCGC": 51.25,
+    "CAGCGCGCGC": 50.25,
+    "CACGCGCGCG": 51.5,
+    "CCGCGCGCGC": 56,
+    "CCGCGCGCGT": 50.25,
+    "CGACGCGCGC": 50.25,
+    "CGCCGCGCGC": 56,
+    "CGCCGCGCGT": 50.25,
+    "CGCACGCGCG": 51.5,
+    "CGCAGCGCGC": 50.25,
+    "CGCGACGCGC": 50.25,
+    "CGCGCACGCG": 51.5,
+    "CGCGCAGCGC": 50.25,
+    "CGCGCCGCGC": 56,
+    "CGCGCCGCGT": 50.25,
+    "CGCGCGACGC": 50.25,
+    "CGCGCGCACG": 51.5,
+    "CGCGCGCAGC": 50.25,
+    "CGCGCGCGAC": 50.25,
+    "CGCGCGCGAT": 50,
+    "CGCGCGCGCA": 57.25,
+    "CGCGCGCGCC": 56,
+    "CGCGCGCGCG": 63,
+    "CGCGCGCGCT": 56,
+    "CGCGCGCGGC": 56,
+    "CGCGCGCGGT": 50.25,
+    "CGCGCGCGTC": 50.25,
+    "CGCGCGCGTG": 51.5,
+    "CGCGCGCGTT": 50.25,
+    "CGCGCGCGTA": 51.25,
+    "CGCGCGCCGC": 56,
+    "CGCGCGCCGT": 50.25,
+    "CGCGCGGCGC": 56,
+    "CGCGCGGCGT": 50.25,
+    "CGCGCGTCGC": 50.25,
+    "CGCGCGTGCG": 51.5,
+    "CGCGCTGCGC": 50.25,
+    "CGCGGCGCGC": 56,
+    "CGCGGCGCGT": 50.25,
+    "CGCGTCGCGC": 50.25,
+    "CGCGTGCGCG": 51.5,
+    "CGCTGCGCGC": 50.25,
+    "CGGCGCGCGC": 56,
+    "CGGCGCGCGT": 50.25,
+    "CGTCGCGCGC": 50.25,
+    "CGTGCGCGCG": 51.5,
+    "CTGCGCGCGC": 50.25,
+    "GACGCGCGCG": 50.25,
+    "GCACGCGCGC": 51.5,
+    "GCAGCGCGCG": 50.25,
+    "GCCGCGCGCA": 50.25,
+    "GCCGCGCGCG": 56,
+    "GCGACGCGCG": 50.25,
+    "GCGCACGCGC": 51.5,
+    "GCGCAGCGCG": 50.25,
+    "GCGCCGCGCA": 50.25,
+    "GCGCCGCGCG": 56,
+    "GCGCGACGCG": 50.25,
+    "GCGCGCACGC": 51.5,
+    "GCGCGCAGCG": 50.25,
+    "GCGCGCGAAA": 50.25,
+    "GCGCGCGAAC": 51.5,
+    "GCGCGCGAAG": 50.25,
+    "GCGCGCGACA": 50.25,
+    "GCGCGCGACG": 50.25,
+    "GCGCGCGCAG": 50.25,
+    "GCGCGCGCAT": 51.25,
+    "GCGCGCGCCA": 50.25,
+    "GCGCGCGCCG": 56,
+    "GCGCGCGCGA": 56,
+    "GCGCGCGCGC": 63,
+    "GCGCGCGCGG": 56,
+    "GCGCGCGCGT": 57.25,
+    "GCGCGCGCTA": 50,
+    "GCGCGCGCTG": 50.25,
+    "GCGCGCGGCA": 50.25,
+    "GCGCGCGGCG": 56,
+    "GCGCGCGTCG": 50.25,
+    "GCGCGCGTGC": 51.5,
+    "GCGCGCTGCG": 50.25,
+    "GCGCGGCGCA": 50.25,
+    "GCGCGGCGCG": 56,
+    "GCGCGTCGCG": 50.25,
+    "GCGCGTGCGC": 51.5,
+    "GCGCTGCGCG": 50.25,
+    "GCGGCGCGCA": 50.25,
+    "GCGGCGCGCG": 56,
+    "GCGTCGCGCG": 50.25,
+    "GCGTGCGCGC": 51.5,
+    "GCTGCGCGCG": 50.25,
+    "GGCGCGCGCA": 50.25,
+    "GGCGCGCGCG": 56,
+    "GTCGCGCGCG": 50.25,
+    "GTGCGCGCGC": 51.5,
+    "TACGCGCGCG": 51.25,
+    "TAGCGCGCGC": 50,
+    "TCGCGCGCGC": 56,
+    "TCGCGCGCGT": 50.25,
+    "TGCCGCGCGC": 50.25,
+    "TGCGCCGCGC": 50.25,
+    "TGCGCGCCGC": 50.25,
+    "TGCGCGCGCA": 51.5,
+    "TGCGCGCGCC": 50.25,
+    "TGCGCGCGCG": 57.25,
+    "TGCGCGCGCT": 50.25,
+    "TGCGCGCGGC": 50.25,
+    "TGCGCGGCGC": 50.25,
+    "TGCGGCGCGC": 50.25,
+    "TGGCGCGCGC": 50.25,
+    "TTGCGCGCGC": 50.25,
+}
+
 # === Z-DNA Seeker Scoring Algorithm (Ho 1986, Rich 1993, Wang 2007) ===
 def zdna_seeker_scoring_array(seq, GC_weight=7.0, AT_weight=0.5, GT_weight=1.25, AC_weight=1.25,
         consecutive_AT_scoring=(0.5, 0.5, 0.5, 0.5, 0.0, 0.0, -5.0, -100.0),
@@ -146,10 +274,112 @@ def find_egz_motif(seq) -> list:
     # Use optimized Hyperscan manager
     return optimized_hs_find(patterns, seqU, egz_callback)
 
+#--- Z-DNA 10-mer motif finder using Hyperscan for fast pattern matching ---
+def find_zdna_10mer_patterns(seq: str) -> list:
+    """
+    Find Z-DNA 10-mer patterns using Hyperscan-based fast pattern matching.
+    
+    Args:
+        seq: DNA sequence to scan
+        
+    Returns:
+        List of Z-DNA 10-mer motif matches with positions and scores
+    """
+    if len(seq) < 10:
+        return []
+    
+    seq = seq.upper()
+    matches = []
+    
+    # Try Hyperscan first for fast pattern matching
+    try:
+        import hyperscan
+        
+        # Create patterns for all Z-DNA 10-mers
+        patterns = []
+        motif_scores = {}
+        
+        for i, (motif, score) in enumerate(ZDNA_10MER_SCORES.items()):
+            patterns.append((motif.encode(), i, hyperscan.HS_FLAG_CASELESS))
+            motif_scores[i] = (motif, score)
+        
+        # Compile the database 
+        try:
+            db = hyperscan.Database(
+                expressions=[p[0] for p in patterns],
+                ids=[p[1] for p in patterns],
+                flags=[p[2] for p in patterns]
+            )
+            
+            # Create scratch space
+            scratch = hyperscan.Scratch(db)
+            
+        except Exception as compile_error:
+            print(f"Hyperscan compilation failed, using regex fallback: {compile_error}")
+            return find_zdna_10mer_regex(seq)
+        
+        # Scan the sequence
+        def match_handler(match_id, start, end, flags, context):
+            motif, score = motif_scores[match_id]
+            matches.append({
+                'Class': 'Z-DNA',
+                'Subclass': 'Z-DNA-10mer',
+                'Start': start + 1,  # 1-based coordinates
+                'End': end,
+                'Length': len(motif),
+                'Sequence': motif,
+                'Score': float(score),
+                'ScoreMethod': '10mer-Pattern'
+            })
+        
+        # Perform the scan
+        db.scan(seq.encode(), match_handler, scratch)
+        return matches
+        
+    except ImportError:
+        print("Hyperscan not available, using regex fallback")
+        return find_zdna_10mer_regex(seq)
+    except Exception as e:
+        print(f"Hyperscan failed, falling back to regex: {e}")
+        return find_zdna_10mer_regex(seq)
+
+def find_zdna_10mer_regex(seq: str) -> list:
+    """
+    Fallback regex-based search for Z-DNA 10-mer patterns.
+    
+    Args:
+        seq: DNA sequence to scan
+        
+    Returns:
+        List of Z-DNA 10-mer motif matches with positions and scores  
+    """
+    import re
+    seq = seq.upper()
+    matches = []
+    
+    for motif, score in ZDNA_10MER_SCORES.items():
+        pattern = re.compile(motif)
+        for match in pattern.finditer(seq):
+            matches.append({
+                'Class': 'Z-DNA',
+                'Subclass': 'Z-DNA-10mer', 
+                'Start': match.start() + 1,  # 1-based coordinates
+                'End': match.end(),
+                'Length': len(motif),
+                'Sequence': motif,
+                'Score': float(score),
+                'ScoreMethod': '10mer-Pattern'
+            })
+    
+    return matches
+
 #--- Main: Find all Z-DNA and eGZ motifs, output standardized for genomic analysis ---
 def find_z_dna(seq: str, sequence_name: str = "") -> list:
-    zdna_results=find_zdna(seq); egz_results=find_egz_motif(seq)
-    all_results=zdna_results+egz_results
+    zdna_results = find_zdna(seq)
+    egz_results = find_egz_motif(seq)
+    zdna_10mer_results = find_zdna_10mer_patterns(seq)
+    
+    all_results = zdna_results + egz_results + zdna_10mer_results
     return [standardize_motif_output(motif, sequence_name, i) for i, motif in enumerate(all_results, 1)]
 
 #--- Annotations ---
