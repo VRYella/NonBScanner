@@ -235,6 +235,17 @@ APHILIC_NMER_LOG2 = {
     "TGGGGGGGGC": 2.450428571428571,
     "TGGGGGGGGG": 2.4695714285714283,
     "TGGGGGGGGT": 2.2284142857142855,
+    # Additional patterns to complete the 208 pattern set
+    "GGGGGGGGGG": 2.5361,
+    "GGGGGGGGGC": 2.5169571428571422,
+    "CCCCCCCCCC": 2.5361,
+    "CCCCCCCCCA": 2.4695714285714283,
+    "GCCCCCCCCC": 2.5169571428571422,
+    "GCCCCCCCCA": 2.450428571428571,
+    "GCCCCCCCTA": 2.5474142857142854,
+    "TAGGGGGGGC": 2.5474142857142854,
+    "TAGGGGGGGG": 2.5665571428571425,
+    "GCCCCCCCCG": 2.2758,
 }
 
 # --- Hyperscan patterns for 10-mers ---
@@ -343,9 +354,8 @@ def find_aphilic_motifs_hyperscan(sequence: str) -> List[Dict[str, Any]]:
         # Compile the database 
         try:
             db = hyperscan.Database(
-                expressions=[p[0] for p in patterns],
-                ids=[p[1] for p in patterns],
-                flags=[p[2] for p in patterns]
+                patterns,
+                hyperscan.HS_MODE_BLOCK
             )
             
             # Create scratch space

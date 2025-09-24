@@ -306,9 +306,8 @@ def find_zdna_10mer_patterns(seq: str) -> list:
         # Compile the database 
         try:
             db = hyperscan.Database(
-                expressions=[p[0] for p in patterns],
-                ids=[p[1] for p in patterns],
-                flags=[p[2] for p in patterns]
+                patterns,
+                hyperscan.HS_MODE_BLOCK
             )
             
             # Create scratch space
