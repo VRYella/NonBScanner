@@ -305,7 +305,8 @@ FRACTION_MOD = 4/7
 # --- Hyperscan check ---
 try:
     import hyperscan
-    USE_HS = True
+    # Disable hyperscan for now due to API compatibility issues
+    USE_HS = False  # Set to False until hyperscan API is fixed
 except ImportError:
     USE_HS = False
 
@@ -350,11 +351,19 @@ def find_aphilic_motifs_hyperscan(sequence: str) -> List[Dict[str, Any]]:
             patterns.append((motif.encode(), i, hyperscan.HS_FLAG_CASELESS))
             motif_scores[i] = (motif, score)
         
-        # Compile the database - try different approaches
+        # Compile the database 
         try:
-            db = hyperscan.Database(patterns)
-        except:
-            # Fallback to regex if hyperscan compilation fails
+            db = hyperscan.Database(
+                expressions=[p[0] for p in patterns],
+                ids=[p[1] for p in patterns],
+                flags=[p[2] for p in patterns]
+            )
+            
+            # Create scratch space
+            scratch = hyperscan.Scratch(db)
+            
+        except Exception as compile_error:
+            print(f"Hyperscan compilation failed: {compile_error}")
             return find_aphilic_motifs_regex(sequence)
         
         # Scan the sequence
@@ -368,11 +377,9 @@ def find_aphilic_motifs_hyperscan(sequence: str) -> List[Dict[str, Any]]:
                 'score': score,
                 'length': len(motif)
             })
-            return 0  # Continue scanning
         
-        # Create a scanner
-        scanner = hyperscan.Scanner(db)
-        scanner.scan(sequence.upper().encode(), match_handler)
+        # Perform the scan
+        db.scan(sequence.upper().encode(), match_handler, scratch)
         return matches
         
     except Exception as e:
@@ -412,7 +419,7 @@ def merge_overlapping_motifs(motifs: List[Dict[str, Any]]) -> List[Dict[str, Any
     """
     Merge overlapping A-philic motifs and recalculate scores.
     
-    Formula for overlapping regions: 10^((score1+score2)/total_length)
+    Formula for overlapping regions: 10 * (score1+score2) / total_length
     
     Args:
         motifs: List of motif dictionaries with start, end, score
@@ -436,8 +443,8 @@ def merge_overlapping_motifs(motifs: List[Dict[str, Any]]) -> List[Dict[str, Any
             total_length = max(current['end'], next_motif['end']) - current['start']
             combined_score = current['score'] + next_motif['score']
             
-            # Calculate new score: 10^((score1+score2)/total_length)
-            new_score = pow(10, combined_score / total_length)
+            # Calculate new score: 10 * (score1+score2) / total_length
+            new_score = 10.0 * combined_score / total_length
             
             # Update current motif
             current['end'] = max(current['end'], next_motif['end'])
@@ -672,7 +679,8 @@ if __name__ == "__main__":
     
     print(f"Found {len(motifs)} A-philic DNA motifs:")
     for motif in motifs:
-        print(f"  {motif['Subclass']}: {motif['Start']}-{motif['End']} (score: {motif['Score']})")
+        score = motif.get('Actual_Score', motif.get('Score', 'N/A'))
+        print(f"  {motif['Subclass']}: {motif['Start']}-{motif['End']} (score: {score})")
     
     # Also test legacy TSV output
     out_file = scan_sequence(example, min_len=10, max_len=20, step=1,
