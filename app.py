@@ -508,6 +508,22 @@ with tab_pages["Upload & Analyze"]:
         else:
             st.warning("⚠️ No classes selected")
         
+        # ========== OVERLAP OPTIONS ========== 
+        st.markdown("### ⚙️ Analysis Options")
+        
+        overlap_option = st.radio(
+            "Motif Overlap Handling:",
+            options=["Remove overlaps within subclasses", "Show all motifs (including overlaps)"],
+            index=0,
+            help="""
+            • **Remove overlaps within subclasses**: Filters out overlapping motifs within the same subclass, keeping only the best one. Allows overlaps between different subclasses and classes.
+            • **Show all motifs**: Shows all detected motifs regardless of overlaps. Useful for comprehensive analysis and understanding motif distribution.
+            """
+        )
+        
+        # Convert radio selection to boolean
+        nonoverlap = overlap_option == "Remove overlaps within subclasses"
+        
         
         # ========== RUN ANALYSIS BUTTON ========== 
         if st.button("🔬 Run Motif Analysis", type="primary", use_container_width=True, key="run_motif_analysis_main"):
@@ -521,8 +537,12 @@ with tab_pages["Upload & Analyze"]:
             else:
                 st.session_state.analysis_status = "Running"
                 
-                # Set analysis parameters based on requirements
-                nonoverlap = True  # Keep overlaps disabled for specificity
+                # Store analysis parameters in session state for use in download section
+                st.session_state.overlap_option_used = overlap_option
+                st.session_state.nonoverlap_used = nonoverlap
+                
+                # Set analysis parameters based on user selections
+                # nonoverlap is already set above based on user selection
                 report_hotspots = True  # Enable hotspot detection 
                 calculate_conservation = False  # Disable to reduce computation time
                 threshold = 0.0  # Show all detected motifs (even 0 scores)
@@ -877,6 +897,15 @@ with tab_pages["Download"]:
         st.info("No results available to download.")
     else:
         st.markdown("### 📊 Export Options")
+        
+        # Show analysis configuration used
+        overlap_option_used = st.session_state.get('overlap_option_used', 'Remove overlaps within subclasses (default)')
+        st.info(f"""
+        **Analysis Configuration Used:**
+        • Overlap Handling: {overlap_option_used}
+        • Motif Classes: {len(st.session_state.get('selected_classes', []))} classes selected
+        • Total Motifs Found: {sum(len(motifs) for motifs in st.session_state.results)}
+        """)
         
         # Export configuration
         col1, col2 = st.columns(2)

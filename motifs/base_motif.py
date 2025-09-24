@@ -125,124 +125,6 @@ def standardize_motif_output(motif: Dict[str, Any], sequence_name: str = "", mot
     }
 
 
-def select_best_nonoverlapping_motifs(motifs: List[Dict], motif_priority: List[str] = None) -> List[Dict]:
-    """
-    Enhanced overlap filtering for maximum specificity and minimal redundancy.
-    
-    Uses official classification system for priority ordering and implements
-    stringent overlap filtering with clustering of nearby motifs.
-    
-    Args:
-        motifs: List of motif dictionaries
-        motif_priority: Optional priority list (uses official G4 priority if None)
-    
-    Returns:
-        List of selected high-specificity motifs with minimal overlaps and redundancy
-    """
-    if not motifs:
-        return []
-    
-    # Apply clustering to merge nearby redundant motifs first
-    clustered_motifs = cluster_nearby_motifs(motifs)
-    
-    # Get official priority order from classification system
-    if motif_priority is None:
-        try:
-            from motif_classification import MOTIF_CLASSES
-            # Find G-Quadruplex class with priority order
-            for class_info in MOTIF_CLASSES.values():
-                if class_info.get("class_name") == "G-Quadruplex Family" and "priority_order" in class_info:
-                    motif_priority = class_info["priority_order"]
-                    break
-        except ImportError:
-            pass
-        
-        # Fallback to official names (without underscores)
-        if motif_priority is None:
-            motif_priority = [
-                'Multimeric G4', 'Canonical G4', 'Relaxed G4', 'Bulged G4',
-                'Bipartite G4', 'Imperfect G4', 'G-Triplex intermediate'
-            ]
-    
-    # Create priority ranking
-    subtype_rank = {subtype: i for i, subtype in enumerate(motif_priority)}
-    
-    def normalize_subclass_name(subclass):
-        """Convert current implementation names to official names"""
-        try:
-            from motif_classification import CURRENT_TO_OFFICIAL
-            return CURRENT_TO_OFFICIAL.get(subclass, subclass)
-        except ImportError:
-            # Manual mapping as fallback for common G4 types
-            mapping = {
-                'Multimeric_G4': 'Multimeric G4',
-                'Canonical_G4': 'Canonical G4', 
-                'Relaxed_G4': 'Relaxed G4',
-                'Bulged_G4': 'Bulged G4',
-                'Bipartite_G4': 'Bipartite G4',
-                'Imperfect_G4': 'Imperfect G4',
-                'G-Triplex_intermediate': 'G-Triplex intermediate'
-            }
-            return mapping.get(subclass, subclass)
-    
-    def motif_key(m):
-        # Get subclass, handling both Subclass and Subtype fields
-        raw_subclass = m.get('Subclass', m.get('Subtype', ''))
-        normalized_subclass = normalize_subclass_name(raw_subclass)
-        
-        # Get priority rank
-        rank = subtype_rank.get(normalized_subclass, len(subtype_rank))
-        
-        # Get score with proper priority: Normalized_Score > Score > Actual_Score
-        try:
-            score = float(m.get('Normalized_Score', m.get('Score', m.get('Actual_Score', 0))))
-        except (ValueError, TypeError):
-            score = 0.0
-        
-        length = m.get('Length', 0)
-        
-        # Return sort key: (Class, -Score, Priority_Rank, -Length)
-        # Score is prioritized over subclass rank for within-class selection
-        return (m.get('Class', ''), -score, rank, -length)
-    
-    # Sort motifs by priority (class, then score, then rank, then length)
-    sorted_motifs = sorted(clustered_motifs, key=motif_key)
-    
-    # Enhanced overlap filtering with inter-class conflict resolution
-    selected = []
-    occupied_per_class = dict()
-    global_occupied = set()  # Track all occupied positions globally
-    
-    for m in sorted_motifs:
-        motif_class = m.get('Class', 'Other')
-        
-        # Validate coordinates
-        start = m.get('Start', 0)
-        end = m.get('End', 0)
-        if start <= 0 or end <= 0 or start > end:
-            continue
-            
-        # Create position range (inclusive)
-        region = set(range(start, end + 1))
-        
-        # Initialize class tracking if needed
-        if motif_class not in occupied_per_class:
-            occupied_per_class[motif_class] = set()
-        
-        # Check for overlap within the same class (strict) and globally (lenient)
-        intra_class_overlap = not occupied_per_class[motif_class].isdisjoint(region)
-        
-        # Allow some inter-class overlap for hybrid detection, but limit excessive overlap
-        inter_class_overlap_ratio = len(region.intersection(global_occupied)) / len(region)
-        excessive_overlap = inter_class_overlap_ratio > 0.5  # Allow up to 50% inter-class overlap
-        
-        if not intra_class_overlap and not excessive_overlap:
-            selected.append(m)
-            occupied_per_class[motif_class].update(region)
-            global_occupied.update(region)
-    
-    return selected
-
 
 def cluster_nearby_motifs(motifs: List[Dict], max_distance: int = 10) -> List[Dict]:
     """
@@ -382,13 +264,14 @@ def select_best_nonoverlapping_motifs(motifs: List[Dict], motif_priority: List[s
     # Sort motifs by priority (class, then score, then rank, then length)
     sorted_motifs = sorted(clustered_motifs, key=motif_key)
     
-    # Enhanced overlap filtering with inter-class conflict resolution
+    # Enhanced overlap filtering with subclass-level resolution per problem requirements
     selected = []
-    occupied_per_class = dict()
+    occupied_per_subclass = dict()  # Track positions per (Class, Subclass) combination
     global_occupied = set()  # Track all occupied positions globally
     
     for m in sorted_motifs:
         motif_class = m.get('Class', 'Other')
+        motif_subclass = m.get('Subclass', m.get('Subtype', 'Unknown'))
         
         # Validate coordinates
         start = m.get('Start', 0)
@@ -399,20 +282,39 @@ def select_best_nonoverlapping_motifs(motifs: List[Dict], motif_priority: List[s
         # Create position range (inclusive)
         region = set(range(start, end + 1))
         
-        # Initialize class tracking if needed
-        if motif_class not in occupied_per_class:
-            occupied_per_class[motif_class] = set()
+        # Create subclass key for tracking overlaps at subclass level
+        subclass_key = (motif_class, motif_subclass)
         
-        # Check for overlap within the same class (strict) and globally (lenient)
-        intra_class_overlap = not occupied_per_class[motif_class].isdisjoint(region)
+        # Initialize subclass tracking if needed
+        if subclass_key not in occupied_per_subclass:
+            occupied_per_subclass[subclass_key] = set()
+        
+        # Check for overlap within the same subclass (strict) and globally (lenient)
+        # KEY CHANGE: Only prevent overlaps within the SAME subclass, allow overlaps between different subclasses
+        intra_subclass_overlap = not occupied_per_subclass[subclass_key].isdisjoint(region)
+        
+        # For global overlap check, only consider positions from DIFFERENT classes, not different subclasses within same class
+        occupied_per_class = dict()
+        for (cls, subcls), positions in occupied_per_subclass.items():
+            if cls != motif_class:  # Only count positions from different classes
+                if cls not in occupied_per_class:
+                    occupied_per_class[cls] = set()
+                occupied_per_class[cls].update(positions)
+        
+        inter_class_occupied = set()
+        for positions in occupied_per_class.values():
+            inter_class_occupied.update(positions)
         
         # Allow some inter-class overlap for hybrid detection, but limit excessive overlap
-        inter_class_overlap_ratio = len(region.intersection(global_occupied)) / len(region)
-        excessive_overlap = inter_class_overlap_ratio > 0.5  # Allow up to 50% inter-class overlap
+        if inter_class_occupied:
+            inter_class_overlap_ratio = len(region.intersection(inter_class_occupied)) / len(region)
+            excessive_overlap = inter_class_overlap_ratio > 0.5  # Allow up to 50% inter-class overlap
+        else:
+            excessive_overlap = False  # No inter-class overlap yet
         
-        if not intra_class_overlap and not excessive_overlap:
+        if not intra_subclass_overlap and not excessive_overlap:
             selected.append(m)
-            occupied_per_class[motif_class].update(region)
+            occupied_per_subclass[subclass_key].update(region)
             global_occupied.update(region)
     
     return selected
