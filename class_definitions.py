@@ -22,12 +22,10 @@ CLASS_DEFINITIONS = {
     "Slipped_DNA": {
         "id": "Slipped_DNA", 
         "name": "Slipped DNA",
-        "description": "Direct/tandem repeats forming slipped structures",
+        "description": "Direct repeats forming slipped structures",
         "color": "#FFDAC1",
         "subclasses": [
-            {"id": "direct_repeat", "name": "Direct Repeat", "description": "Direct tandem repeats"},
-            {"id": "str", "name": "STR (Short Tandem Repeat)", "description": "Short tandem repeat sequences"},
-            {"id": "slipped_str", "name": "Slipped DNA [STR]", "description": "STR-based slipped structures"}
+            {"id": "direct_repeat", "name": "Direct Repeat", "description": "Direct tandem repeats"}
         ]
     },
     "Cruciform": {
