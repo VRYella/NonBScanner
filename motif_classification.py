@@ -30,7 +30,8 @@ OFFICIAL_CLASSIFICATION = {
     2: {
         "class_name": "Slipped DNA", 
         "subclasses": [
-            "Slipped DNA [Direct Repeat]"
+            "Slipped DNA [Direct Repeat]",
+            "Slipped DNA [STR]"
         ]
     },
     3: {
@@ -106,6 +107,7 @@ MOTIF_IDS = {
     
     # Class 2: Slipped DNA
     "Slipped DNA [Direct Repeat]": "2.1",
+    "Slipped DNA [STR]": "2.2",
     
     # Class 3: Cruciform DNA
     "Cruciform DNA [IR]/HairPin [IR]": "3.1",
@@ -146,6 +148,7 @@ CURRENT_TO_OFFICIAL = {
     
     # Slipped DNA mappings
     "Direct_Repeat": "Slipped DNA [Direct Repeat]",
+    "STR": "Slipped DNA [STR]",
     
     # Cruciform DNA mappings
     "Cruciform_DNA": "Cruciform DNA [IR]/HairPin [IR]",

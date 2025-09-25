@@ -160,8 +160,8 @@ async def get_motif_classes():
         },
         "Slipped_DNA": {
             "name": "Slipped DNA", 
-            "description": "Direct repeats forming slipped structures",
-            "subclasses": ["Direct Repeat"]
+            "description": "Direct/tandem repeats forming slipped structures",
+            "subclasses": ["Direct Repeat", "STR (Short Tandem Repeat)", "Slipped DNA [STR]"]
         },
         "Cruciform": {
             "name": "Cruciform DNA",
@@ -388,9 +388,10 @@ async def get_comprehensive_motif_info():
             },
             "Class_02_Slipped_DNA": {
                 "name": "Slipped DNA",
-                "description": "Direct repeats forming slipped-strand structures",
+                "description": "Direct/tandem repeats forming slipped-strand structures",
                 "subclasses": [
-                    {"id": "2.1", "name": "Direct Repeat", "description": "Perfect tandem repeats prone to slippage"}
+                    {"id": "2.1", "name": "Direct Repeat", "description": "Perfect tandem repeats prone to slippage"},
+                    {"id": "2.2", "name": "STR (Short Tandem Repeat)", "description": "Microsatellites with slippage potential"}
                 ],
                 "scoring_method": "Instability-based scoring with repeat unit analysis",
                 "biological_relevance": "Genetic instability, disease mutations, evolution"
