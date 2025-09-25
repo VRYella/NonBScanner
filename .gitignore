@@ -78,3 +78,23 @@ tmp/
 # Test output files
 *.tsv
 !example*.tsv
+
+# Exclude original complex directories - using consolidated scripts instead
+motifs/
+detectors/
+core/
+orchestrators/
+cli/
+nbdio/
+viz/
+docs/
+
+# Exclude other complex files - using consolidated scripts instead
+all_motifs_refactored.py
+api.py
+app.py
+class_definitions.py
+classification_config.py
+motif_classification.py
+test_regex_registry.py
+utils.py
