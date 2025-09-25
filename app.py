@@ -106,7 +106,8 @@ def get_biological_significance(class_id: int) -> str:
         5: "Antigene therapy, DNA damage",
         6: "Telomere maintenance, oncogene regulation",
         7: "pH sensing, gene expression control",
-        8: "Transcription regulation, immune recognition"
+        8: "Transcription regulation, immune recognition",
+        9: "Protein-DNA interactions, A-tract formation, transcription regulation"
     }
     return significance_map.get(class_id, "Unknown biological role")
 
@@ -164,7 +165,7 @@ def main():
         
         | Feature | Description |
         |---------|-------------|
-        | 8 Structure Types | G-quadruplex, i-motif, Z-DNA, curved DNA, triplex, cruciform, R-loops, slipped DNA |
+        | 9 Structure Types | G-quadruplex, i-motif, Z-DNA, curved DNA, triplex, cruciform, R-loops, slipped DNA, A-philic DNA |
         | Scientific Scoring | Literature-based algorithms (G4Hunter, Z-seeker, etc.) |
         | Multiple Input Methods | Text input, file upload |
         | Advanced Filtering | Score thresholds, overlap removal, length constraints |

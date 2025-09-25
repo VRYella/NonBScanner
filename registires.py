@@ -198,6 +198,123 @@ SLIPPED_DNA_PATTERNS = {
 }
 
 # =============================================================================
+# A-PHILIC DNA PATTERNS (Class 9) - A-philic DNA detection using tetranucleotide scoring
+# =============================================================================
+APHILIC_DNA_PATTERNS = {
+    'high_confidence_aphilic': [
+        # High confidence A-philic 10-mers (score >= 2.0)
+        (r"ACCCCCCCCA", 200, 0, "High_A_philic", None, 1.0, 1, 2.228, "Aphilic_Score"),
+        (r"ACCCCCCCCC", 201, 0, "High_A_philic", None, 1.0, 1, 2.295, "Aphilic_Score"),
+        (r"ACCCCCCCCG", 202, 0, "High_A_philic", None, 1.0, 1, 2.054, "Aphilic_Score"),
+        (r"ACCCCCCCCT", 203, 0, "High_A_philic", None, 1.0, 1, 2.461, "Aphilic_Score"),
+        (r"ACCCCCCCTA", 204, 0, "High_A_philic", None, 1.0, 1, 2.325, "Aphilic_Score"),
+        (r"AGGGCCCCCA", 205, 0, "High_A_philic", None, 1.0, 1, 2.254, "Aphilic_Score"),
+        (r"AGGGCCCCCC", 206, 0, "High_A_philic", None, 1.0, 1, 2.321, "Aphilic_Score"),
+        (r"AGGGCCCCCG", 207, 0, "High_A_philic", None, 1.0, 1, 2.080, "Aphilic_Score"),
+        (r"AGGGCCCCCT", 208, 0, "High_A_philic", None, 1.0, 1, 2.487, "Aphilic_Score"),
+        (r"AGGGCCCCTA", 209, 0, "High_A_philic", None, 1.0, 1, 2.351, "Aphilic_Score"),
+        (r"AGGGGCCCCA", 210, 0, "High_A_philic", None, 1.0, 1, 2.254, "Aphilic_Score"),
+        (r"AGGGGCCCCC", 211, 0, "High_A_philic", None, 1.0, 1, 2.321, "Aphilic_Score"),
+        (r"AGGGGCCCCG", 212, 0, "High_A_philic", None, 1.0, 1, 2.080, "Aphilic_Score"),
+        (r"AGGGGCCCCT", 213, 0, "High_A_philic", None, 1.0, 1, 2.487, "Aphilic_Score"),
+        (r"AGGGGCCCTA", 214, 0, "High_A_philic", None, 1.0, 1, 2.351, "Aphilic_Score"),
+        (r"AGGGGGCCCA", 215, 0, "High_A_philic", None, 1.0, 1, 2.254, "Aphilic_Score"),
+        (r"AGGGGGCCCC", 216, 0, "High_A_philic", None, 1.0, 1, 2.321, "Aphilic_Score"),
+        (r"AGGGGGCCCG", 217, 0, "High_A_philic", None, 1.0, 1, 2.080, "Aphilic_Score"),
+        (r"AGGGGGCCCT", 218, 0, "High_A_philic", None, 1.0, 1, 2.487, "Aphilic_Score"),
+        (r"AGGGGGGCCC", 219, 0, "High_A_philic", None, 1.0, 1, 2.321, "Aphilic_Score"),
+        (r"AGGGGGGGCC", 220, 0, "High_A_philic", None, 1.0, 1, 2.340, "Aphilic_Score"),
+        (r"AGGGGGGGGC", 221, 0, "High_A_philic", None, 1.0, 1, 2.683, "Aphilic_Score"),
+        (r"AGGGGGGGGG", 222, 0, "High_A_philic", None, 1.0, 1, 2.702, "Aphilic_Score"),
+        (r"AGGGGGGGGT", 223, 0, "High_A_philic", None, 1.0, 1, 2.461, "Aphilic_Score"),
+        (r"CCCCCCCCCA", 224, 0, "High_A_philic", None, 1.0, 1, 2.470, "Aphilic_Score"),
+        (r"CCCCCCCCCC", 225, 0, "High_A_philic", None, 1.0, 1, 2.536, "Aphilic_Score"),
+        (r"CCCCCCCCCG", 226, 0, "High_A_philic", None, 1.0, 1, 2.295, "Aphilic_Score"),
+        (r"CCCCCCCCCT", 227, 0, "High_A_philic", None, 1.0, 1, 2.702, "Aphilic_Score"),
+        (r"CCCCCCCCTA", 228, 0, "High_A_philic", None, 1.0, 1, 2.567, "Aphilic_Score"),
+        (r"CGGGCCCCCA", 229, 0, "High_A_philic", None, 1.0, 1, 2.847, "Aphilic_Score"),
+        (r"CGGGCCCCCC", 230, 0, "High_A_philic", None, 1.0, 1, 2.914, "Aphilic_Score"),
+        (r"CGGGCCCCCG", 231, 0, "High_A_philic", None, 1.0, 1, 2.672, "Aphilic_Score"),
+        (r"CGGGCCCCCT", 232, 0, "High_A_philic", None, 1.0, 1, 2.080, "Aphilic_Score"),
+        (r"CGGGCCCCTA", 233, 0, "High_A_philic", None, 1.0, 1, 2.944, "Aphilic_Score"),
+        (r"CGGGGCCCCA", 234, 0, "High_A_philic", None, 1.0, 1, 2.847, "Aphilic_Score"),
+        (r"CGGGGCCCCC", 235, 0, "High_A_philic", None, 1.0, 1, 2.914, "Aphilic_Score"),
+        (r"CGGGGCCCCG", 236, 0, "High_A_philic", None, 1.0, 1, 2.672, "Aphilic_Score"),
+        (r"CGGGGCCCCT", 237, 0, "High_A_philic", None, 1.0, 1, 2.080, "Aphilic_Score"),
+        (r"CGGGGCCCCTA", 238, 0, "High_A_philic", None, 1.0, 1, 2.944, "Aphilic_Score"),
+        (r"CGGGGGCCCA", 239, 0, "High_A_philic", None, 1.0, 1, 2.847, "Aphilic_Score"),
+        (r"CGGGGGCCCC", 240, 0, "High_A_philic", None, 1.0, 1, 2.914, "Aphilic_Score"),
+        (r"CGGGGGCCCG", 241, 0, "High_A_philic", None, 1.0, 1, 2.672, "Aphilic_Score"),
+        (r"CGGGGGCCCT", 242, 0, "High_A_philic", None, 1.0, 1, 2.080, "Aphilic_Score"),
+        (r"CGGGGGGCCC", 243, 0, "High_A_philic", None, 1.0, 1, 2.914, "Aphilic_Score"),
+        (r"CGGGGGGGCC", 244, 0, "High_A_philic", None, 1.0, 1, 2.933, "Aphilic_Score"),
+        (r"CGGGGGGGGC", 245, 0, "High_A_philic", None, 1.0, 1, 2.276, "Aphilic_Score"),
+        (r"CGGGGGGGGG", 246, 0, "High_A_philic", None, 1.0, 1, 2.295, "Aphilic_Score"),
+        (r"CGGGGGGGGT", 247, 0, "High_A_philic", None, 1.0, 1, 2.054, "Aphilic_Score"),
+        (r"GCCCCCCCCA", 248, 0, "High_A_philic", None, 1.0, 1, 2.450, "Aphilic_Score"),
+        (r"GCCCCCCCCC", 249, 0, "High_A_philic", None, 1.0, 1, 2.517, "Aphilic_Score"),
+        (r"GCCCCCCCCG", 250, 0, "High_A_philic", None, 1.0, 1, 2.276, "Aphilic_Score"),
+        (r"GCCCCCCCTA", 251, 0, "High_A_philic", None, 1.0, 1, 2.547, "Aphilic_Score"),
+        (r"GGCCCCCCCA", 252, 0, "High_A_philic", None, 1.0, 1, 2.107, "Aphilic_Score"),
+        (r"GGCCCCCCCC", 253, 0, "High_A_philic", None, 1.0, 1, 2.174, "Aphilic_Score"),
+        (r"GGCCCCCCCG", 254, 0, "High_A_philic", None, 1.0, 1, 2.933, "Aphilic_Score"),
+        (r"GGCCCCCCCT", 255, 0, "High_A_philic", None, 1.0, 1, 2.340, "Aphilic_Score"),
+        (r"GGCCCCCCTA", 256, 0, "High_A_philic", None, 1.0, 1, 2.204, "Aphilic_Score"),
+        (r"GGGCCCCCCA", 257, 0, "High_A_philic", None, 1.0, 1, 2.088, "Aphilic_Score"),
+        (r"GGGCCCCCCC", 258, 0, "High_A_philic", None, 1.0, 1, 2.155, "Aphilic_Score"),
+        (r"GGGCCCCCCG", 259, 0, "High_A_philic", None, 1.0, 1, 2.914, "Aphilic_Score"),
+        (r"GGGCCCCCCT", 260, 0, "High_A_philic", None, 1.0, 1, 2.321, "Aphilic_Score"),
+        (r"GGGCCCCCTA", 261, 0, "High_A_philic", None, 1.0, 1, 2.185, "Aphilic_Score"),
+        (r"GGGGCCCCCA", 262, 0, "High_A_philic", None, 1.0, 1, 2.088, "Aphilic_Score"),
+        (r"GGGGCCCCCC", 263, 0, "High_A_philic", None, 1.0, 1, 2.155, "Aphilic_Score"),
+        (r"GGGGCCCCCG", 264, 0, "High_A_philic", None, 1.0, 1, 2.914, "Aphilic_Score"),
+        (r"GGGGCCCCCT", 265, 0, "High_A_philic", None, 1.0, 1, 2.321, "Aphilic_Score"),
+        (r"GGGGCCCCCTA", 266, 0, "High_A_philic", None, 1.0, 1, 2.185, "Aphilic_Score"),
+        (r"GGGGGGCCCA", 267, 0, "High_A_philic", None, 1.0, 1, 2.088, "Aphilic_Score"),
+        (r"GGGGGGCCCC", 268, 0, "High_A_philic", None, 1.0, 1, 2.155, "Aphilic_Score"),
+        (r"GGGGGGCCCG", 269, 0, "High_A_philic", None, 1.0, 1, 2.914, "Aphilic_Score"),
+        (r"GGGGGGCCCT", 270, 0, "High_A_philic", None, 1.0, 1, 2.321, "Aphilic_Score"),
+        (r"GGGGGGGGCC", 271, 0, "High_A_philic", None, 1.0, 1, 2.174, "Aphilic_Score"),
+        (r"GGGGGGGGGC", 272, 0, "High_A_philic", None, 1.0, 1, 2.517, "Aphilic_Score"),
+        (r"GGGGGGGGGG", 273, 0, "High_A_philic", None, 1.0, 1, 2.536, "Aphilic_Score"),
+        (r"GGGGGGGGGT", 274, 0, "High_A_philic", None, 1.0, 1, 2.295, "Aphilic_Score"),
+        (r"TAGGGCCCCA", 275, 0, "High_A_philic", None, 1.0, 1, 2.119, "Aphilic_Score"),
+        (r"TAGGGCCCCC", 276, 0, "High_A_philic", None, 1.0, 1, 2.185, "Aphilic_Score"),
+        (r"TAGGGCCCCG", 277, 0, "High_A_philic", None, 1.0, 1, 2.944, "Aphilic_Score"),
+        (r"TAGGGCCCCT", 278, 0, "High_A_philic", None, 1.0, 1, 2.351, "Aphilic_Score"),
+        (r"TAGGGCCCTA", 279, 0, "High_A_philic", None, 1.0, 1, 2.216, "Aphilic_Score"),
+        (r"TAGGGGCCCA", 280, 0, "High_A_philic", None, 1.0, 1, 2.119, "Aphilic_Score"),
+        (r"TAGGGGCCCC", 281, 0, "High_A_philic", None, 1.0, 1, 2.185, "Aphilic_Score"),
+        (r"TAGGGGCCCG", 282, 0, "High_A_philic", None, 1.0, 1, 2.944, "Aphilic_Score"),
+        (r"TAGGGGCCCT", 283, 0, "High_A_philic", None, 1.0, 1, 2.351, "Aphilic_Score"),
+        (r"TAGGGGGCCC", 284, 0, "High_A_philic", None, 1.0, 1, 2.185, "Aphilic_Score"),
+        (r"TAGGGGGGCC", 285, 0, "High_A_philic", None, 1.0, 1, 2.204, "Aphilic_Score"),
+        (r"TAGGGGGGGC", 286, 0, "High_A_philic", None, 1.0, 1, 2.547, "Aphilic_Score"),
+        (r"TAGGGGGGGG", 287, 0, "High_A_philic", None, 1.0, 1, 2.567, "Aphilic_Score"),
+        (r"TAGGGGGGGT", 288, 0, "High_A_philic", None, 1.0, 1, 2.325, "Aphilic_Score"),
+        (r"TGGGCCCCCA", 289, 0, "High_A_philic", None, 1.0, 1, 2.022, "Aphilic_Score"),
+        (r"TGGGCCCCCC", 290, 0, "High_A_philic", None, 1.0, 1, 2.088, "Aphilic_Score"),
+        (r"TGGGCCCCCG", 291, 0, "High_A_philic", None, 1.0, 1, 2.847, "Aphilic_Score"),
+        (r"TGGGCCCCCT", 292, 0, "High_A_philic", None, 1.0, 1, 2.254, "Aphilic_Score"),
+        (r"TGGGCCCCTA", 293, 0, "High_A_philic", None, 1.0, 1, 2.119, "Aphilic_Score"),
+        (r"TGGGGCCCCA", 294, 0, "High_A_philic", None, 1.0, 1, 2.022, "Aphilic_Score"),
+        (r"TGGGGCCCCC", 295, 0, "High_A_philic", None, 1.0, 1, 2.088, "Aphilic_Score"),
+        (r"TGGGGCCCCG", 296, 0, "High_A_philic", None, 1.0, 1, 2.847, "Aphilic_Score"),
+        (r"TGGGGCCCCT", 297, 0, "High_A_philic", None, 1.0, 1, 2.254, "Aphilic_Score"),
+        (r"TGGGGCCCTA", 298, 0, "High_A_philic", None, 1.0, 1, 2.119, "Aphilic_Score"),
+        (r"TGGGGGCCCA", 299, 0, "High_A_philic", None, 1.0, 1, 2.022, "Aphilic_Score"),
+        (r"TGGGGGCCCC", 300, 0, "High_A_philic", None, 1.0, 1, 2.088, "Aphilic_Score"),
+        (r"TGGGGGCCCG", 301, 0, "High_A_philic", None, 1.0, 1, 2.847, "Aphilic_Score"),
+        (r"TGGGGGCCCT", 302, 0, "High_A_philic", None, 1.0, 1, 2.254, "Aphilic_Score"),
+        (r"TGGGGGGCCC", 303, 0, "High_A_philic", None, 1.0, 1, 2.088, "Aphilic_Score"),
+        (r"TGGGGGGGCC", 304, 0, "High_A_philic", None, 1.0, 1, 2.107, "Aphilic_Score"),
+        (r"TGGGGGGGGC", 305, 0, "High_A_philic", None, 1.0, 1, 2.450, "Aphilic_Score"),
+        (r"TGGGGGGGGG", 306, 0, "High_A_philic", None, 1.0, 1, 2.470, "Aphilic_Score"),
+        (r"TGGGGGGGGT", 307, 0, "High_A_philic", None, 1.0, 1, 2.228, "Aphilic_Score"),
+    ]
+}
+
+# =============================================================================
 # PATTERN AGGREGATION AND ACCESS FUNCTIONS
 # =============================================================================
 ALL_PATTERNS = {
@@ -208,7 +325,8 @@ ALL_PATTERNS = {
     'TRIPLEX': TRIPLEX_PATTERNS,
     'CRUCIFORM': CRUCIFORM_PATTERNS,
     'R_LOOP': R_LOOP_PATTERNS,
-    'SLIPPED_DNA': SLIPPED_DNA_PATTERNS
+    'SLIPPED_DNA': SLIPPED_DNA_PATTERNS,
+    'APHILIC_DNA': APHILIC_DNA_PATTERNS
 }
 
 def get_patterns_for_motif(motif_type: str) -> dict:
@@ -321,10 +439,11 @@ CLASS_DEFINITIONS = {
     5: {"name": "Triplex", "description": "Three-stranded DNA", "color": "#FECA57"},
     6: {"name": "G-Quadruplex", "description": "Four-stranded G-rich", "color": "#FF9FF3"},
     7: {"name": "i-Motif", "description": "C-rich quadruplex", "color": "#54A0FF"},
-    8: {"name": "Z-DNA", "description": "Left-handed helix", "color": "#5F27CD"}
+    8: {"name": "Z-DNA", "description": "Left-handed helix", "color": "#5F27CD"},
+    9: {"name": "A-philic DNA", "description": "A-philic protein binding sites", "color": "#FF8E53"}
 }
 
-DEFAULT_SELECTED_CLASSES = [1, 2, 3, 4, 5, 6, 7, 8]
+DEFAULT_SELECTED_CLASSES = [1, 2, 3, 4, 5, 6, 7, 8, 9]
 DEFAULT_SELECTED_SUBCLASSES = list(range(1, 25))
 
 MOTIF_LENGTH_LIMITS = {
