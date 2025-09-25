@@ -437,11 +437,12 @@ def find_strs(seq, min_unit=1, max_unit=6, min_reps=5, min_len=15):
 
 #--- Main function: find all slipped DNA motifs with standardized output, using Hyperscan for both DR and STR ---
 def find_slipped_dna(seq: str, sequence_name: str = "") -> list:
-    """Detect slipped DNA motifs (Direct Repeats only) using SIMD-accelerated search; output standardized."""
-    results = find_direct_repeats(seq)  # STRs removed as requested
+    """Detect slipped DNA motifs (Direct Repeats, STRs) using SIMD-accelerated search; output standardized."""
+    results = find_direct_repeats(seq) + find_strs(seq)
     return [standardize_motif_output(motif, sequence_name, i) for i, motif in enumerate(results, 1)]
 
 #--- Annotations ---
 # - find_direct_repeats: All direct repeats 10–300bp, using block-motif Hyperscan, AT-richness weighted score.
-# - find_slipped_dna: Direct repeats only (STRs removed as requested), standardized 1-based output for genomic analysis.
+# - find_strs: Canonical STRs (unit 1–6bp, at least 5 copies, >=15bp), greedy extension, GC/length/copy scoring, deduplicated.
+# - find_slipped_dna: Combines both motif types, standardized 1-based output for genomic analysis.
 # - Regexes and scores are based on scientific best practices (e.g. Toth 2000, Gemayel 2010).
