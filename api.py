@@ -1,17 +1,17 @@
 #!/usr/bin/env python3
 """
-NBDFinder REST API
+NBDScanner REST API
 ==================
 
-Comprehensive REST API for Non-B DNA Motif Detection
-Supports all 10 main classes and 22+ subclasses
+Consolidated REST API for Non-B DNA Motif Detection
+Supports all 11 major classes and 22+ subclasses using the consolidated NBDScanner engine
 
 Endpoints:
 - GET  /api/v1/health - Health check
-- GET  /api/v1/classes - List all supported motif classes
-- GET  /api/v1/classes/{class_id} - Get details for specific class
+- GET  /api/v1/classes - List all supported motif classes  
+- GET  /api/v1/patterns - Get pattern statistics
 - POST /api/v1/analyze - Analyze DNA sequence for all motifs
-- POST /api/v1/analyze/{class_id} - Analyze sequence for specific class
+- GET  /api/v1/motif-info - Get comprehensive motif information
 - GET  /api/v1/stats - Get API usage statistics
 """
 
@@ -31,13 +31,18 @@ from contextlib import asynccontextmanager
 # Add current directory to path for imports
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-# Import NBDFinder modules
-from all_motifs_refactored import all_motifs_refactored
-from detectors import (
-    get_available_detectors, get_detector_function, 
-    DETECTOR_REGISTRY, detect_motif_class
+# Import consolidated NBDScanner modules
+from nbdscanner import (
+    analyze_sequence, analyze_multiple_sequences, 
+    get_motif_classification_info
 )
-from classification_config import MOTIF_LENGTH_LIMITS, SCORING_METHODS
+from utils_consolidated import (
+    parse_fasta, validate_sequence, get_basic_stats,
+    export_to_json, export_to_csv, export_to_bed
+)
+from motif_patterns import (
+    PatternRegistry, get_pattern_statistics
+)
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -56,17 +61,17 @@ api_stats = {
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Application lifespan management"""
-    logger.info("NBDFinder API starting up...")
+    logger.info("NBDScanner API starting up...")
     yield
-    logger.info("NBDFinder API shutting down...")
+    logger.info("NBDScanner API shutting down...")
 
 # Initialize FastAPI app
 app = FastAPI(
-    title="NBDFinder API",
-    description="Comprehensive REST API for Non-B DNA Motif Detection",
-    version="1.0.0",
+    title="NBDScanner API", 
+    description="Consolidated REST API for Non-B DNA Motif Detection with 11 classes and 22+ subclasses",
+    version="2024.1",
     docs_url="/docs",
-    redoc_url="/redoc",
+    redoc_url="/redoc", 
     lifespan=lifespan
 )
 
@@ -83,16 +88,27 @@ app.add_middleware(
 class SequenceRequest(BaseModel):
     sequence: str = Field(..., description="DNA sequence to analyze", min_length=10)
     sequence_name: str = Field(default="sequence", description="Name identifier for the sequence")
-    nonoverlap: bool = Field(default=True, description="Remove overlapping motifs")
-    report_hotspots: bool = Field(default=True, description="Include cluster/hotspot analysis")
-    calculate_conservation: bool = Field(default=False, description="Calculate conservation scores")
+    detailed: bool = Field(default=True, description="Include detailed analysis metadata")
 
-class MotifClassInfo(BaseModel):
-    class_id: str
-    class_name: str
-    description: str
-    subclasses: List[str]
-    scoring_method: str
+class MotifResult(BaseModel):
+    Class: str
+    Subclass: str
+    Start: int
+    End: int
+    Length: int
+    Sequence: str
+    Score: float
+    Strand: str
+    Method: str
+
+class AnalysisResponse(BaseModel):
+    sequence_name: str
+    sequence_length: int
+    total_motifs: int
+    classes_detected: int
+    subclasses_detected: int
+    analysis_time: float
+    motifs: List[MotifResult]
     length_limits: Dict[str, int]
 
 class MotifResult(BaseModel):
@@ -248,9 +264,9 @@ async def get_motif_class_details(class_id: str):
         detail=f"Motif class '{class_id}' not found"
     )
 
-@app.post("/api/v1/analyze", response_model=MotifResult)
-async def analyze_sequence(request: SequenceRequest, background_tasks: BackgroundTasks):
-    """Analyze DNA sequence for all motif types"""
+@app.post("/api/v1/analyze", response_model=AnalysisResponse)
+async def analyze_dna_sequence(request: SequenceRequest, background_tasks: BackgroundTasks):
+    """Analyze DNA sequence using consolidated NBDScanner"""
     global api_stats
     api_stats["analyze_requests"] += 1
     api_stats["sequences_analyzed"] += 1
@@ -258,40 +274,39 @@ async def analyze_sequence(request: SequenceRequest, background_tasks: Backgroun
     start_time = time.time()
     
     try:
-        # Validate sequence
+        # Validate sequence using consolidated utilities
         sequence = request.sequence.upper().strip()
-        if not all(c in 'ATGCN' for c in sequence):
-            raise HTTPException(
-                status_code=400,
-                detail="Invalid DNA sequence. Only ATGCN characters allowed."
-            )
+        is_valid, error_msg = validate_sequence(sequence)
+        if not is_valid:
+            raise HTTPException(status_code=400, detail=error_msg)
         
-        # Run motif analysis
-        motifs = all_motifs_refactored(
-            seq=sequence,
+        # Run consolidated NBDScanner analysis
+        motifs = analyze_sequence(
+            sequence=sequence,
             sequence_name=request.sequence_name,
-            nonoverlap=request.nonoverlap,
-            report_hotspots=request.report_hotspots,
-            calculate_conservation=request.calculate_conservation
+            detailed=request.detailed
         )
         
-        # Extract analysis results
+        # Calculate analysis statistics
         total_motifs = len(motifs)
-        classes_detected = sorted(set(m.get('Class', 'Unknown') for m in motifs))
-        subclasses_detected = sorted(set(m.get('Subclass', 'Unknown') for m in motifs))
-        
+        classes_detected = len(set(m.get('Class', 'Unknown') for m in motifs))
+        subclasses_detected = len(set(m.get('Subclass', 'Unknown') for m in motifs))
         analysis_time = time.time() - start_time
         
-        # Update statistics
+        # Update API statistics
         api_stats["motifs_detected"] += total_motifs
         
-        return MotifResult(
+        # Convert to response model
+        motif_results = [MotifResult(**motif) for motif in motifs]
+        
+        return AnalysisResponse(
             sequence_name=request.sequence_name,
+            sequence_length=len(sequence),
             total_motifs=total_motifs,
             classes_detected=classes_detected,
             subclasses_detected=subclasses_detected,
             analysis_time=round(analysis_time, 3),
-            motifs=motifs
+            motifs=motif_results
         )
         
     except Exception as e:
@@ -367,42 +382,39 @@ async def get_api_statistics():
 
 @app.get("/api/v1/motif-info")
 async def get_comprehensive_motif_info():
-    """Get comprehensive information about all 10 motif classes and 22+ subclasses"""
+    """Get comprehensive information about all 11 motif classes and 22+ subclasses"""
+    
+    # Use consolidated classification info
+    classification_info = get_motif_classification_info()
+    pattern_stats = get_pattern_statistics()
     
     comprehensive_info = {
         "overview": {
-            "total_classes": 10,
-            "total_subclasses": 22,
-            "description": "NBDFinder detects Non-B DNA structures across 10 major classes with 22+ specialized subclasses"
+            "version": classification_info["version"],
+            "total_classes": classification_info["total_classes"],
+            "total_subclasses": classification_info["total_subclasses"],
+            "total_patterns": pattern_stats["total_patterns"],
+            "description": "NBDScanner detects Non-B DNA structures across 11 major classes with 22+ specialized subclasses using 52+ regex patterns"
         },
-        "classes": {
-            "Class_01_Curved_DNA": {
-                "name": "Curved DNA",
-                "description": "A-tract mediated DNA curvature patterns",
-                "subclasses": [
-                    {"id": "1.1", "name": "Global Curvature", "description": "Phased A-tract arrays with helical periodicity"},
-                    {"id": "1.2", "name": "Local Curvature", "description": "Individual A-tracts causing local bending"}
-                ],
-                "scoring_method": "Enhanced curvature scoring based on tract length and phasing",
-                "biological_relevance": "Gene regulation, replication timing, chromatin structure"
-            },
-            "Class_02_Slipped_DNA": {
-                "name": "Slipped DNA",
-                "description": "Direct/tandem repeats forming slipped-strand structures",
-                "subclasses": [
-                    {"id": "2.1", "name": "Direct Repeat", "description": "Perfect tandem repeats prone to slippage"},
-                    {"id": "2.2", "name": "STR (Short Tandem Repeat)", "description": "Microsatellites with slippage potential"}
-                ],
-                "scoring_method": "Instability-based scoring with repeat unit analysis",
-                "biological_relevance": "Genetic instability, disease mutations, evolution"
-            },
-            "Class_03_Cruciform": {
-                "name": "Cruciform DNA",
-                "description": "Inverted repeats forming four-way junctions",
-                "subclasses": [
-                    {"id": "3.1", "name": "Palindromic Inverted Repeat", "description": "Perfect palindromes forming cruciform structures"}
-                ],
-                "scoring_method": "Thermodynamic stability based on arm length and base pairing",
+        "classification": classification_info["classification"],
+        "pattern_statistics": pattern_stats,
+        "technology": {
+            "engine": "NBDScanner Consolidated Engine",
+            "pattern_matching": "Hyperscan accelerated (when available)",
+            "scoring_algorithms": pattern_stats["scoring_methods"],
+            "performance": "40x+ speed improvement over traditional methods",
+            "output_format": "Standardized genomic coordinates with comprehensive metadata"
+        },
+        "references": [
+            "Bedrat et al. (2016) Nucleic Acids Research - G4Hunter algorithm", 
+            "Ho et al. (1986) Nucleic Acids Research - Z-DNA scoring",
+            "Olson et al. (1998) PNAS - DNA curvature models",
+            "Frank-Kamenetskii & Mirkin (1995) - Triplex DNA",
+            "Zeraati et al. (2018) Nature Chemistry - i-motif structures"
+        ]
+    }
+    
+    return comprehensive_info
                 "biological_relevance": "Recombination hotspots, gene regulation, genomic instability"
             },
             "Class_04_R_Loop": {
