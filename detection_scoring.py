@@ -306,7 +306,8 @@ def detect_motifs_in_sequence(seq: str, sequence_name: str = "sequence") -> List
         'TRIPLEX': detect_triplex_motifs,
         'CRUCIFORM': detect_cruciform_motifs,
         'R_LOOP': detect_rloop_motifs,
-        'SLIPPED_DNA': detect_slipped_motifs
+        'SLIPPED_DNA': detect_slipped_motifs,
+        'APHILIC_DNA': detect_aphilic_motifs
     }
     
     for motif_class, detect_func in detection_methods.items():
@@ -634,6 +635,255 @@ def detect_slipped_motifs(seq: str, sequence_name: str) -> List[Dict[str, Any]]:
                         'Pattern_ID': pattern_id,
                         'Sequence_Name': sequence_name,
                         'Repeat_Unit': repeat_unit
+                    }
+                    motifs.append(motif)
+    
+    return motifs
+
+def aphilic_score(seq: str) -> float:
+    """
+    A-philic DNA scoring based on tetranucleotide log2 odds table
+    
+    | Parameter | Type | Description                           |
+    |-----------|------|---------------------------------------|
+    | seq       | str  | DNA sequence (10bp for 10-mer table) |
+    
+    Returns: A-philic score (>=2.0 = high confidence, >=1.0 = moderate)
+    """
+    # A-philic 10-mer log2 odds scores from tetranucleotide analysis
+    APHILIC_10MER_SCORES = {
+        "ACCCCCCCCA": 2.2284142857142855,
+        "ACCCCCCCCC": 2.294942857142857,
+        "ACCCCCCCCG": 2.053785714285714,
+        "ACCCCCCCCT": 2.4612714285714286,
+        "ACCCCCCCGG": 1.7285,
+        "ACCCCCCCTA": 2.3253999999999997,
+        "ACCCCCCGGG": 1.4873428571428569,
+        "ACCCCCGGGC": 1.4682,
+        "ACCCCCGGGG": 1.4873428571428569,
+        "ACCCCCGGGT": 1.2461857142857142,
+        "ACCCCGGGCC": 1.1250857142857142,
+        "ACCCCGGGGC": 1.4682,
+        "ACCCCGGGGG": 1.4873428571428569,
+        "ACCCCGGGGT": 1.2461857142857142,
+        "ACCCGGGCCC": 1.1059428571428571,
+        "ACCCGGGGCC": 1.1250857142857142,
+        "ACCCGGGGGC": 1.4682,
+        "ACCCGGGGGG": 1.4873428571428569,
+        "ACCCGGGGGT": 1.2461857142857142,
+        "AGGGCCCCCA": 2.2544999999999997,
+        "AGGGCCCCCC": 2.321028571428571,
+        "AGGGCCCCCG": 2.0798714285714284,
+        "AGGGCCCCCT": 2.487357142857143,
+        "AGGGCCCCGG": 1.7545857142857142,
+        "AGGGCCCCTA": 2.3514857142857144,
+        "AGGGCCCGGG": 1.5134285714285713,
+        "AGGGGCCCCA": 2.2544999999999997,
+        "AGGGGCCCCC": 2.321028571428571,
+        "AGGGGCCCCG": 2.0798714285714284,
+        "AGGGGCCCCT": 2.487357142857143,
+        "AGGGGCCCGG": 1.7545857142857142,
+        "AGGGGCCCTA": 2.3514857142857144,
+        "AGGGGGCCCA": 2.2544999999999997,
+        "AGGGGGCCCC": 2.321028571428571,
+        "AGGGGGCCCG": 2.0798714285714284,
+        "AGGGGGCCCT": 2.487357142857143,
+        "AGGGGGGCCC": 2.321028571428571,
+        "AGGGGGGGCC": 2.3401714285714283,
+        "AGGGGGGGGC": 2.683285714285714,
+        "AGGGGGGGGG": 2.702428571428571,
+        "AGGGGGGGGT": 2.4612714285714286,
+        "CCCCCCCCCA": 2.4695714285714283,
+        "CCCCCCCCCC": 2.5361,
+        "CCCCCCCCCG": 2.294942857142857,
+        "CCCCCCCCCT": 2.702428571428571,
+        "CCCCCCCCGG": 1.9696571428571428,
+        "CCCCCCCCTA": 2.5665571428571425,
+        "CCCCCCCGGG": 1.7285,
+        "CCCCCCGGGC": 1.7093571428571426,
+        "CCCCCCGGGG": 1.7285,
+        "CCCCCCGGGT": 1.4873428571428569,
+        "CCCCCGGGCC": 1.366242857142857,
+        "CCCCCGGGGC": 1.7093571428571426,
+        "CCCCCGGGGG": 1.7285,
+        "CCCCCGGGGT": 1.4873428571428569,
+        "CCCCGGGCCC": 1.3471,
+        "CCCCGGGGCC": 1.366242857142857,
+        "CCCCGGGGGC": 1.7093571428571426,
+        "CCCCGGGGGG": 1.7285,
+        "CCCCGGGGGT": 1.4873428571428569,
+        "CGGGCCCCCA": 1.8470142857142857,
+        "CGGGCCCCCC": 1.9135428571428572,
+        "CGGGCCCCCG": 1.6723857142857141,
+        "CGGGCCCCCT": 2.0798714285714284,
+        "CGGGCCCCGG": 1.3471,
+        "CGGGCCCCTA": 1.9440000000000002,
+        "CGGGCCCGGG": 1.1059428571428571,
+        "CGGGGCCCCA": 1.8470142857142857,
+        "CGGGGCCCCC": 1.9135428571428572,
+        "CGGGGCCCCG": 1.6723857142857141,
+        "CGGGGCCCCT": 2.0798714285714284,
+        "CGGGGCCCGG": 1.3471,
+        "CGGGGCCCTA": 1.9440000000000002,
+        "CGGGGGCCCA": 1.8470142857142857,
+        "CGGGGGCCCC": 1.9135428571428572,
+        "CGGGGGCCCG": 1.6723857142857141,
+        "CGGGGGCCCT": 2.0798714285714284,
+        "CGGGGGGCCC": 1.9135428571428572,
+        "CGGGGGGGCC": 1.9326857142857141,
+        "CGGGGGGGGC": 2.2758,
+        "CGGGGGGGGG": 2.294942857142857,
+        "CGGGGGGGGT": 2.053785714285714,
+        "GCCCCCCCCA": 2.450428571428571,
+        "GCCCCCCCCC": 2.5169571428571422,
+        "GCCCCCCCCG": 2.2758,
+        "GCCCCCCCGG": 1.9505142857142856,
+        "GCCCCCCCTA": 2.5474142857142854,
+        "GCCCCCCGGG": 1.7093571428571426,
+        "GCCCCCGGGC": 1.6902142857142857,
+        "GCCCCCGGGG": 1.7093571428571426,
+        "GCCCCCGGGT": 1.4682,
+        "GCCCCGGGCC": 1.366242857142857,
+        "GCCCCGGGGC": 1.6902142857142857,
+        "GCCCCGGGGG": 1.7093571428571426,
+        "GCCCCGGGGT": 1.4682,
+        "GCCCGGGCCC": 1.3279571428571428,
+        "GCCCGGGGCC": 1.366242857142857,
+        "GCCCGGGGGC": 1.6902142857142857,
+        "GCCCGGGGGG": 1.7093571428571426,
+        "GCCCGGGGGT": 1.4682,
+        "GGCCCCCCCA": 2.1073142857142857,
+        "GGCCCCCCCC": 2.173842857142857,
+        "GGCCCCCCCG": 1.9326857142857141,
+        "GGCCCCCCCT": 2.3401714285714283,
+        "GGCCCCCCGG": 1.6074,
+        "GGCCCCCCTA": 2.2043,
+        "GGCCCCCGGG": 1.366242857142857,
+        "GGCCCCGGGG": 1.366242857142857,
+        "GGCCCCGGGT": 1.1250857142857142,
+        "GGCCCGGGCC": 1.0039857142857143,
+        "GGCCCGGGGG": 1.366242857142857,
+        "GGCCCGGGGT": 1.1250857142857142,
+        "GGGCCCCCCA": 2.0881714285714286,
+        "GGGCCCCCCC": 2.1546999999999996,
+        "GGGCCCCCCG": 1.9135428571428572,
+        "GGGCCCCCCT": 2.321028571428571,
+        "GGGCCCCCGG": 1.5882571428571428,
+        "GGGCCCCCTA": 2.185157142857143,
+        "GGGCCCCGGG": 1.3471,
+        "GGGCCCGGGC": 1.3279571428571428,
+        "GGGCCCGGGG": 1.3471,
+        "GGGCCCGGGT": 1.1059428571428571,
+        "GGGGCCCCCA": 2.0881714285714286,
+        "GGGGCCCCCC": 2.1546999999999996,
+        "GGGGCCCCCG": 1.9135428571428572,
+        "GGGGCCCCCT": 2.321028571428571,
+        "GGGGCCCCGG": 1.5882571428571428,
+        "GGGGCCCCTA": 2.185157142857143,
+        "GGGGCCCGGG": 1.3471,
+        "GGGGGGCCCA": 2.0881714285714286,
+        "GGGGGGCCCC": 2.1546999999999996,
+        "GGGGGGCCCG": 1.9135428571428572,
+        "GGGGGGCCCT": 2.321028571428571,
+        "GGGGGGGGCC": 2.173842857142857,
+        "GGGGGGGGGC": 2.5169571428571422,
+        "GGGGGGGGGG": 2.5361,
+        "GGGGGGGGGT": 2.294942857142857,
+        "TAGGGCCCCA": 2.1186285714285713,
+        "TAGGGCCCCC": 2.185157142857143,
+        "TAGGGCCCCG": 1.9440000000000002,
+        "TAGGGCCCCT": 2.3514857142857144,
+        "TAGGGCCCGG": 1.6187142857142856,
+        "TAGGGCCCTA": 2.2156142857142855,
+        "TAGGGGCCCA": 2.1186285714285713,
+        "TAGGGGCCCC": 2.185157142857143,
+        "TAGGGGCCCG": 1.9440000000000002,
+        "TAGGGGCCCT": 2.3514857142857144,
+        "TAGGGGGCCC": 2.185157142857143,
+        "TAGGGGGGCC": 2.2043,
+        "TAGGGGGGGC": 2.5474142857142854,
+        "TAGGGGGGGG": 2.5665571428571425,
+        "TAGGGGGGGT": 2.3253999999999997,
+        "TGGGCCCCCA": 2.021642857142857,
+        "TGGGCCCCCC": 2.0881714285714286,
+        "TGGGCCCCCG": 1.8470142857142857,
+        "TGGGCCCCCT": 2.2544999999999997,
+        "TGGGCCCCGG": 1.5217285714285713,
+        "TGGGCCCCTA": 2.1186285714285713,
+        "TGGGCCCGGG": 1.2805714285714287,
+        "TGGGGCCCCA": 2.021642857142857,
+        "TGGGGCCCCC": 2.0881714285714286,
+        "TGGGGCCCCG": 1.8470142857142857,
+        "TGGGGCCCCT": 2.2544999999999997,
+        "TGGGGCCCGG": 1.5217285714285713,
+        "TGGGGCCCTA": 2.1186285714285713,
+        "TGGGGGCCCA": 2.021642857142857,
+        "TGGGGGCCCC": 2.0881714285714286,
+        "TGGGGGCCCG": 1.8470142857142857,
+        "TGGGGGCCCT": 2.2544999999999997,
+        "TGGGGGGCCC": 2.0881714285714286,
+        "TGGGGGGGCC": 2.1073142857142857,
+        "TGGGGGGGGC": 2.450428571428571,
+        "TGGGGGGGGG": 2.4695714285714283,
+        "TGGGGGGGGT": 2.2284142857142855,
+    }
+    
+    seq = seq.upper()
+    if len(seq) != 10:
+        return 0.0
+    
+    return APHILIC_10MER_SCORES.get(seq, 0.0)
+
+def detect_aphilic_motifs(seq: str, sequence_name: str) -> List[Dict[str, Any]]:
+    """
+    Detect A-philic DNA structures using 10-mer tetranucleotide log2 odds scoring
+    
+    A-philic DNA represents sequences with high affinity for specific protein binding
+    and structural features that favor A-tract formation and protein-DNA interactions.
+    """
+    motifs = []
+    patterns = get_patterns_for_motif('APHILIC_DNA')
+    
+    for pattern_group, pattern_list in patterns.items():
+        for pattern_tuple in pattern_list:
+            if not pattern_tuple:
+                continue
+                
+            regex, pattern_id, group_idx, subclass, _, scale, min_runs, min_score, method = pattern_tuple
+            
+            for match in re.finditer(regex, seq):
+                start_pos = match.start() + 1
+                end_pos = match.end()
+                motif_seq = match.group(0)
+                
+                raw_score = aphilic_score(motif_seq)
+                normalized_score = min(raw_score / 3.0, 1.0)  # Normalize to 0-1 scale
+                
+                if raw_score >= min_score:
+                    # Classify A-philic confidence levels
+                    if raw_score >= 2.0:
+                        subclass = "High_A_philic"
+                        confidence = "High"
+                    elif raw_score >= 1.0:
+                        subclass = "Moderate_A_philic"
+                        confidence = "Moderate"
+                    else:
+                        subclass = "Low_A_philic"
+                        confidence = "Low"
+                    
+                    motif = {
+                        'Class': 9,
+                        'Subclass': subclass,
+                        'Start': start_pos,
+                        'End': end_pos,
+                        'Length': len(motif_seq),
+                        'Sequence': motif_seq,
+                        'Raw_Score': round(raw_score, 3),
+                        'Normalized_Score': round(normalized_score, 3),
+                        'Scoring_Method': method,
+                        'Pattern_ID': pattern_id,
+                        'Sequence_Name': sequence_name,
+                        'Confidence': confidence
                     }
                     motifs.append(motif)
     
