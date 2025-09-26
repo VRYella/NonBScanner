@@ -32,7 +32,7 @@ from nbdscanner import (
     analyze_sequence, analyze_multiple_sequences, 
     get_motif_classification_info
 )
-from utils_consolidated import (
+from utils import (
     parse_fasta, validate_sequence, get_basic_stats,
     export_to_json, export_to_csv, export_to_bed
 )
