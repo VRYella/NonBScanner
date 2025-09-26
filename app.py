@@ -10,12 +10,12 @@ from nbdscanner import (
     analyze_sequence, analyze_multiple_sequences,
     get_motif_classification_info, export_results_to_dataframe
 )
-from utils_consolidated import (
+from utils import (
     parse_fasta, gc_content, reverse_complement, wrap,
     get_basic_stats, export_to_bed, export_to_csv, export_to_json,
     validate_sequence, quality_check_motifs
 )
-from visualization_consolidated import (
+from visualization import (
     plot_motif_distribution, plot_coverage_map, plot_score_distribution,
     plot_length_distribution, plot_nested_pie_chart, save_all_plots,
     MOTIF_CLASS_COLORS
@@ -167,6 +167,7 @@ st.markdown("""
 
 # ---------- CONSTANTS ----------
 # Use classification config if available, otherwise fallback to defaults
+CONFIG_AVAILABLE = False  # Configuration not available, use fallback
 if CONFIG_AVAILABLE:
     MOTIF_ORDER = list(MOTIF_LENGTH_LIMITS.keys())
     # Expand special cases
@@ -833,7 +834,7 @@ with tab_pages["Results"]:
             with viz_tabs[3]:  # Interactive
                 st.subheader("Interactive Analysis")
                 try:
-                    from visualization_consolidated import create_interactive_coverage_plot
+                    from visualization import create_interactive_coverage_plot
                     interactive_fig = create_interactive_coverage_plot(motifs, sequence_length, 
                                                                      title=f"Interactive Motif Browser - {sequence_name}")
                     if hasattr(interactive_fig, 'show'):  # Plotly figure
