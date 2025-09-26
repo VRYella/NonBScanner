@@ -349,14 +349,14 @@ with tab_pages["Upload & Analyze"]:
                 for line in content.splitlines():
                     if line.startswith(">"):
                         if cur_seq:
-                            seqs.append(parse_fasta(cur_seq))
+                            seqs.append(cur_seq)
                             names.append(cur_name if cur_name else f"Seq{len(seqs)}")
                         cur_name = line.strip().lstrip(">")
                         cur_seq = ""
                     else:
                         cur_seq += line.strip()
                 if cur_seq:
-                    seqs.append(parse_fasta(cur_seq))
+                    seqs.append(cur_seq)
                     names.append(cur_name if cur_name else f"Seq{len(seqs)}")
                 if seqs:
                     st.success(f"✅ Loaded {len(seqs)} sequences.")
@@ -377,14 +377,14 @@ with tab_pages["Upload & Analyze"]:
                 for line in seq_input.splitlines():
                     if line.startswith(">"):
                         if cur_seq:
-                            seqs.append(parse_fasta(cur_seq))
+                            seqs.append(cur_seq)
                             names.append(cur_name if cur_name else f"Seq{len(seqs)}")
                         cur_name = line.strip().lstrip(">")
                         cur_seq = ""
                     else:
                         cur_seq += line.strip()
                 if cur_seq:
-                    seqs.append(parse_fasta(cur_seq))
+                    seqs.append(cur_seq)
                     names.append(cur_name if cur_name else f"Seq{len(seqs)}")
                 if seqs:
                     st.success(f"✅ Pasted {len(seqs)} sequences.")
@@ -401,8 +401,9 @@ with tab_pages["Upload & Analyze"]:
             ex_type = st.radio("Example Type:", ["Single Example", "Multi-FASTA Example"], horizontal=True)
             if ex_type == "Single Example":
                 if st.button("🔬 Load Single Example"):
-                    seqs = [parse_fasta(EXAMPLE_FASTA)]
-                    names = ["Example Sequence"]
+                    parsed_fasta = parse_fasta(EXAMPLE_FASTA)
+                    seqs = list(parsed_fasta.values())
+                    names = list(parsed_fasta.keys())
                     st.success("✅ Single example sequence loaded.")
                     stats = get_basic_stats(seqs[0])
                     st.code(EXAMPLE_FASTA, language="fasta")
@@ -414,14 +415,14 @@ with tab_pages["Upload & Analyze"]:
                     for line in EXAMPLE_MULTI_FASTA.splitlines():
                         if line.startswith(">"):
                             if cur_seq:
-                                seqs.append(parse_fasta(cur_seq))
+                                seqs.append(cur_seq)
                                 names.append(cur_name if cur_name else f"Seq{len(seqs)}")
                             cur_name = line.strip().lstrip(">")
                             cur_seq = ""
                         else:
                             cur_seq += line.strip()
                     if cur_seq:
-                        seqs.append(parse_fasta(cur_seq))
+                        seqs.append(cur_seq)
                         names.append(cur_name if cur_name else f"Seq{len(seqs)}")
                     st.success(f"✅ Multi-FASTA example loaded with {len(seqs)} sequences.")
                     for i, seq in enumerate(seqs[:3]):
