@@ -4,37 +4,40 @@ import matplotlib.pyplot as plt
 import io
 import numpy as np
 from collections import Counter
-from Bio import Entrez, SeqIO
 
-from utils import (
-    parse_fasta, gc_content, reverse_complement, wrap
+# Import consolidated NBDScanner modules
+from nbdscanner import (
+    analyze_sequence, analyze_multiple_sequences,
+    get_motif_classification_info, export_results_to_dataframe
 )
-from motifs import get_basic_stats
-from motifs.base_motif import select_best_nonoverlapping_motifs
-# Import the new unified orchestrator
-from all_motifs_refactored import all_motifs_refactored
-from motifs import visualization as viz
-from motifs.enhanced_visualization import create_comprehensive_information_based_visualizations
-# Import class definitions for selection interface
-from class_definitions import CLASS_DEFINITIONS, DEFAULT_SELECTED_CLASSES, DEFAULT_SELECTED_SUBCLASSES
+from utils_consolidated import (
+    parse_fasta, gc_content, reverse_complement, wrap,
+    get_basic_stats, export_to_bed, export_to_csv, export_to_json,
+    validate_sequence, quality_check_motifs
+)
+from visualization_consolidated import (
+    plot_motif_distribution, plot_coverage_map, plot_score_distribution,
+    plot_length_distribution, plot_nested_pie_chart, save_all_plots,
+    MOTIF_CLASS_COLORS
+)
 
-# Import new configuration modules
+# Try to import Entrez for demo functionality
 try:
-    from classification_config import MOTIF_LENGTH_LIMITS, SCORING_METHODS, get_motif_limits
-    CONFIG_AVAILABLE = True
+    from Bio import Entrez, SeqIO
+    BIO_AVAILABLE = True
 except ImportError:
-    CONFIG_AVAILABLE = False
-    MOTIF_LENGTH_LIMITS = {}
-    SCORING_METHODS = {}
+    BIO_AVAILABLE = False
 
 # ---------- PAGE CONFIG ----------
 st.set_page_config(
-    page_title="Non-B DNA Motif Finder",
+    page_title="NBDScanner - Non-B DNA Motif Finder",
     layout="wide",
     page_icon="🧬",
-    menu_items={'About': "Non-B DNA Motif Finder | Developed by Dr. Venkata Rajesh Yella"}
+    menu_items={'About': "NBDScanner | Developed by Dr. Venkata Rajesh Yella"}
 )
 
+# Get motif classification info
+CLASSIFICATION_INFO = get_motif_classification_info()
 
 # ---------- PATCH: Ensure every motif has Subclass ----------
 def ensure_subclass(motif):
@@ -44,7 +47,7 @@ def ensure_subclass(motif):
             motif['Subclass'] = motif.get('Subtype', 'Other')
         return motif
     else:
-        # Handle non-dict motifs gracefully (could log/warn here)
+        # Handle non-dict motifs gracefully
         return {'Subclass': 'Other', 'Motif': motif}
 
 
@@ -209,16 +212,9 @@ else:
         "Multimeric G4","i-Motif","AC-Motif","A-philic DNA","Hybrid","Non-B DNA Clusters"
     ]
 
-MOTIF_COLORS = {
-    "Curved DNA": "#FF9AA2","Z-DNA": "#FFB7B2","eGZ (Extruded-G)": "#6A4C93",
-    "Slipped DNA": "#FFDAC1","Slipped DNA (Direct Repeat)": "#FFDAC1","Slipped DNA (STR)": "#FFE4B3",
-    "R-Loop": "#FFD3B6","Cruciform": "#E2F0CB",
-    "Triplex DNA": "#B5EAD7","Sticky DNA": "#DCB8CB","G-Triplex": "#C7CEEA",
-    "G4": "#A2D7D8","Relaxed G4": "#A2D7B8","Bulged G4": "#A2A7D8",
-    "Bipartite G4": "#A2D788","Multimeric G4": "#A2A7B8","i-Motif": "#B0C4DE",
-    "A-philic DNA": "#E6B8F7",  # NEW: Light purple for A-philic DNA
-    "Hybrid": "#C1A192","Non-B DNA Clusters": "#A2C8CC","AC-Motif": "#F5B041"
-}
+# Update color mapping to match the consolidated system
+MOTIF_COLORS = MOTIF_CLASS_COLORS  # Use the consolidated colors
+
 PAGES = {
     "Home": "Overview",
     "Upload & Analyze": "Sequence Upload and Motif Analysis",
@@ -226,8 +222,11 @@ PAGES = {
     "Download": "Export Data",
     "Documentation": "Scientific Documentation & References"
 }
-Entrez.email = "raazbiochem@gmail.com"
-Entrez.api_key = None
+
+# Remove Entrez setup since it's optional
+if BIO_AVAILABLE:
+    Entrez.email = "raazbiochem@gmail.com"
+    Entrez.api_key = None
 
 EXAMPLE_FASTA = """>Example Sequence
 ATCGATCGATCGAAAATTTTATTTAAATTTAAATTTGGGTTAGGGTTAGGGTTAGGGCCCCCTCCCCCTCCCCCTCCCC
@@ -260,16 +259,13 @@ ATCGATCGATCGATCGATCGCCCTACCCTACCCTACCCAAACCCTACCCTACCCTACCCAAAAAAAAAAAAAAAA
 AAAAAAAAAAAGATCTAGATCTAGATCTAGATCTAGATCTAGATCTGAAAGAAAGAAAGAAAGAAAGAAAGAAA
 """
 
-# Streamlined session state - removed unnecessary configuration switches
+# Streamlined session state using consolidated system
 for k, v in {
     'seqs': [],
     'names': [],
     'results': [],
     'summary_df': pd.DataFrame(),
-    'hotspots': [],
-    'analysis_status': "Ready",
-    'selected_classes': DEFAULT_SELECTED_CLASSES.copy(),
-    'selected_subclasses': DEFAULT_SELECTED_SUBCLASSES.copy()
+    'analysis_status': "Ready"
 }.items():
     if k not in st.session_state:
         st.session_state[k] = v
@@ -487,40 +483,21 @@ with tab_pages["Upload & Analyze"]:
     with col_right:
         st.markdown("### 🚀 Analysis & Run")
         
-        # ========== SUCCINCT MOTIF CLASS SELECTOR ========== 
-        
-        # Quick action buttons
-        qa1, qa2, qa3 = st.columns([1,1,1])
-        with qa1:
-            if st.button("🎯 All", use_container_width=True, help="Select all classes", key="select_all_classes"):
-                st.session_state["selected_classes"] = list(CLASS_DEFINITIONS.keys())
-        with qa2:
-            if st.button("❌ Clear", use_container_width=True, help="Clear selection", key="clear_all_classes"):
-                st.session_state["selected_classes"] = []
-        with qa3:
-            if st.button("🎲 Core", use_container_width=True, help="Select core classes", key="select_core_classes"):
-                core = ["Curved_DNA", "G-Quadruplex", "Z-DNA", "Slipped_DNA", "Cruciform"]
-                st.session_state["selected_classes"] = [c for c in core if c in CLASS_DEFINITIONS]
-        
-        # Compact multi-select for motif classes
-        selected_classes = st.multiselect(
-            "Choose motif classes to analyze:",
-            options=list(CLASS_DEFINITIONS.keys()),
-            default=st.session_state.get("selected_classes", []),
-            format_func=lambda x: f"{CLASS_DEFINITIONS[x]['name']} ({len(CLASS_DEFINITIONS[x]['subclasses'])} subclasses)",
-            help="Select one or more motif classes for analysis"
-        )
-        st.session_state["selected_classes"] = selected_classes
-        
-        # Show selection summary
-        if selected_classes:
-            total_subclasses = sum(len(CLASS_DEFINITIONS[cls]["subclasses"]) for cls in selected_classes)
-            st.success(f"✅ {len(selected_classes)} classes selected ({total_subclasses} subclasses)")
-        else:
-            st.warning("⚠️ No classes selected")
-        
-        # ========== OVERLAP OPTIONS ========== 
+        # Analysis controls simplified
         st.markdown("### ⚙️ Analysis Options")
+        
+        # Enable all classes by default in consolidated system
+        st.info("🔬 **NBDScanner detects all 11 motif classes with 22+ subclasses automatically**")
+        
+        # Simple options
+        col1, col2 = st.columns(2)
+        with col1:
+            detailed_output = st.checkbox("Detailed Analysis", value=True, 
+                                        help="Include comprehensive motif metadata")
+        with col2:
+            quality_check = st.checkbox("Quality Validation", value=True, 
+                                      help="Validate detected motifs")
+        
         
         overlap_option = st.radio(
             "Motif Overlap Handling:",
@@ -537,12 +514,9 @@ with tab_pages["Upload & Analyze"]:
         
         
         # ========== RUN ANALYSIS BUTTON ========== 
-        if st.button("🔬 Run Motif Analysis", type="primary", use_container_width=True, key="run_motif_analysis_main"):
-            # Validate selection
-            if not st.session_state.selected_classes:
-                st.error("❌ Please select at least one motif class to analyze.")
-                st.session_state.analysis_status = "Error"
-            elif not st.session_state.seqs:
+        if st.button("🔬 Run NBDScanner Analysis", type="primary", use_container_width=True, key="run_motif_analysis_main"):
+            # Simplified validation
+            if not st.session_state.seqs:
                 st.error("❌ Please upload or input sequences before running analysis.")
                 st.session_state.analysis_status = "Error"
             else:
@@ -581,43 +555,23 @@ with tab_pages["Upload & Analyze"]:
                         for i, (seq, name) in enumerate(zip(st.session_state.seqs, st.session_state.names)):
                             progress = (i + 1) / len(st.session_state.seqs)
                             
-                            # Run the core analysis
-                            results = all_motifs_refactored(
-                                seq, name,
-                                nonoverlap=nonoverlap,
-                                report_hotspots=report_hotspots,
-                                calculate_conservation=calculate_conservation
-                            )
-                            
-                            # Filter results by selected classes if specified
-                            if analysis_classes:
-                                filtered_results = []
-                                for motif in results:
-                                    motif_class = motif.get('Class', motif.get('Type', 'Unknown'))
-                                    if motif_class in analysis_classes:
-                                        filtered_results.append(motif)
-                                results = filtered_results
+                            # Run the consolidated NBDScanner analysis
+                            results = analyze_sequence(seq, name)
                             
                             # Ensure all motifs have required fields
                             results = [ensure_subclass(motif) for motif in results]
                             all_results.append(results)
                             
-                            # Handle hotspots if present
-                            if isinstance(results, tuple) and len(results) == 2:
-                                motifs, hotspots = results
-                                all_results[-1] = motifs
-                                all_hotspots.extend(hotspots)
-                            
                             st.progress(progress, text=f"Analyzed {i+1}/{len(st.session_state.seqs)} sequences")
                     
                     # Store results
                     st.session_state.results = all_results
-                    st.session_state.hotspots = all_hotspots
                     
                     # Generate summary
                     summary = []
                     for i, results in enumerate(all_results):
-                        stats = get_basic_stats(st.session_state.seqs[i])
+                        seq = st.session_state.seqs[i]
+                        stats = get_basic_stats(seq, results)
                         summary.append({
                             'Sequence': st.session_state.names[i],
                             'Length': stats['Length'],
@@ -680,19 +634,19 @@ with tab_pages["Results"]:
             coverage_pct = stats.get("Motif Coverage %", 0)
             non_b_density = (filtered_count / sequence_length * 1000) if sequence_length > 0 else 0
             
-            # Enhanced summary card
+            # Enhanced summary card using consolidated stats
             st.markdown(f"""
             <div style='background: linear-gradient(90deg, #667eea 0%, #764ba2 100%); 
                         border-radius: 12px; padding: 15px; margin: 10px 0; color: white;'>
-                <h3 style='margin: 0; color: white; text-align: center;'>Comprehensive Non-B DNA Analysis</h3>
+                <h3 style='margin: 0; color: white; text-align: center;'>NBDScanner Analysis Results</h3>
                 <div style='display: flex; justify-content: space-around; margin-top: 15px; flex-wrap: wrap;'>
                     <div style='text-align: center; min-width: 120px;'>
-                        <h2 style='margin: 5px; color: #FFD700;'>{coverage_pct:.2f}%</h2>
-                        <p style='margin: 0; font-size: 16px;'>Motif Coverage*</p>
+                        <h2 style='margin: 5px; color: #FFD700;'>{stats.get("Coverage%", 0):.2f}%</h2>
+                        <p style='margin: 0; font-size: 16px;'>Sequence Coverage</p>
                     </div>
                     <div style='text-align: center; min-width: 120px;'>
-                        <h2 style='margin: 5px; color: #FFD700;'>{non_b_density:.2f}</h2>
-                        <p style='margin: 0; font-size: 16px;'>Non-B DNA Density*<br>(motifs/kb)</p>
+                        <h2 style='margin: 5px; color: #FFD700;'>{stats.get("Density", 0):.2f}</h2>
+                        <p style='margin: 0; font-size: 16px;'>Motif Density<br>(motifs/kb)</p>
                     </div>
                     <div style='text-align: center; min-width: 120px;'>
                         <h2 style='margin: 5px; color: #FFD700;'>{motif_count}</h2>
@@ -828,52 +782,68 @@ with tab_pages["Results"]:
                 display_df.columns = [col.replace('_', ' ') for col in display_df.columns]
                 st.dataframe(display_df, use_container_width=True, height=360)
             
-            # AUTOMATIC COMPREHENSIVE VISUALIZATION GENERATION
-            st.markdown('<h3>📊 Comprehensive Analysis - Information-Based Visualizations</h3>', unsafe_allow_html=True)
-            st.info("🎯 Generating all visualizations automatically (organized by information type, not plot type)")
+            # CONSOLIDATED VISUALIZATION SUITE
+            st.markdown('<h3>📊 NBDScanner Visualizations</h3>', unsafe_allow_html=True)
             
-            with st.spinner("Creating comprehensive information-based visualization suite..."):
+            # Create tabs for different visualization categories
+            viz_tabs = st.tabs(["📈 Distribution", "🗺️ Coverage Map", "📊 Statistics", "🎯 Interactive"])
+            
+            with viz_tabs[0]:  # Distribution
+                st.subheader("Motif Distribution Analysis")
                 try:
-                    # Generate comprehensive visualizations automatically
-                    static_plots, interactive_plots, detailed_stats = create_comprehensive_information_based_visualizations(
-                        df, sequence_length, sequence_name)
+                    fig1 = plot_motif_distribution(motifs, by='Class', title=f"Motif Classes - {sequence_name}")
+                    st.pyplot(fig1)
+                    plt.close(fig1)
                     
-                    # Display information-type organized visualizations
-                    visualization_categories = [
-                        ("📈 Coverage & Density Analysis", ["coverage_analysis", "detailed_coverage_map"]),
-                        ("📊 Distribution Analysis", ["distribution_analysis"]),
-                        ("🧬 Sequence Analysis", ["sequence_analysis"]),
-                        ("⚖️ Comparative Analysis", ["comparative_analysis"]),
-                        ("🔬 Advanced Analysis", ["advanced_analysis"])
-                    ]
+                    fig2 = plot_motif_distribution(motifs, by='Subclass', title=f"Motif Subclasses - {sequence_name}")
+                    st.pyplot(fig2) 
+                    plt.close(fig2)
                     
-                    for category_name, plot_keys in visualization_categories:
-                        st.markdown(f'<h4>{category_name}</h4>', unsafe_allow_html=True)
-                        
-                        # Display plots in this category
-                        for plot_key in plot_keys:
-                            if plot_key in static_plots:
-                                st.pyplot(static_plots[plot_key])
-                                plt.close(static_plots[plot_key])  # Free memory
-                    
-                    # Interactive Visualizations Section
-                    if interactive_plots:
-                        st.markdown('<h4>🎯 Interactive Visualizations</h4>', unsafe_allow_html=True)
-                        
-                        for plot_name, plot_fig in interactive_plots.items():
-                            st.plotly_chart(plot_fig, use_container_width=True)
-                    
-                    st.success("✅ All visualizations generated successfully! All plots are organized by information type.")
-                    
+                    # Pie chart
+                    fig3 = plot_nested_pie_chart(motifs, title=f"Class-Subclass Distribution - {sequence_name}")
+                    st.pyplot(fig3)
+                    plt.close(fig3)
                 except Exception as e:
-                    st.error(f"Error generating comprehensive visualizations: {e}")
-                    st.info("Falling back to basic visualization options...")
-                    
-                    # Fallback to basic visualization selector
-                    viz_options = [
-                        "Basic Charts", "Interactive Plots", "Statistical Analysis", 
-                        "Genomic Mapping", "Advanced Analysis"
-                    ]
+                    st.error(f"Error generating distribution plots: {e}")
+            
+            with viz_tabs[1]:  # Coverage Map
+                st.subheader("Sequence Coverage Analysis")
+                try:
+                    fig4 = plot_coverage_map(motifs, sequence_length, title=f"Motif Coverage - {sequence_name}")
+                    st.pyplot(fig4)
+                    plt.close(fig4)
+                except Exception as e:
+                    st.error(f"Error generating coverage map: {e}")
+            
+            with viz_tabs[2]:  # Statistics  
+                st.subheader("Statistical Analysis")
+                try:
+                    col1, col2 = st.columns(2)
+                    with col1:
+                        fig5 = plot_score_distribution(motifs, by_class=True, title="Score Distribution by Class")
+                        st.pyplot(fig5)
+                        plt.close(fig5)
+                    with col2:
+                        fig6 = plot_length_distribution(motifs, by_class=True, title="Length Distribution by Class") 
+                        st.pyplot(fig6)
+                        plt.close(fig6)
+                except Exception as e:
+                    st.error(f"Error generating statistical plots: {e}")
+            
+            with viz_tabs[3]:  # Interactive
+                st.subheader("Interactive Analysis")
+                try:
+                    from visualization_consolidated import create_interactive_coverage_plot
+                    interactive_fig = create_interactive_coverage_plot(motifs, sequence_length, 
+                                                                     title=f"Interactive Motif Browser - {sequence_name}")
+                    if hasattr(interactive_fig, 'show'):  # Plotly figure
+                        st.plotly_chart(interactive_fig, use_container_width=True)
+                    else:  # Matplotlib fallback
+                        st.pyplot(interactive_fig)
+                        plt.close(interactive_fig)
+                except Exception as e:
+                    st.error(f"Error generating interactive plots: {e}")
+                    st.info("Interactive plots require plotly. Install with: pip install plotly")
                     selected_viz = st.radio("Choose Visualization Category:", viz_options, horizontal=True)
             
                     # Simple fallback visualization for error cases
@@ -928,88 +898,64 @@ with tab_pages["Download"]:
             include_sequences = st.checkbox("Include Full Sequences", value=True,
                                            help="Include full motif sequences in export")
         
-        # Prepare data for export
-        df_all = []
+        # Prepare data for export using consolidated utilities
+        all_motifs = []
         for i, motifs in enumerate(st.session_state.results):
             for m in motifs:
-                export_row = m.copy()
-                # Only add Sequence Name if it's not already present
-                if 'Sequence Name' not in export_row:
-                    export_row['Sequence Name'] = st.session_state.names[i]
-                
-                # Handle class mapping for compatibility
-                if export_row['Class'] == "Z-DNA" and export_row.get("Subclass", "") == "eGZ (Extruded-G)":
-                    export_row['Class'] = "eGZ (Extruded-G)"
-                
-                # Filter sequence data if not requested
-                if not include_sequences:
-                    export_row.pop('Sequence', None)
-                
-                # Keep both score types (normalized and actual)
-                # No filtering of score columns
-                
-                df_all.append(export_row)
-        
-        df_all = pd.DataFrame(df_all)
-        
-        # Remove any duplicate columns that might have been created
-        df_all = df_all.loc[:, ~df_all.columns.duplicated()]
-        
-        # Replace underscores with spaces in column names for better readability
-        df_all.columns = [col.replace('_', ' ') for col in df_all.columns]
-        
-        # Remove any duplicate columns that might have been created after underscore replacement
-        df_all = df_all.loc[:, ~df_all.columns.duplicated()]
+                export_motif = m.copy()
+                if 'Sequence_Name' not in export_motif:
+                    export_motif['Sequence_Name'] = st.session_state.names[i]
+                all_motifs.append(export_motif)
         
         # Display preview
-        st.markdown("### 👀 Export Preview")
-        st.dataframe(df_all.head(10), use_container_width=True)
-        st.caption(f"Showing first 10 of {len(df_all)} total records")
+        if all_motifs:
+            df_preview = export_results_to_dataframe(all_motifs).head(10)
+            st.markdown("### 👀 Export Preview")
+            st.dataframe(df_preview, use_container_width=True)
+            st.caption(f"Showing first 10 of {len(all_motifs)} total records")
         
-        # Export buttons - Always provide both CSV and Excel
+        # Export buttons using consolidated functions
         st.markdown("### 💾 Download Files")
         col1, col2, col3 = st.columns(3)
         
         with col1:
-            csv_data = df_all.to_csv(index=False).encode("utf-8")
-            st.download_button(
-                "📄 Download CSV", 
-                data=csv_data, 
-                file_name="nbdfinder_results_both_scores.csv", 
-                mime="text/csv",
-                use_container_width=True,
-                help="CSV format with both normalized and actual scores"
-            )
+            # CSV Export
+            if all_motifs:
+                csv_data = export_to_csv(all_motifs)
+                st.download_button(
+                    "📄 Download CSV", 
+                    data=csv_data.encode('utf-8'), 
+                    file_name="nbdscanner_results.csv", 
+                    mime="text/csv",
+                    use_container_width=True,
+                    help="Comma-separated values format"
+                )
         
         with col2:
-            excel_data = io.BytesIO()
-            with pd.ExcelWriter(excel_data, engine='xlsxwriter') as writer:
-                df_all.to_excel(writer, index=False, sheet_name="Motifs")
-            
-            excel_data.seek(0)
-            st.download_button(
-                "📊 Download Excel", 
-                data=excel_data, 
-                file_name="nbdfinder_results_both_scores.xlsx", 
-                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                use_container_width=True,
-                help="Excel format with both normalized and actual scores"
-            )
+            # JSON Export  
+            if all_motifs:
+                json_data = export_to_json(all_motifs, pretty=True)
+                st.download_button(
+                    "📊 Download JSON", 
+                    data=json_data.encode('utf-8'), 
+                    file_name="nbdscanner_results.json", 
+                    mime="application/json",
+                    use_container_width=True,
+                    help="JSON format with metadata"
+                )
         
         with col3:
-            # Enhanced export options with new formats
-            if CONFIG_AVAILABLE:
-                config_summary = {
-                    'Analysis Parameters': {
-                        'Score Type': 'Both (Normalized and Actual)',
-                        'Normalized Scoring': True,  # Always use normalized scoring
-                        'Score Threshold': 0.0,  # Include all detected motifs
-                        'Overlaps Removed': 'Within class only',  # Overlaps prevented within class, allowed between classes
-                        'Hotspots Detected': True  # Always detect hotspots
-                    },
-                    'Motif Length Limits': MOTIF_LENGTH_LIMITS,
-                    'Scoring Methods': SCORING_METHODS
-                }
+            # BED Export
+            if all_motifs and st.session_state.names:
+                bed_data = export_to_bed(all_motifs, st.session_state.names[0])
+                st.download_button(
+                    "🧬 Download BED", 
+                    data=bed_data.encode('utf-8'), 
+                    file_name="nbdscanner_results.bed", 
+                    mime="text/plain",
+                    use_container_width=True,
+                    help="BED format for genome browsers"
+                )
                 
                 import json
                 config_json = json.dumps(config_summary, indent=2)
