@@ -281,8 +281,7 @@ def plot_nested_pie_chart(motifs: List[Dict[str, Any]],
         colors=all_subclass_colors,
         radius=1.0,
         labeldistance=1.1,
-        startangle=90,
-        alpha=0.7
+        startangle=90
     )
     
     ax.set_title(title, fontsize=16, pad=20)
