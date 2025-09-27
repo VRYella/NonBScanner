@@ -44,6 +44,13 @@ try:
 except ImportError:
     HYPERSCAN_AVAILABLE = False
 
+# Import pure Python scanner for specific classes
+try:
+    from nonb_pure_python import scan_sequence as pure_python_scan
+    PURE_PYTHON_AVAILABLE = True
+except ImportError:
+    PURE_PYTHON_AVAILABLE = False
+
 # =============================================================================
 # CORE MOTIF PATTERNS & DETECTION ALGORITHMS
 # =============================================================================
@@ -457,6 +464,7 @@ class MotifDetector:
     def analyze_sequence(self, sequence: str, sequence_name: str = "sequence") -> List[Dict[str, Any]]:
         """
         Main analysis function - detects all 11 motif classes with 22+ subclasses
+        Uses split approach: Pure Python for Slipped/Cruciform/Triplex, Hyperscan for others
         
         Args:
             sequence: DNA sequence to analyze
@@ -468,13 +476,24 @@ class MotifDetector:
         sequence = sequence.upper().strip()
         all_motifs = []
         
-        # Classes 1-9: Primary motif detection
-        primary_classes = [
-            'curved_dna', 'slipped_dna', 'cruciform', 'r_loop', 'triplex',
-            'g_quadruplex', 'i_motif', 'z_dna', 'a_philic'
+        # Split approach as requested:
+        # 1. Pure Python detection for Slipped DNA, Cruciform, and Triplex
+        if PURE_PYTHON_AVAILABLE:
+            pure_python_motifs = pure_python_scan(sequence, sequence_name)
+            all_motifs.extend(pure_python_motifs)
+        else:
+            # Fallback to original detection for these classes
+            fallback_classes = ['slipped_dna', 'cruciform', 'triplex']
+            for motif_class in fallback_classes:
+                class_motifs = self._detect_class_motifs(sequence, motif_class)
+                all_motifs.extend(class_motifs)
+        
+        # 2. Hyperscan-based detection for all other classes
+        hyperscan_classes = [
+            'curved_dna', 'r_loop', 'g_quadruplex', 'i_motif', 'z_dna', 'a_philic'
         ]
         
-        for motif_class in primary_classes:
+        for motif_class in hyperscan_classes:
             class_motifs = self._detect_class_motifs(sequence, motif_class)
             all_motifs.extend(class_motifs)
         
