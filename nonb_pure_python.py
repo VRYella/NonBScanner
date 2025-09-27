@@ -1,17 +1,25 @@
 #!/usr/bin/env python3
 """
-Non-B DNA unified scanner (pure Python)
+| **Parameter/Function**           | **Purpose/Range**                                              | **Typical Value**       | **Relevant Detector/Scoring**             | **Notes/Comment**                                                             |
+|----------------------------------|----------------------------------------------------------------|------------------------|-------------------------------------------|-------------------------------------------------------------------------------|
+| `KMER_DIRECT`                    | Direct repeat seed k-mer size                                  | 12                     | Direct Repeat                            | Seed for initial match, unit >= 10                                          |
+| `KMER_INVERT_SEED`               | Inverted/mirror repeat seed size                               | 8                      | Cruciform, Mirror/Triplex                 | Seed for palindrome/mirror seeding                                           |
+| `MIN_DIRECT_UNIT`                | Min direct repeat unit length                                  | 10                     | Direct Repeat                            | Lower bound for repeat unit                                                  |
+| `MAX_DIRECT_UNIT`                | Max direct repeat unit length                                  | 300                    | Direct Repeat                            | Upper bound for repeat unit                                                  |
+| `MAX_DIRECT_SPACER`              | Max allowed spacer between direct repeats                      | 10                     | Direct Repeat                            | Max gap between repeat units                                                 |
+| `STR_MIN_UNIT`                   | Min STR unit length                                            | 1                      | STR                                      | Shortest repeat unit for STR detection                                       |
+| `STR_MAX_UNIT`                   | Max STR unit length                                            | 9                      | STR                                      | Longest repeat unit for STR detection                                        |
+| `STR_MIN_TOTAL_LEN`              | Min total STR length                                           | 10                     | STR                                      | Ensures STRs are significant                                                 |
+| `MIN_CRUCIFORM_ARM`              | Min arm length for cruciform/inverted repeat                   | 6                      | Cruciform/Inverted                       | Shortest palindrome arm detected                                             |
+| `MAX_CRUCIFORM_SPACER`           | Max allowed spacer in cruciform/inverted repeats               | 100                    | Cruciform/Inverted                       | Max gap between palindrome arms                                              |
+| `MIN_TRIPLEX_ARM`                | Min arm length for triplex/mirror repeat                       | 10                     | Mirror/Triplex                           | Shortest arm for triplex detection                                           |
+| `MAX_TRIPLEX_SPACER`             | Max allowed spacer in triplex/mirror repeats                   | 100                    | Mirror/Triplex                           | Max gap between arms                                                         |
+| `TRIPLEX_PURITY`                 | Min purine/pyrimidine purity for triplex/mirror                | 0.90                   | Mirror/Triplex                           | Fraction of A/G or C/T required in arm                                      |
+| **score_direct**                 | Scores direct repeats by unit len, repeat count, and spacer    | -                      | Direct Repeat                            | Penalizes by spacer, saturates via logistic curve                            |
+| **score_STR**                    | Scores STRs by total length and unit length                    | -                      | STR                                      | Favors longer repeats                                                        |
+| **score_cruciform**              | Scores cruciform/inverted by arm length and spacer             | -                      | Cruciform/Inverted                       | Prefers long arms, penalizes large spacer                                    |
+| **score_triplex**                | Scores triplex/mirror by arm length, purity, and spacer        | -                      | Mirror/Triplex                           | Penalizes by spacer, boosts for purity above threshold          
 
-Detects:
- - Direct repeats (unit_len 10..300, spacer <=10)
- - STRs (unit 1..9, total_len >=10)
- - Cruciform / Inverted repeats (arm >=6, spacer <=100)
- - Mirror / Triplex repeats (arm >=10, spacer <=100, purine/pyrimidine >90%)
-
-Outputs TSV lines with columns:
-motif_id,sequence_name,class,subclass,start,end,length,sequence,raw_score,normalized_score,strand,details
-
-Tune parameters near top of file.
 """
 
 from collections import defaultdict
