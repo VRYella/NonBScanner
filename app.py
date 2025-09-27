@@ -959,15 +959,32 @@ with tab_pages["Download"]:
                     use_container_width=True,
                     help="BED format for genome browsers"
                 )
-                
+            
+            # Config Export - always available when results exist
+            if all_motifs:
                 import json
+                # Create a basic configuration summary
+                config_summary = {
+                    "analysis_info": {
+                        "tool": "NBDScanner",
+                        "version": "2024.1",
+                        "motif_classes_detected": list(set(m.get('Class', 'Unknown') for m in all_motifs)),
+                        "total_sequences_analyzed": len(st.session_state.names) if hasattr(st.session_state, 'names') else 0,
+                        "total_motifs_found": len(all_motifs)
+                    },
+                    "detection_parameters": {
+                        "all_classes_enabled": True,
+                        "consolidated_system": True
+                    }
+                }
                 config_json = json.dumps(config_summary, indent=2)
                 st.download_button(
                     "⚙️ Download Config", 
                     data=config_json, 
                     file_name="analysis_configuration.json", 
                     mime="application/json",
-                    use_container_width=True
+                    use_container_width=True,
+                    help="Analysis configuration and metadata"
                 )
         
         # Prepare data for genome browser exports
