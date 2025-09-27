@@ -266,7 +266,8 @@ for k, v in {
     'names': [],
     'results': [],
     'summary_df': pd.DataFrame(),
-    'analysis_status': "Ready"
+    'analysis_status': "Ready",
+    'selected_classes': []  # Initialize empty list for motif class selection
 }.items():
     if k not in st.session_state:
         st.session_state[k] = v
