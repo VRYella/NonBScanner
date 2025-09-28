@@ -553,7 +553,7 @@ class MotifDetector:
 # =============================================================================
 
 def analyze_sequence(sequence: str, sequence_name: str = "sequence", 
-                    detailed: bool = True) -> Union[List[Dict[str, Any]], Dict[str, Any]]:
+                    detailed: bool = True, use_modular: bool = True) -> Union[List[Dict[str, Any]], Dict[str, Any]]:
     """
     Analyze DNA sequence for all Non-B DNA motif classes
     
@@ -561,10 +561,20 @@ def analyze_sequence(sequence: str, sequence_name: str = "sequence",
         sequence: DNA sequence string
         sequence_name: Identifier for the sequence
         detailed: If True, return detailed results; if False, return summary
+        use_modular: If True, uses new modular architecture; if False, uses legacy centralized approach
         
     Returns:
         List of motif dictionaries or summary dictionary
     """
+    if use_modular:
+        # Use the new modular architecture
+        try:
+            from modular_scanner import analyze_sequence as modular_analyze
+            return modular_analyze(sequence, sequence_name, detailed)
+        except ImportError:
+            print("Warning: Modular scanner not available, falling back to legacy approach")
+    
+    # Legacy centralized approach
     detector = MotifDetector()
     motifs = detector.analyze_sequence(sequence, sequence_name)
     
@@ -585,27 +595,61 @@ def analyze_sequence(sequence: str, sequence_name: str = "sequence",
 
 def get_motif_classification_info() -> Dict[str, Any]:
     """Get comprehensive information about the 11-class, 22+ subclass system"""
-    return {
-        'version': '2024.1',
-        'total_classes': 11,
-        'total_subclasses': '22+',
-        'classification': {
-            1: {'name': 'Curved DNA', 'subclasses': ['Global curvature', 'Local Curvature']},
-            2: {'name': 'Slipped DNA', 'subclasses': ['Direct Repeat', 'STR']},
-            3: {'name': 'Cruciform DNA', 'subclasses': ['Inverted Repeats']},
-            4: {'name': 'R-loop', 'subclasses': ['R-loop formation sites']},
-            5: {'name': 'Triplex', 'subclasses': ['Triplex', 'Sticky DNA']},
-            6: {'name': 'G-Quadruplex Family', 'subclasses': [
-                'Multimeric G4', 'Canonical G4', 'Relaxed G4', 'Bulged G4',
-                'Bipartite G4', 'Imperfect G4', 'G-Triplex intermediate'
-            ]},
-            7: {'name': 'i-Motif Family', 'subclasses': ['Canonical i-motif', 'Relaxed i-motif', 'AC-motif']},
-            8: {'name': 'Z-DNA', 'subclasses': ['Z-DNA', 'eGZ (Extruded-G) DNA']},
-            9: {'name': 'A-philic DNA', 'subclasses': ['A-philic DNA']},
-            10: {'name': 'Hybrid', 'subclasses': ['Dynamic overlaps']},
-            11: {'name': 'Non-B DNA Clusters', 'subclasses': ['Dynamic clusters']}
+    # Try to get info from modular architecture first
+    try:
+        from modular_scanner import get_motif_classification_info as modular_info
+        modular_data = modular_info()
+        
+        # Enhanced info combining modular data with classification details
+        return {
+            'version': '2024.1',
+            'architecture': 'modular',
+            'total_classes': 11,
+            'total_subclasses': '22+',
+            'total_detectors': modular_data.get('total_detectors', 9),
+            'total_patterns': modular_data.get('total_patterns', 54),
+            'classification': {
+                1: {'name': 'Curved DNA', 'subclasses': ['Global curvature', 'Local Curvature']},
+                2: {'name': 'Slipped DNA', 'subclasses': ['Direct Repeat', 'STR']},
+                3: {'name': 'Cruciform DNA', 'subclasses': ['Inverted Repeats']},
+                4: {'name': 'R-loop', 'subclasses': ['R-loop formation sites']},
+                5: {'name': 'Triplex', 'subclasses': ['Triplex', 'Sticky DNA']},
+                6: {'name': 'G-Quadruplex Family', 'subclasses': [
+                    'Multimeric G4', 'Canonical G4', 'Relaxed G4', 'Bulged G4',
+                    'Bipartite G4', 'Imperfect G4', 'G-Triplex intermediate'
+                ]},
+                7: {'name': 'i-Motif Family', 'subclasses': ['Canonical i-motif', 'Relaxed i-motif', 'AC-motif']},
+                8: {'name': 'Z-DNA', 'subclasses': ['Z-DNA', 'eGZ (Extruded-G) DNA']},
+                9: {'name': 'A-philic DNA', 'subclasses': ['A-philic DNA']},
+                10: {'name': 'Hybrid', 'subclasses': ['Dynamic overlaps']},
+                11: {'name': 'Non-B DNA Clusters', 'subclasses': ['Dynamic clusters']}
+            },
+            'detector_details': modular_data.get('detectors', {})
         }
-    }
+    except ImportError:
+        # Fallback to legacy info
+        return {
+            'version': '2024.1',
+            'architecture': 'legacy',
+            'total_classes': 11,
+            'total_subclasses': '22+',
+            'classification': {
+                1: {'name': 'Curved DNA', 'subclasses': ['Global curvature', 'Local Curvature']},
+                2: {'name': 'Slipped DNA', 'subclasses': ['Direct Repeat', 'STR']},
+                3: {'name': 'Cruciform DNA', 'subclasses': ['Inverted Repeats']},
+                4: {'name': 'R-loop', 'subclasses': ['R-loop formation sites']},
+                5: {'name': 'Triplex', 'subclasses': ['Triplex', 'Sticky DNA']},
+                6: {'name': 'G-Quadruplex Family', 'subclasses': [
+                    'Multimeric G4', 'Canonical G4', 'Relaxed G4', 'Bulged G4',
+                    'Bipartite G4', 'Imperfect G4', 'G-Triplex intermediate'
+                ]},
+                7: {'name': 'i-Motif Family', 'subclasses': ['Canonical i-motif', 'Relaxed i-motif', 'AC-motif']},
+                8: {'name': 'Z-DNA', 'subclasses': ['Z-DNA', 'eGZ (Extruded-G) DNA']},
+                9: {'name': 'A-philic DNA', 'subclasses': ['A-philic DNA']},
+                10: {'name': 'Hybrid', 'subclasses': ['Dynamic overlaps']},
+                11: {'name': 'Non-B DNA Clusters', 'subclasses': ['Dynamic clusters']}
+            }
+        }
 
 # =============================================================================
 # BATCH PROCESSING & UTILITIES
