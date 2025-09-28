@@ -14,10 +14,7 @@ def get_patterns(self) -> Dict[str, List[Tuple]]:
         'relaxed_imotif': [
             (r'C{2,}[ATGC]{1,12}C{2,}[ATGC]{1,12}C{2,}[ATGC]{1,12}C{2,}', 'IM_7_3', 'Relaxed i-motif', 'Relaxed i-motif', 12, 'imotif_score', 0.80, 'Potential i-motif structures', 'Mergny 1995'),
         ],
-        # keep older ac heuristics (optional), but Hur detection is separate
-        'ac_motif_heuristic': [
-            (r'(?:AC){6,}', 'IM_7_h1', 'AC-motif (heuristic)', 'AC-motif', 10, 'imotif_score', 0.6, 'heuristic alternating AC', 'heuristic'),
-        ],
+
     }
 
 # ---------------- validated-sequence utilities ----------------
