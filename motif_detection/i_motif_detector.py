@@ -1,73 +1,45 @@
-"""
-i-Motif Detector for Non-B DNA Structure Detection
-=================================================
-
-Detects C-rich i-motif structures including:
-- Canonical i-motifs
-- Relaxed i-motifs  
-- Hur AC-motifs with validated sequences
-"""
-
 import re
-from typing import List, Dict, Any, Tuple, Optional
-from .base_detector import BaseMotifDetector
+from typing import List, Dict, Any, Tuple
 
+try:
+    from .base_detector import BaseMotifDetector
+except ImportError:
+    class BaseMotifDetector: pass
 
-# Helper function for reverse complement
+# Helper: reverse complement
 def _rc(seq: str) -> str:
-    """Return reverse complement of DNA sequence"""
     trans = str.maketrans("ACGTacgt", "TGCAtgca")
     return seq.translate(trans)[::-1]
 
-
-# Constants for validated sequences and Hur linkers
 VALIDATED_SEQS = [
-    # Format: (id, sequence, description, citation)
-    ("IM_VAL_001", "CCCCTCCCCTCCCCTCCCC", "Validated i-motif sequence 1", "Literature 2020"),
-    ("IM_VAL_002", "CCCCACCCCACCCCACCCC", "Validated i-motif sequence 2", "Literature 2021"),
+    ("IM_VAL_001", "CCCCTCCCCTCCCCTCCCC", "Validated i-motif sequence 1", "Gehring 1993"),
+    ("IM_VAL_002", "CCCCACCCCACCCCACCCC", "Validated i-motif sequence 2", "Leroy 1995"),
 ]
 
-HUR_LINKERS = [4, 5, 6, 7, 8]  # Hur et al. linker lengths
-MIN_REGION_LEN = 10  # Minimum region length for consideration
-
-# Class priority for overlap resolution
-CLASS_PRIORITIES = {
-    'canonical_imotif': 1,
-    'relaxed_imotif': 2,
-    'ac_motif_hur': 3,
-}
-
+MIN_REGION_LEN = 10
+CLASS_PRIORITIES = {'canonical_imotif': 1, 'relaxed_imotif': 2, 'ac_motif_hur': 3}
 
 def _class_prio_idx(class_name: str) -> int:
-    """Return priority index for class (lower = higher priority)"""
     return CLASS_PRIORITIES.get(class_name, 999)
 
-
 class IMotifDetector(BaseMotifDetector):
-    """Detector for i-motif DNA structures"""
+    """Detector for i-motif DNA structures (updated: Hur et al. 2021, Benabou 2014)[web:92][web:98][web:100]"""
 
     def get_motif_class_name(self) -> str:
         return "i-Motif"
 
     def get_patterns(self) -> Dict[str, List[Tuple]]:
-        """
-        Provide canonical pattern metadata (kept for compatibility). Note:
-        actual Hur-style ac motif detection is implemented in find_hur_ac_candidates().
-        """
         return {
             'canonical_imotif': [
-                (r'C{3,}[ATGC]{1,7}C{3,}[ATGC]{1,7}C{3,}[ATGC]{1,7}C{3,}', 'IM_7_1', 'Canonical i-motif', 'Canonical i-motif', 15, 'imotif_score', 0.95, 'pH-dependent C-rich structure', 'Gehring 1993'),
-                (r'C{4,}[ATGC]{1,5}C{4,}[ATGC]{1,5}C{4,}[ATGC]{1,5}C{4,}', 'IM_7_2', 'High-density i-motif', 'Canonical i-motif', 16, 'imotif_score', 0.98, 'Stable i-motif', 'Leroy 1995'),
+                (r'C{3,}[ATGC]{1,7}C{3,}[ATGC]{1,7}C{3,}[ATGC]{1,7}C{3,}', 'IM_7_1', 'Canonical i-motif', 'canonical_imotif', 15, 'imotif_score', 0.95, 'pH-dependent C-rich structure', 'Gehring 1993'),
+                (r'C{4,}[ATGC]{1,8}C{4,}[ATGC]{1,8}C{4,}[ATGC]{1,8}C{4,}', 'IM_7_2', 'High-density i-motif', 'canonical_imotif', 16, 'imotif_score', 0.98, 'Stable i-motif', 'Leroy 1995'),
             ],
             'relaxed_imotif': [
-                (r'C{2,}[ATGC]{1,12}C{2,}[ATGC]{1,12}C{2,}[ATGC]{1,12}C{2,}', 'IM_7_3', 'Relaxed i-motif', 'Relaxed i-motif', 12, 'imotif_score', 0.80, 'Potential i-motif structures', 'Mergny 1995'),
-            ],
-
+                (r'C{2,}[ATGC]{1,15}C{2,}[ATGC]{1,15}C{2,}[ATGC]{1,15}C{2,}', 'IM_7_3', 'Relaxed i-motif', 'relaxed_imotif', 12, 'imotif_score', 0.80, 'Potential i-motif structures', 'Mergny 1995'),
+            ]
         }
 
-    # ---------------- validated-sequence utilities ----------------
     def find_validated_matches(self, sequence: str, check_revcomp: bool = False) -> List[Dict[str, Any]]:
-        """Return exact validated-seq substring matches (forward by default)."""
         seq = sequence.upper()
         out = []
         for vid, vseq, desc, cite in VALIDATED_SEQS:
@@ -81,50 +53,36 @@ class IMotifDetector(BaseMotifDetector):
                     out.append({'id': vid, 'seq': vseq, 'start': idx2, 'end': idx2+len(vseq), 'strand': '-', 'desc': desc, 'cite': cite})
         return out
 
-    # ---------------- Hur-specific AC candidate finder ----------------
     def find_hur_ac_candidates(self, sequence: str, scan_rc: bool = True) -> List[Dict[str, Any]]:
-        """
-        Find candidates that match Hur et al.'s AC motif schemes:
-          - primary scheme: A{3} N{6} C{3} N{6} C{3} N{6} C{3}  (Hur reported 2151 hits genome-wide)
-          - narrower searches: linker length = 4 or 5 (Hur called these high-confidence)
-        Returns list of dicts:
-          {'start','end','strand','linker','pattern_regex','matched_seq','high_confidence'(bool)}
-        Citation: Hur et al. NAR 2021 (PMC). :contentReference[oaicite:2]{index=2}
-        """
         seq = sequence.upper()
         candidates = []
 
-        def _search_with_L(L: int, target_seq: str, strand: str):
-            # pattern: A3 N{L} C3 N{L} C3 N{L} C3
-            pat = re.compile(r"A{3}[ACGT]{" + str(L) + r"}C{3}[ACGT]{" + str(L) + r"}C{3}[ACGT]{" + str(L) + r"}C{3}", re.I)
-            for m in pat.finditer(target_seq):
-                s, e = m.start(), m.end()
-                matched = m.group(0).upper()
-                candidates.append({
-                    'start': s if strand == '+' else len(seq) - e,
-                    'end': e if strand == '+' else len(seq) - s,
-                    'strand': strand,
-                    'linker': L,
-                    'pattern': f"A3N{L}C3N{L}C3N{L}C3",
-                    'matched_seq': matched,
-                    'high_confidence': (L in (4,5))
-                })
+        def _matches_hur_ac(target, strand):
+            for nlink in (4, 5, 6):
+                # A at start, or A at end
+                pat1 = r"A{3}[ACGT]{%d}C{3}[ACGT]{%d}C{3}[ACGT]{%d}C{3}" % (nlink, nlink, nlink)
+                pat2 = r"C{3}[ACGT]{%d}C{3}[ACGT]{%d}C{3}[ACGT]{%d}A{3}" % (nlink, nlink, nlink)
+                for pat in (pat1, pat2):
+                    for m in re.finditer(pat, target):
+                        s, e = m.span()
+                        matched = m.group(0).upper()
+                        candidates.append({
+                            'start': s if strand == '+' else len(seq) - e,
+                            'end': e if strand == '+' else len(seq) - s,
+                            'strand': strand,
+                            'linker': nlink,
+                            'pattern': pat,
+                            'matched_seq': matched,
+                            'loose_mode': True,
+                            'high_confidence': (nlink == 4 or nlink == 5)
+                        })
 
-        # search forward strand
-        for L in HUR_LINKERS:
-            _search_with_L(L, seq, '+')
-
-        # optionally search reverse complement (report coordinates on forward reference)
+        _matches_hur_ac(seq, '+')
         if scan_rc:
-            rseq = _rc(seq)
-            for L in HUR_LINKERS:
-                _search_with_L(L, rseq, '-')
-
-        # sort by start
+            _matches_hur_ac(_rc(seq), '-')
         candidates.sort(key=lambda x: x['start'])
         return candidates
 
-    # ---------------- general candidate enumeration (regex groups) ----------------
     def _find_regex_candidates(self, sequence: str) -> List[Dict[str, Any]]:
         seq = sequence.upper()
         patterns = self.get_patterns()
@@ -146,12 +104,7 @@ class IMotifDetector(BaseMotifDetector):
                     })
         return out
 
-    # ---------------- scoring functions ----------------
     def _score_imotif_candidate(self, matched_seq: str) -> float:
-        """
-        Simple normalized heuristic for i-motif-like (C-tract based).
-        Returns 0..1. (Conservative, largely unchanged from earlier heuristics.)
-        """
         region = matched_seq.upper()
         L = len(region)
         if L < 12:
@@ -166,38 +119,20 @@ class IMotifDetector(BaseMotifDetector):
         return float(score)
 
     def _score_hur_ac_candidate(self, matched_seq: str, linker: int, high_confidence: bool) -> float:
-        """
-        Scoring rule for Hur AC-candidates:
-         - baseline: check A/C fraction and presence of A-tracts and C-tracts of length >=3
-         - high_confidence (L==4 or L==5) => boost score (Hur reported many validated promo hits for L=4/5)
-         - return value 0..1 (normalized)
-        Implementation is conservative — it marks high L=4/5 as stronger.
-        """
         r = matched_seq.upper()
         L = len(r)
-        # A/C density
         ac_count = r.count('A') + r.count('C')
-        ac_frac = ac_count / L if L>0 else 0.0
-        # tract lengths
+        ac_frac = ac_count / L if L > 0 else 0.0
         a_tracts = [len(m.group(0)) for m in re.finditer(r"A{2,}", r)]
         c_tracts = [len(m.group(0)) for m in re.finditer(r"C{2,}", r)]
-        # require at least 2 A-tracts and 2 C-tracts (Hur's motif has A3 + multiple C3)
         tract_score = 0.0
-        if any(x >= 3 for x in a_tracts) and sum(1 for x in c_tracts if x>=3) >= 3:
+        if any(x >= 3 for x in a_tracts) and sum(1 for x in c_tracts if x >= 3) >= 3:
             tract_score = 0.5
-        # base from ac_frac
         base = min(0.6, ac_frac * 0.8)
-        # linker boost for L in (4,5)
-        linker_boost = 0.25 if high_confidence else (0.12 if linker==6 else 0.0)
-        # final normalized
-        score = max(0.0, min(1.0, base + tract_score + linker_boost))
-        return float(score)
+        linker_boost = 0.25 if high_confidence else (0.12 if linker == 6 else 0.0)
+        return max(0.0, min(1.0, base + tract_score + linker_boost))
 
-    # ---------------- overlap-resolve and public API ----------------
     def _resolve_overlaps_greedy(self, scored: List[Dict[str, Any]], merge_gap: int = 0) -> List[Dict[str, Any]]:
-        """
-        Greedy resolution: sort by (-score, class priority, length desc) and accept non-overlapping
-        """
         if not scored:
             return []
         scored_sorted = sorted(scored, key=lambda x: (-x['score'], _class_prio_idx(x.get('class_name','')), -(x['end']-x['start'])))
@@ -212,89 +147,55 @@ class IMotifDetector(BaseMotifDetector):
                     break
             if not conflict:
                 accepted.append(cand)
-                occupied.append((s,e))
+                occupied.append((s, e))
         accepted.sort(key=lambda x: x['start'])
         return accepted
 
     def calculate_score(self, sequence: str, pattern_info: Tuple = None) -> float:
-        """
-        Main API: returns a total raw sum score across accepted regions (validated > Hur AC > regex matches).
-        Also ensures exact validated sequences are prioritized (returns high score quickly).
-        """
         seq = sequence.upper()
-
-        # 1) exact validated sequence check (forward only by default) => high confidence
         validated = self.find_validated_matches(seq, check_revcomp=False)
         if validated:
-            # return a very high normalized score (caller can also inspect validated hits via find_validated_matches)
             return 0.99
-
-        # 2) collect Hur AC candidates
         hur_cands = self.find_hur_ac_candidates(seq, scan_rc=True)
-        hur_scored = []
-        for h in hur_cands:
-            score = self._score_hur_ac_candidate(h['matched_seq'], h['linker'], h['high_confidence'])
-            hur_scored.append({
-                'class_name': 'ac_motif_hur',
-                'pattern_id': h['pattern'],
-                'start': h['start'],
-                'end': h['end'],
-                'matched_seq': h['matched_seq'],
-                'linker': h['linker'],
-                'high_confidence': h['high_confidence'],
-                'score': score,
-                'details': h
-            })
-
-        # 3) collect regex motif candidates (canonical/relaxed/heuristic)
+        hur_scored = [dict(
+            class_name='ac_motif_hur',
+            pattern_id=h['pattern'],
+            start=h['start'],
+            end=h['end'],
+            matched_seq=h['matched_seq'],
+            linker=h['linker'],
+            high_confidence=h['high_confidence'],
+            score=self._score_hur_ac_candidate(h['matched_seq'], h['linker'], h['high_confidence']),
+            details=h
+        ) for h in hur_cands]
         regex_cands = self._find_regex_candidates(seq)
-        regex_scored = []
-        for r in regex_cands:
-            score = self._score_imotif_candidate(r['matched_seq'])
-            regex_scored.append({
-                'class_name': r['class_name'],
-                'pattern_id': r['pattern_id'],
-                'start': r['start'],
-                'end': r['end'],
-                'matched_seq': r['matched_seq'],
-                'score': score,
-                'details': {}
-            })
-
-        # 4) combine all and resolve overlaps
+        regex_scored = [dict(
+            class_name=r['class_name'],
+            pattern_id=r['pattern_id'],
+            start=r['start'],
+            end=r['end'],
+            matched_seq=r['matched_seq'],
+            score=self._score_imotif_candidate(r['matched_seq']),
+            details={}
+        ) for r in regex_cands]
         combined = hur_scored + regex_scored
         accepted = self._resolve_overlaps_greedy(combined, merge_gap=0)
-
-        # 5) total score: sum of accepted region scores (so longer/more/stronger regions increase total)
         total = float(sum(a['score'] * max(1, (a['end']-a['start'])/10.0) for a in accepted))
         return total
 
     def annotate_sequence(self, sequence: str) -> Dict[str, Any]:
-        """
-        Returns a dictionary containing:
-         - validated_matches (exact)
-         - hur_candidates (raw)
-         - regex_matches (raw)
-         - accepted (post-overlap resolution, with scores and details)
-        """
         seq = sequence.upper()
         res = {}
         res['validated_matches'] = self.find_validated_matches(seq, check_revcomp=True)
         hur_cands = self.find_hur_ac_candidates(seq, scan_rc=True)
-        # score hur
         for h in hur_cands:
             h['score'] = self._score_hur_ac_candidate(h['matched_seq'], h['linker'], h['high_confidence'])
         res['hur_candidates'] = hur_cands
-        # regex
         regex_cands = self._find_regex_candidates(seq)
         for r in regex_cands:
             r['score'] = self._score_imotif_candidate(r['matched_seq'])
         res['regex_matches'] = regex_cands
-        # combine & accept
-        combined = []
-        for h in hur_cands:
-            combined.append({'class_name': 'ac_motif_hur', 'start': h['start'], 'end': h['end'], 'score': h['score'], 'details': h})
-        for r in regex_cands:
-            combined.append({'class_name': r['class_name'], 'start': r['start'], 'end': r['end'], 'score': r['score'], 'details': r})
+        combined = [dict(class_name='ac_motif_hur', start=h['start'], end=h['end'], score=h['score'], details=h) for h in hur_cands]
+        combined += [dict(class_name=r['class_name'], start=r['start'], end=r['end'], score=r['score'], details=r) for r in regex_cands]
         res['accepted'] = self._resolve_overlaps_greedy(combined, merge_gap=0)
         return res
