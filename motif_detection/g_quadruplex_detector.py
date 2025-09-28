@@ -1,32 +1,13 @@
-"""
-G-Quadruplex Detector (G4Hunter-based, overlap-resolved)
-
-- Uses the regex pattern groups present in get_patterns() to find candidate regions.
-- Scores candidates using a G4Hunter-like algorithm (per-base G=+1, C=-1, others 0,
-  sliding window aggregation + tract bonus), producing a numeric score in 0..1.
-- Resolves overlaps between classes by accepting candidates in descending score order
-  (higher-score regions get precedence). The 'g_triplex' class is given lowest
-  priority (ties broken by class priority list).
-- Exposes:
-    - get_patterns() (keeps original pattern metadata)
-    - calculate_score(sequence, pattern_info): returns total sum of accepted region scores
-    - annotate_sequence(sequence): returns detailed region annotations (class, start/end, score, matched_text)
-- No external dependencies (pure Python). Replace with Hyperscan-based matching if desired.
-
-Notes:
-- Tuning knobs at top of file: WINDOW_SIZE (G4Hunter window) and CLASS_PRIORITY (ordering).
-- This module expects BaseMotifDetector to be present in same package.
-"""
-
 import re
 from typing import List, Dict, Any, Tuple
-from .base_detector import BaseMotifDetector
 
-# -----------------------
-# Tuning parameters
-# -----------------------
-WINDOW_SIZE_DEFAULT = 25  # G4Hunter sliding window size used to compute per-region score
-MIN_REGION_LEN = 8        # minimum length for candidate evaluation (can be tuned)
+try:
+    from .base_detector import BaseMotifDetector
+except ImportError:
+    class BaseMotifDetector: pass
+
+WINDOW_SIZE_DEFAULT = 25
+MIN_REGION_LEN = 8
 CLASS_PRIORITY = [
     "canonical_g4",
     "relaxed_g4",
@@ -34,9 +15,8 @@ CLASS_PRIORITY = [
     "bulged_g4",
     "imperfect_g4",
     "bipartite_g4",
-    "g_triplex",  # lowest priority: triplex gets least preference
+    "g_triplex",
 ]
-
 
 class GQuadruplexDetector(BaseMotifDetector):
     """Detector for G-quadruplex DNA motifs using G4Hunter scoring and overlap resolution."""
@@ -45,7 +25,6 @@ class GQuadruplexDetector(BaseMotifDetector):
         return "G-Quadruplex"
 
     def get_patterns(self) -> Dict[str, List[Tuple]]:
-        """Return G-quadruplex DNA regex patterns (keeps existing metadata)."""
         return {
             'canonical_g4': [
                 (r'G{3,}[ATGC]{1,7}G{3,}[ATGC]{1,7}G{3,}[ATGC]{1,7}G{3,}', 'G4_6_1', 'Canonical G4', 'Canonical G4', 15, 'g4hunter_score', 0.95, 'Stable G4 structures', 'Burge 2006'),
@@ -76,38 +55,15 @@ class GQuadruplexDetector(BaseMotifDetector):
             ]
         }
 
-    # -------------------------
-    # Public API
-    # -------------------------
     def calculate_score(self, sequence: str, pattern_info: Tuple = None) -> float:
-        """
-        Scan sequence for all pattern groups, score candidates, resolve overlaps by score
-        and return total sum of accepted region scores (sum of region scores, not normalized).
-        """
         seq = sequence.upper()
         candidates = self._find_all_candidates(seq)
-        if not candidates:
-            return 0.0
-        # score candidates
         scored = [self._score_candidate(c, seq) for c in candidates]
-        # resolve overlaps by selecting highest-scoring candidates first (respecting class priority tie-break)
         accepted = self._resolve_overlaps(scored)
-        # total score sum
         total = sum(a['score'] for a in accepted)
         return float(total)
 
     def annotate_sequence(self, sequence: str) -> List[Dict[str, Any]]:
-        """
-        Return list of accepted region annotations after overlap resolution.
-        Each annotation includes:
-          - class_name (pattern group)
-          - pattern_id (metadata)
-          - start, end (0-based, end-exclusive)
-          - length
-          - score (region G4Hunter-derived score 0..1 scaled by length; we return raw region score)
-          - matched_seq
-          - details: g_tracts, n_g_tracts, gc_balance, max_window_score, normalized_window_score
-        """
         seq = sequence.upper()
         candidates = self._find_all_candidates(seq)
         scored = [self._score_candidate(c, seq) for c in candidates]
@@ -127,15 +83,7 @@ class GQuadruplexDetector(BaseMotifDetector):
             anns.append(ann)
         return anns
 
-    # -------------------------
-    # Candidate finding & scoring
-    # -------------------------
     def _find_all_candidates(self, seq: str) -> List[Dict[str, Any]]:
-        """
-        Run through all pattern groups and regex patterns, collect candidate regions.
-        Returns list of dicts:
-          { 'class_name', 'pattern_id', 'start', 'end', 'match_text' }
-        """
         patt_groups = self.get_patterns()
         candidates = []
         for class_name, patterns in patt_groups.items():
@@ -144,7 +92,6 @@ class GQuadruplexDetector(BaseMotifDetector):
                 pattern_id = pat[1] if len(pat) > 1 else f"{class_name}_pat"
                 for m in re.finditer(regex, seq):
                     s, e = m.start(), m.end()
-                    # enforce minimum length
                     if (e - s) < MIN_REGION_LEN:
                         continue
                     candidates.append({
@@ -157,38 +104,14 @@ class GQuadruplexDetector(BaseMotifDetector):
         return candidates
 
     def _score_candidate(self, candidate: Dict[str, Any], seq: str, window_size: int = WINDOW_SIZE_DEFAULT) -> Dict[str, Any]:
-        """
-        Compute a G4Hunter-like score for the candidate region.
-        Returns candidate dict extended with:
-          - score: raw region score (sum of per-base redistributed window contributions)
-          - details: breakdown dict
-        Scoring approach:
-          - For candidate region R, compute sliding-window sums where G=+1, C=-1, others=0.
-          - max_window_abs = max absolute window sum across windows inside R (windows limited to window_size or region length)
-          - normalized_window = max_window_abs / window_size
-          - tract bonus: number and length of G-tracts (G{2,}) inside R increases score modestly
-          - final normalized score = clamp(normalized_window + tract_bonus, 0.0, 1.0)
-          - region_score (raw) = normalized_score * (region_length / window_size)  <-- this makes longer, dense regions accumulate larger raw scores
-        """
         s = candidate['start']
         e = candidate['end']
         region = seq[s:e]
         L = len(region)
-        # per-base values
-        vals = []
-        for ch in region:
-            if ch == 'G':
-                vals.append(1)
-            elif ch == 'C':
-                vals.append(-1)
-            else:
-                vals.append(0)
-        # sliding window sums
+        vals = [1 if ch == 'G' else -1 if ch == 'C' else 0 for ch in region]
         ws = min(window_size, L)
-        if ws <= 0:
-            max_abs = 0
-        else:
-            # compute first window sum
+        max_abs = 0
+        if ws > 0:
             cur = sum(vals[0:ws])
             max_abs = abs(cur)
             for i in range(1, L - ws + 1):
@@ -197,29 +120,23 @@ class GQuadruplexDetector(BaseMotifDetector):
                     max_abs = abs(cur)
         normalized_window = (max_abs / ws) if ws > 0 else 0.0
 
-        # G-tracts
         g_tracts = re.findall(r'G{2,}', region)
         n_g = len(g_tracts)
         total_g_len = sum(len(t) for t in g_tracts)
-        # tract bonus: proportional to number and average tract length
         tract_bonus = 0.0
         if n_g >= 3:
-            # modest bonus: 0.08 per tract beyond 2, scaled by mean tract length / 4
-            tract_bonus = min(0.5, 0.08 * (n_g - 2) * ( (total_g_len / n_g) / 4.0 ))
-        # small GC-balance penalty if many Cs dominate
+            tract_bonus = min(0.5, 0.08 * (n_g - 2) * ((total_g_len / n_g) / 4.0))
         total_c = region.count('C')
         total_g = region.count('G')
-        gc_balance = (total_g - total_c) / (L if L>0 else 1)
+        gc_balance = (total_g - total_c) / (L if L > 0 else 1)
         gc_penalty = 0.0
         if gc_balance < -0.3:
-            gc_penalty = 0.2  # heavy C-rich region penalized
+            gc_penalty = 0.2
         elif gc_balance < -0.1:
             gc_penalty = 0.1
 
         normalized_score = max(0.0, min(1.0, normalized_window + tract_bonus - gc_penalty))
-
-        # raw region score scales with region length relative to window (so longer dense regions accumulate)
-        region_score = normalized_score * (L / float(ws))
+        region_score = normalized_score * (L / float(ws)) if ws > 0 else 0.0
 
         details = {
             'n_g_tracts': n_g,
@@ -237,44 +154,29 @@ class GQuadruplexDetector(BaseMotifDetector):
         out['details'] = details
         return out
 
-    # -------------------------
-    # Overlap resolution
-    # -------------------------
     def _resolve_overlaps(self, scored_candidates: List[Dict[str, Any]], merge_gap: int = 0) -> List[Dict[str, Any]]:
-        """
-        Resolve overlaps between scored candidates.
-        Strategy:
-          - Sort candidates by (score desc, class_priority asc, region length desc)
-          - Greedily accept candidate if it does not overlap any previously accepted region (respecting merge_gap)
-          - If it overlaps, skip (so higher-score region keeps the space)
-        Returns list of accepted candidates (same dicts with score/details).
-        """
         if not scored_candidates:
             return []
-        # attach class priority index
         def class_prio_idx(class_name):
             try:
                 return CLASS_PRIORITY.index(class_name)
             except ValueError:
                 return len(CLASS_PRIORITY)
-        # sort
         scored_sorted = sorted(
             scored_candidates,
             key=lambda x: (-x['score'], class_prio_idx(x['class_name']), -(x['end'] - x['start']))
         )
         accepted = []
-        occupied = []  # list of (s,e) accepted intervals
+        occupied = []
         for cand in scored_sorted:
             s, e = cand['start'], cand['end']
             conflict = False
             for (as_, ae) in occupied:
-                # if overlap when extended by merge_gap -> conflict
                 if not (e <= as_ - merge_gap or s >= ae + merge_gap):
                     conflict = True
                     break
             if not conflict:
                 accepted.append(cand)
                 occupied.append((s, e))
-        # optionally sort accepted by position
         accepted.sort(key=lambda x: x['start'])
         return accepted
