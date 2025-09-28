@@ -20,7 +20,7 @@ NBDFinder is a state-of-the-art bioinformatics tool for detecting and analyzing 
 | **1** | Curved DNA | Global Curvature, Local Curvature | A-tract mediated curvature |
 | **2** | Slipped DNA | Direct Repeat, STR | Tandem repeats, slipped structures |
 | **3** | Cruciform | Palindromic Inverted Repeat | Four-way junctions |
-| **4** | R-Loop | R-Loop Formation Site | RNA-DNA hybrids |
+| **4** | R-Loop | R-Loop Formation Site, QmRLFS-m1, QmRLFS-m2 | RNA-DNA hybrids, QmRLFS algorithm |
 | **5** | Triplex | Mirror Repeat, Sticky DNA | Three-stranded structures |
 | **6** | G-Quadruplex | Canonical, Bulged, Relaxed, Bipartite, Multimeric, Imperfect, G-Triplex | Four-stranded G-rich structures |
 | **7** | i-Motif | Canonical, Extended, AC-Motif | C-rich structures |
@@ -88,6 +88,7 @@ curl http://localhost:8000/api/v1/stats
 
 ### Scientific Accuracy
 - **Literature-Based**: Algorithms from peer-reviewed research
+- **QmRLFS Integration**: Advanced R-loop detection with RIZ/REZ analysis
 - **Validated Thresholds**: Biologically relevant cut-offs
 - **Comprehensive Scoring**: Class-specific normalization
 - **Quality Control**: Built-in validation and error checking
@@ -114,6 +115,7 @@ curl http://localhost:8000/api/v1/stats
 ## 🔬 Scoring Algorithms
 
 - **G4Hunter**: G-quadruplex prediction (Bedrat et al., 2016)
+- **QmRLFS**: R-loop formation site detection with RIZ/REZ analysis (Jenjaroenpun & Wongsurawat, 2016)
 - **Z-Seeker**: Z-DNA detection (Ho et al., 1986)
 - **Enhanced Curvature**: A-tract curvature (Olson et al., 1998)
 - **Instability Scoring**: Repeat instability analysis
