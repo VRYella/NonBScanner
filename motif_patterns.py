@@ -81,6 +81,12 @@ class PatternRegistry:
             (r'[GC]{10,}[AT]{2,10}[GC]{10,}', 'RLP_4_1', 'GC-rich R-loop site', 'R-loop formation sites', 20, 'r_loop_potential', 0.85, 'Transcription-replication conflicts', 'Aguilera 2012'),
             (r'G{5,}[ATGC]{10,100}C{5,}', 'RLP_4_2', 'G-C rich region', 'R-loop formation sites', 20, 'r_loop_potential', 0.80, 'R-loop prone regions', 'Ginno 2012'),
             (r'[GC]{6,}[AT]{1,5}[GC]{6,}', 'RLP_4_3', 'GC-AT pattern', 'R-loop formation sites', 15, 'r_loop_potential', 0.75, 'Transcriptional pausing', 'Skourti-Stathaki 2011'),
+        ],
+        'qmrlfs_model_1': [
+            (r'G{3,}[ATCGU]{1,10}?G{3,}(?:[ATCGU]{1,10}?G{3,}){1,}?', 'QmRLFS_4_1', 'QmRLFS Model 1', 'QmRLFS-m1', 25, 'qmrlfs_score', 0.90, 'RIZ detection with 3+ G tracts', 'Jenjaroenpun 2016'),
+        ],
+        'qmrlfs_model_2': [
+            (r'G{4,}(?:[ATCGU]{1,10}?G{4,}){1,}?', 'QmRLFS_4_2', 'QmRLFS Model 2', 'QmRLFS-m2', 30, 'qmrlfs_score', 0.95, 'RIZ detection with 4+ G tracts', 'Jenjaroenpun 2016'),
         ]
     }
     
@@ -202,7 +208,7 @@ class PatternRegistry:
             'curved_dna': ['Global curvature', 'Local Curvature'],
             'slipped_dna': ['Direct Repeat', 'STR'],
             'cruciform': ['Inverted Repeats'],
-            'r_loop': ['R-loop formation sites'],
+            'r_loop': ['R-loop formation sites', 'QmRLFS-m1', 'QmRLFS-m2'],
             'triplex': ['Triplex', 'Sticky DNA'],
             'g_quadruplex': ['Multimeric G4', 'Canonical G4', 'Relaxed G4', 'Bulged G4', 
                            'Bipartite G4', 'Imperfect G4', 'G-Triplex intermediate'],
@@ -393,6 +399,41 @@ class MotifScoring:
         gc_content = len(re.findall(r'[GC]', sequence)) / len(sequence)
         
         return min(gc_skew * 0.6 + gc_content * 0.4, 1.0)
+    
+    @staticmethod
+    def qmrlfs_score(sequence: str) -> float:
+        """
+        QmRLFS-based R-loop formation scoring (Jenjaroenpun & Wongsurawat, 2016)
+        
+        Implements the QmRLFS algorithm for R-loop forming sequence detection
+        based on RIZ (R-loop Initiating Zone) and REZ (R-loop Extending Zone)
+        
+        Args:
+            sequence: DNA sequence
+            
+        Returns:
+            QmRLFS score (0.0-1.0)
+        """
+        try:
+            from qmrlfs_finder import QmRLFSDetector
+            
+            if len(sequence) < 20:
+                return 0.0
+            
+            # Use quick mode for scoring to avoid performance issues
+            detector = QmRLFSDetector(quick_mode=True)
+            results = detector.analyze_sequence(sequence, analyze_both_strands=False)
+            
+            if not results:
+                return 0.0
+            
+            # Return the highest scoring RLFS
+            max_score = max(result["qmrlfs_score"] for result in results)
+            return max_score
+            
+        except ImportError:
+            # Fallback to simple scoring if QmRLFS module not available
+            return MotifScoring.r_loop_potential(sequence)
     
     @staticmethod
     def instability_score(sequence: str) -> float:
@@ -667,7 +708,7 @@ def get_pattern_statistics() -> Dict[str, Any]:
         'subclass_breakdown': subclasses,
         'scoring_methods': [
             'g4hunter_score', 'imotif_score', 'z_dna_score', 'curvature_score',
-            'triplex_potential', 'r_loop_potential', 'instability_score', 
+            'triplex_potential', 'r_loop_potential', 'qmrlfs_score', 'instability_score', 
             'cruciform_stability', 'a_philic_score'
         ]
     }
