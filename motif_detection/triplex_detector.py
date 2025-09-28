@@ -1,90 +1,133 @@
 """
-Triplex DNA Motif Detector
-=========================
+Triplex DNA Motif Detector (Mirror repeat strict, content threshold)
+===================================================================
+Detects three-stranded DNA structures, key rules from Frank-Kamenetskii 1995, Sakamoto 1999, Bacolla 2006, and recent reviews[web:80][web:83][web:85][web:86][web:89].
 
-Detects three-stranded DNA structures including:
-- Triplex-forming sequences
-- Sticky DNA repeats
-
-Based on Frank-Kamenetskii 1995 and Sakamoto 1999.
+Features:
+- Intramolecular triplex: mirror repeats ≥10 bp per arm, loop ≤100 bp, homopurine or homopyrimidine content >90% in arms
+- Sticky DNA: pure (GAA)n or (TTC)n (≥12 bp)
 """
 
 import re
 from typing import List, Dict, Any, Tuple
-from .base_detector import BaseMotifDetector
 
+try:
+    from .base_detector import BaseMotifDetector
+except ImportError:
+    class BaseMotifDetector: pass
 
 class TriplexDetector(BaseMotifDetector):
-    """Detector for triplex DNA motifs"""
-    
+    """Detector for mirror repeat and sticky DNA triplex motifs (literature strict)[web:80][web:83][web:85][web:86][web:89]"""
+
     def get_motif_class_name(self) -> str:
         return "Triplex"
-    
+
     def get_patterns(self) -> Dict[str, List[Tuple]]:
-        """Return triplex DNA patterns"""
         return {
             'triplex_forming_sequences': [
-                (r'[GA]{15,}', 'TRX_5_1', 'Homopurine tract', 'Triplex', 15, 'triplex_potential', 0.90, 'H-DNA formation', 'Frank-Kamenetskii 1995'),
-                (r'[CT]{15,}', 'TRX_5_2', 'Homopyrimidine tract', 'Triplex', 15, 'triplex_potential', 0.90, 'H-DNA formation', 'Frank-Kamenetskii 1995'),
-                (r'(?:GA){6,}[GA]*(?:TC){6,}', 'TRX_5_3', 'Mirror repeat', 'Triplex', 24, 'triplex_potential', 0.85, 'Intermolecular triplex', 'Beal 1996'),
-                (r'(?:GAA){4,}', 'TRX_5_4', 'GAA repeat', 'Sticky DNA', 12, 'sticky_dna_score', 0.95, 'Disease-associated repeats', 'Sakamoto 1999'),
-                (r'(?:TTC){4,}', 'TRX_5_5', 'TTC repeat', 'Sticky DNA', 12, 'sticky_dna_score', 0.95, 'Disease-associated repeats', 'Sakamoto 1999'),
+                # Homopurine mirror repeat: (arm)-(loop)-(mirror_arm), each arm ≥10bp, loop ≤100bp, >90% purine
+                (r'((?:[GA]{1,}){10,})'
+                 r'([ATGC]{1,100})'
+                 r'((?:[GA]{1,}){10,})',
+                 'TRX_MR_PU',
+                 'Homopurine mirror repeat',
+                 'Triplex',
+                 20,  # total arms+min loop
+                 'triplex_potential',
+                 0.90,
+                 'H-DNA formation (homopurine)',
+                 'Frank-Kamenetskii 1995'),
+                # Homopyrimidine mirror repeat: same logic
+                (r'((?:[CT]{1,}){10,})'
+                 r'([ATGC]{1,100})'
+                 r'((?:[CT]{1,}){10,})',
+                 'TRX_MR_PY',
+                 'Homopyrimidine mirror repeat',
+                 'Triplex',
+                 20,
+                 'triplex_potential',
+                 0.90,
+                 'H-DNA formation (homopyrimidine)',
+                 'Frank-Kamenetskii 1995'),
+                # GAA sticky DNA
+                (r'(?:GAA){4,}', 'TRX_5_4', 'GAA repeat', 'Sticky_DNA', 12, 'sticky_dna_score', 0.95, 'Disease-associated repeats', 'Sakamoto 1999'),
+                # TTC sticky DNA
+                (r'(?:TTC){4,}', 'TRX_5_5', 'TTC repeat', 'Sticky_DNA', 12, 'sticky_dna_score', 0.95, 'Disease-associated repeats', 'Sakamoto 1999'),
             ]
         }
     
+    def annotate_sequence(self, sequence: str) -> List[Dict[str, Any]]:
+        seq = sequence.upper()
+        results = []
+        used = [False] * len(seq)
+        patterns = self.get_patterns()['triplex_forming_sequences']
+
+        for patinfo in patterns:
+            pat, pid, name, cname, minlen, scoretype, cutoff, desc, ref = patinfo
+            for m in re.finditer(pat, seq, overlapped=False if "mirror" in name else True):
+                s, e = m.span()
+                if any(used[s:e]):
+                    continue
+                # Mirror repeats (arms+loop): test content of both arms
+                if "mirror" in name:
+                    arm1 = m.group(1)
+                    arm2 = m.group(3)
+                    loop = m.group(2)
+                    if len(arm1) < 10 or len(arm2) < 10 or len(loop) > 100:
+                        continue
+                    is_purine = set(arm1+arm2).issubset({'A','G'})
+                    is_pyrimidine = set(arm1+arm2).issubset({'C','T'})
+                    pur_ct = sum(1 for b in arm1+arm2 if b in 'AG') / max(1, len(arm1+arm2))
+                    pyr_ct = sum(1 for b in arm1+arm2 if b in 'CT') / max(1, len(arm1+arm2))
+                    if not (pur_ct > 0.9 or pyr_ct > 0.9):
+                        continue
+                # All sticky DNA: keep full match if not overlap
+                for i in range(s, e):
+                    used[i] = True
+                results.append({
+                    'class_name': cname,
+                    'pattern_id': pid,
+                    'start': s,
+                    'end': e,
+                    'length': e-s,
+                    'score': self.calculate_score(seq[s:e], patinfo),
+                    'matched_seq': seq[s:e],
+                    'details': {
+                        'type': name,
+                        'reference': ref,
+                        'description': desc
+                    }
+                })
+        results.sort(key=lambda r: r['start'])
+        return results
+
     def calculate_score(self, sequence: str, pattern_info: Tuple) -> float:
-        """Calculate triplex formation score for the sequence"""
         scoring_method = pattern_info[5] if len(pattern_info) > 5 else 'triplex_potential'
-        
         if scoring_method == 'triplex_potential':
             return self._triplex_potential(sequence)
         elif scoring_method == 'sticky_dna_score':
             return self._sticky_dna_score(sequence)
         else:
-            return self._triplex_potential(sequence)
-    
-    def _triplex_potential(self, sequence: str) -> float:
-        """
-        Triplex formation potential (Frank-Kamenetskii & Mirkin, 1995)
-        """
-        if len(sequence) < 15:
             return 0.0
+
+    def _triplex_potential(self, sequence: str) -> float:
+        """Score: tract length and purine/pyrimidine content (≥90%) [web:80][web:83][web:85]"""
+        if len(sequence) < 20:
+            return 0.0
+        pur = sum(1 for b in sequence if b in "AG") / len(sequence)
+        pyr = sum(1 for b in sequence if b in "CT") / len(sequence)
+        score = (pur if pur > 0.9 else 0) + (pyr if pyr > 0.9 else 0)
+        # tract length bonus: scale for very long arms, up to 1.0
+        return min(score * len(sequence) / 150, 1.0)
         
-        # Calculate purine content (G+A)
-        purine_content = len(re.findall(r'[GA]', sequence)) / len(sequence)
-        
-        # Calculate pyrimidine content (C+T)  
-        pyrimidine_content = len(re.findall(r'[CT]', sequence)) / len(sequence)
-        
-        # Find homopurine/homopyrimidine tracts
-        purine_tracts = re.findall(r'[GA]{10,}', sequence)
-        pyrimidine_tracts = re.findall(r'[CT]{10,}', sequence)
-        
-        # Score based on homogeneity and tract length
-        purine_score = sum(len(tract) ** 1.2 for tract in purine_tracts) / len(sequence)
-        pyrimidine_score = sum(len(tract) ** 1.2 for tract in pyrimidine_tracts) / len(sequence)
-        
-        max_score = max(purine_score, pyrimidine_score)
-        return min(max_score / (len(sequence) ** 1.2), 1.0)
-    
     def _sticky_dna_score(self, sequence: str) -> float:
-        """
-        Sticky DNA scoring for GAA/TTC repeats
-        """
+        """Score for sticky DNA: repeat density and length [web:86]"""
         if len(sequence) < 12:
             return 0.0
-        
-        # Count GAA and TTC repeats
-        gaa_repeats = len(re.findall(r'GAA', sequence))
-        ttc_repeats = len(re.findall(r'TTC', sequence))
-        
-        total_repeats = gaa_repeats + ttc_repeats
-        repeat_density = total_repeats * 3 / len(sequence)  # Each repeat is 3 bases
-        
-        # Bonus for consecutive repeats
-        gaa_consecutive = re.findall(r'(?:GAA){2,}', sequence)
-        ttc_consecutive = re.findall(r'(?:TTC){2,}', sequence)
-        
-        consecutive_bonus = sum(len(match) for match in gaa_consecutive + ttc_consecutive) / len(sequence)
-        
-        return min(repeat_density + consecutive_bonus * 0.3, 1.0)
+        gaa_count = sequence.count("GAA")
+        ttc_count = sequence.count("TTC")
+        rep_total = gaa_count + ttc_count
+        density = (rep_total * 3) / len(sequence)
+        extras = sum(len(m) for m in re.findall(r'(?:GAA){2,}', sequence)) + sum(len(m) for m in re.findall(r'(?:TTC){2,}', sequence))
+        cons_bonus = extras / len(sequence) if len(sequence) else 0
+        return min(0.7 * density + 0.3 * cons_bonus, 1.0)
