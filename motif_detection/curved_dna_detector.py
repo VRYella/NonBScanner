@@ -1,12 +1,13 @@
 """
-Curved DNA Motif Detector
-========================
+CurvedDNADetector
 
-Detects A-tract mediated DNA bending patterns including:
-- A-tracts and T-tracts (local curvature)
-- Phased A-tracts (global curvature)
+Detects:
+ - Global curvature (A-phased repeats, APRs): >= 3 A-tract centers phased ~11 bp apart
+ - Local curvature: long A-tracts (>=7) or T-tracts (>=7)
 
-Based on Olson et al., 1998 and Crothers 1992.
+Implements A-tract detection logic similar to the provided C code: within AT-rich windows,
+computes the longest A/AnTn run and the longest T-only run, uses difference (maxATlen - maxTlen)
+to decide bona fide A-tracts and reports the tract center.
 """
 
 import re
@@ -14,85 +15,346 @@ from typing import List, Dict, Any, Tuple
 from .base_detector import BaseMotifDetector
 
 
+def revcomp(seq: str) -> str:
+    trans = str.maketrans("ACGTacgt", "TGCAtgca")
+    return seq.translate(trans)[::-1]
+
+
 class CurvedDNADetector(BaseMotifDetector):
-    """Detector for curved DNA motifs"""
-    
     def get_motif_class_name(self) -> str:
         return "Curved_DNA"
-    
+
+    # ---------- Parameters you can tune ----------
+    MIN_AT_TRACT = 3         # minimum A-tract length (for global APR detection)
+    MAX_AT_WINDOW = None     # None => no hard upper limit on AT window used to search AnTn patterns
+    PHASING_CENTER_SPACING = 11.0  # ideal center-to-center spacing in bp for APR phasing
+    PHASING_TOL_LOW = 9.9    # lower tolerance
+    PHASING_TOL_HIGH = 11.1  # upper tolerance
+    MIN_APR_TRACTS = 3       # at least this many A-tract centers to call an APR
+    LOCAL_LONG_TRACT = 7     # local curvature: A>=7 or T>=7
+    # --------------------------------------------
+
     def get_patterns(self) -> Dict[str, List[Tuple]]:
-        """Return curved DNA patterns"""
+        """Metadata only — actual logic in find_* methods."""
         return {
             'a_tracts': [
-                # (pattern, pattern_id, name, subclass, min_len, scoring_method, confidence, biological_significance, reference)
-                (r'A{4,15}', 'CRV_1_1', 'A-tract', 'Local Curvature', 4, 'curvature_score', 0.95, 'DNA bending', 'Crothers 1992'),
-                (r'T{4,15}', 'CRV_1_2', 'T-tract', 'Local Curvature', 4, 'curvature_score', 0.95, 'DNA bending', 'Crothers 1992'),
-                (r'(?:A{3,8}T{1,5}){2,}', 'CRV_1_3', 'AT-rich tract', 'Local Curvature', 8, 'curvature_score', 0.85, 'Sequence-dependent bending', 'Hagerman 1986'),
+                (r'A{3,}', 'CRV_1_1', 'A-tract (global)', 'Global Curvature', 3, 'phasing_score', 0.95, 'A-phased repeats (APRs)', 'Koo/Crothers'),
             ],
             'phased_a_tracts': [
-                (r'(?:A{3,8}.{8,12}){3,}A{3,8}', 'CRV_1_4', 'Phased A-tracts', 'Global Curvature', 20, 'phasing_score', 0.90, 'Macroscopic curvature', 'Koo 1986'),
-                (r'(?:T{3,8}.{8,12}){3,}T{3,8}', 'CRV_1_5', 'Phased T-tracts', 'Global Curvature', 20, 'phasing_score', 0.90, 'Macroscopic curvature', 'Koo 1986'),
+                (r'(?:A{3,}[^A]{9,11}){3,}', 'CRV_1_4', 'Phased A-tracts (heuristic)', 'Global Curvature', 20, 'phasing_score', 0.90, 'Phased A-tracts', 'Koo 1986'),
+            ],
+            'local_long_tracts': [
+                (r'A{7,}|T{7,}', 'CRV_1_2', 'Long A/T tract', 'Local Curvature', 7, 'curvature_score', 0.90, 'Long A or T tracts (local curvature)', 'Crothers 1992'),
             ]
         }
-    
-    def calculate_score(self, sequence: str, pattern_info: Tuple) -> float:
-        """Calculate curvature score for the sequence"""
-        scoring_method = pattern_info[5] if len(pattern_info) > 5 else 'curvature_score'
-        
-        if scoring_method == 'curvature_score':
-            return self._curvature_score(sequence)
-        elif scoring_method == 'phasing_score':
-            return self._phasing_score(sequence)
-        else:
-            return self._curvature_score(sequence)
-    
-    def _curvature_score(self, sequence: str) -> float:
+
+    # -------------------------
+    # Top-level scoring API
+    # -------------------------
+    def calculate_score(self, sequence: str, pattern_info: Tuple = None) -> float:
         """
-        DNA curvature scoring based on A-tract analysis (Olson et al., 1998)
+        Returns a combined raw score reflecting:
+          - phasing_score for APRs (sum of APR phasing scores)
+          - local curvature contribution (sum of local A/T tract scores)
+        The sum reflects both number and quality of hits.
         """
-        if len(sequence) < 4:
-            return 0.0
-        
-        # Find A/T tracts
-        a_tracts = re.findall(r'A{3,}', sequence)
-        t_tracts = re.findall(r'T{3,}', sequence)
-        
-        # Calculate curvature based on tract length and frequency
-        curvature = 0
-        for tract in a_tracts + t_tracts:
-            curvature += len(tract) ** 1.5  # Non-linear length dependency
-        
-        return min(curvature / len(sequence), 1.0)
-    
-    def _phasing_score(self, sequence: str) -> float:
+        seq = sequence.upper()
+        ann = self.annotate_sequence(seq)
+        # Sum APR scores
+        apr_sum = sum(a['score'] for a in ann.get('aprs', []))
+        local_sum = sum(l['score'] for l in ann.get('long_tracts', []))
+        return float(apr_sum + local_sum)
+
+    # -------------------------
+    # A-tract detection (core)
+    # -------------------------
+    def find_a_tracts(self, sequence: str, minAT: int = None, max_window: int = None) -> List[Dict[str, Any]]:
         """
-        Phasing score for periodic A-tract arrangements
+        Detect A-tract candidates across the sequence using logic adapted from your C code.
+
+        Returns list of dicts:
+          {
+            'start', 'end'            : region bounds of the AT-window inspected (0-based, end-exclusive)
+            'maxATlen'                : maximal A/AnTn length found inside window
+            'maxTlen'                 : maximal T-only run length (not following A)
+            'maxATend'                : index (0-based) of end position(where maxATlen ends) relative to full seq (inclusive end index)
+            'a_center'                : float center coordinate (1-based in C code; here 0-based float)
+            'call'                    : bool whether (maxATlen - maxTlen) >= minAT
+            'window_len'              : length of AT window
+            'window_seq'              : the AT-window substring
+          }
+
+        Implementation detail:
+        - We scan for contiguous runs of A/T (AT windows). Within each, we iterate positions and
+          compute Alen/Tlen/ATlen per the C algorithm to determine maxATlen and maxTlen.
+        - If either forward strand or reverse complement has (maxATlen - maxTlen) >= minAT, we call it an A-tract.
         """
-        if len(sequence) < 20:
-            return 0.0
-        
-        # Look for periodic A/T tracts with ~10bp spacing
-        a_positions = []
-        t_positions = []
-        
-        # Find A-tract positions
-        for match in re.finditer(r'A{3,8}', sequence):
-            a_positions.append(match.start())
-        
-        # Find T-tract positions  
-        for match in re.finditer(r'T{3,8}', sequence):
-            t_positions.append(match.start())
-        
-        all_positions = sorted(a_positions + t_positions)
-        
-        if len(all_positions) < 3:
-            return 0.0
-        
-        # Check for periodic spacing (8-12 bp intervals)
-        periodic_score = 0
-        for i in range(1, len(all_positions)):
-            spacing = all_positions[i] - all_positions[i-1]
-            if 8 <= spacing <= 12:
-                periodic_score += 1
-        
-        return min(periodic_score / (len(all_positions) - 1), 1.0)
+        seq = sequence.upper()
+        n = len(seq)
+        if minAT is None:
+            minAT = self.MIN_AT_TRACT
+        if max_window is None:
+            max_window = self.MAX_AT_WINDOW  # None allowed
+
+        results: List[Dict[str, Any]] = []
+
+        # Find contiguous A/T windows (length >= minAT)
+        for m in re.finditer(r'[AT]{' + str(minAT) + r',}', seq):
+            wstart, wend = m.start(), m.end()  # [wstart, wend)
+            window_seq = seq[wstart:wend]
+            window_len = wend - wstart
+
+            # analyze forward strand window
+            maxATlen, maxATend, maxTlen = self._analyze_at_window(window_seq)
+            # analyze reverse complement window (to mimic C code check on reverse)
+            rc_window = revcomp(window_seq)
+            maxATlen_rc, maxATend_rc, maxTlen_rc = self._analyze_at_window(rc_window)
+
+            # compute decisions - apply same logic as C code:
+            diff_forward = maxATlen - maxTlen
+            diff_rc = maxATlen_rc - maxTlen_rc
+            call = False
+            chosen_center = None
+            chosen_maxATlen = None
+
+            if diff_forward >= minAT or diff_rc >= minAT:
+                call = True
+                # choose the strand giving larger difference
+                if diff_forward >= diff_rc:
+                    chosen_maxATlen = maxATlen
+                    # compute center coordinate in full sequence (0-based float center)
+                    # in C code: a_center = maxATend - ((maxATlen-1)/2) + 1  (1-based)
+                    # we'll produce 0-based center = (wstart + maxATend - ((maxATlen-1)/2))
+                    chosen_center = (wstart + maxATend) - ((maxATlen - 1) / 2.0)
+                else:
+                    chosen_maxATlen = maxATlen_rc
+                    # maxATend_rc is position in RC sequence; convert to original coords:
+                    # RC index i corresponds to original index: wstart + (window_len - 1 - i)
+                    # maxATend_rc is index in window_rc (end position index)
+                    # In C, they convert similarly; for simplicity compute center via rc mapping
+                    i_rc = maxATend_rc
+                    # rc_end_original = wstart + (window_len - 1 - i_rc)
+                    rc_end_original = wstart + (window_len - 1 - maxATend_rc)
+                    chosen_center = rc_end_original - ((chosen_maxATlen - 1) / 2.0)
+
+            results.append({
+                'start': wstart,
+                'end': wend,
+                'window_len': window_len,
+                'window_seq': window_seq,
+                'maxATlen': int(maxATlen),
+                'maxATend': int(wstart + maxATend),
+                'maxTlen': int(maxTlen),
+                'maxATlen_rc': int(maxATlen_rc),
+                'maxATend_rc': int(wstart + (window_len - 1 - maxATend_rc)),
+                'maxTlen_rc': int(maxTlen_rc),
+                'diff_forward': int(diff_forward),
+                'diff_rc': int(diff_rc),
+                'call': bool(call),
+                'a_center': float(chosen_center) if chosen_center is not None else None,
+                'chosen_maxATlen': int(chosen_maxATlen) if chosen_maxATlen is not None else None
+            })
+
+        return results
+
+    def _analyze_at_window(self, window_seq: str) -> Tuple[int,int,int]:
+        """
+        Analyze a contiguous A/T window and return (maxATlen, maxATend_index_in_window, maxTlen)
+        Implemented following the logic in your C code:
+         - iterate positions; update Alen, Tlen, ATlen, TAlen; track maxATlen, maxTlen and their end positions.
+         - maxATend returned as index (0-based) *within the window* of the last position of the max AT run.
+        """
+        Alen = 0
+        Tlen = 0
+        ATlen = 0
+        TAlen = 0
+        maxATlen = 0
+        maxTlen = 0
+        maxATend = 0
+        maxTend = 0
+        # we'll iterate from index 0..len(window_seq)-1
+        L = len(window_seq)
+        # to mimic C code scanning with lookbacks, we iterate straightforwardly
+        for i in range(L):
+            ch = window_seq[i]
+            prev = window_seq[i-1] if i>0 else None
+            if ch == 'A':
+                Tlen = 0
+                TAlen = 0
+                # if previous base was T, reset A-run counters per C code
+                if prev == 'T':
+                    Alen = 1
+                    ATlen = 1
+                else:
+                    Alen += 1
+                    ATlen += 1
+            elif ch == 'T':
+                # if T follows A-run shorter than Alen, it's considered TAlen (T following A)
+                if TAlen < Alen:
+                    TAlen += 1
+                    ATlen += 1
+                else:
+                    # T is starting a T-only run
+                    Tlen += 1
+                    TAlen = 0
+                    ATlen = 0
+                    Alen = 0
+            else:
+                # non-AT not expected inside this window (we only pass contiguous AT windows)
+                Alen = 0
+                Tlen = 0
+                ATlen = 0
+                TAlen = 0
+            if ATlen > maxATlen:
+                maxATlen = ATlen
+                maxATend = i  # end index within window
+            if Tlen > maxTlen:
+                maxTlen = Tlen
+                maxTend = i
+        return int(maxATlen), int(maxATend), int(maxTlen)
+
+    # -------------------------
+    # APR grouping / phasing
+    # -------------------------
+    def find_aprs(self, sequence: str, min_tract: int = None, min_apr_tracts: int = None) -> List[Dict[str, Any]]:
+        """
+        Group a-tract centers into APRs (A-phased repeats).
+        Criteria:
+          - at least min_apr_tracts centers
+          - consecutive center-to-center spacing must be within PHASING_TOL_LOW..PHASING_TOL_HIGH
+            (we allow flexible grouping: we slide through centers looking for runs of centers that satisfy spacing)
+        Returns list of dicts:
+          { 'start_center_idx', 'end_center_idx', 'centers': [...], 'center_positions': [...], 'score': phasing_score, 'n_tracts' }
+        """
+        if min_tract is None:
+            min_tract = self.MIN_AT_TRACT
+        if min_apr_tracts is None:
+            min_apr_tracts = self.MIN_APR_TRACTS
+
+        # get a-tract calls
+        a_calls = [r for r in self.find_a_tracts(sequence, minAT=min_tract) if r['call'] and r['a_center'] is not None]
+        centers = [r['a_center'] for r in a_calls]
+        centers_sorted = sorted(centers)
+        aprs: List[Dict[str, Any]] = []
+
+        if len(centers_sorted) < min_apr_tracts:
+            return aprs
+
+        # find runs of centers where consecutive spacing is within tolerance
+        i = 0
+        while i < len(centers_sorted):
+            run = [centers_sorted[i]]
+            j = i + 1
+            while j < len(centers_sorted):
+                spacing = centers_sorted[j] - centers_sorted[j-1]
+                if self.PHASING_TOL_LOW <= spacing <= self.PHASING_TOL_HIGH:
+                    run.append(centers_sorted[j])
+                    j += 1
+                else:
+                    break
+            # if run has enough tracts, call APR
+            if len(run) >= min_apr_tracts:
+                # score APR by how close spacings are to ideal spacing
+                spacings = [run[k+1] - run[k] for k in range(len(run)-1)]
+                # closeness = product of gaussian-like terms, but simpler: average deviation
+                devs = [abs(sp - self.PHASING_CENTER_SPACING) for sp in spacings]
+                # normalized closeness
+                mean_dev = sum(devs) / len(devs) if devs else 0.0
+                # phasing_score between 0..1: 1 when mean_dev==0, drop linearly with dev up to tolerance
+                max_dev_allowed = max(abs(self.PHASING_TOL_HIGH - self.PHASING_CENTER_SPACING),
+                                      abs(self.PHASING_CENTER_SPACING - self.PHASING_TOL_LOW))
+                phasing_score = max(0.0, 1.0 - (mean_dev / (max_dev_allowed if max_dev_allowed>0 else 1.0)))
+                aprs.append({
+                    'start_center_idx': i,
+                    'end_center_idx': j-1,
+                    'center_positions': run,
+                    'n_tracts': len(run),
+                    'spacings': spacings,
+                    'mean_deviation': mean_dev,
+                    'score': round(phasing_score, 6)
+                })
+            i = j
+
+        return aprs
+
+    # -------------------------
+    # Local long tract finder
+    # -------------------------
+    def find_long_tracts(self, sequence: str, min_len: int = None) -> List[Dict[str, Any]]:
+        """
+        Finds long A-tracts or T-tracts with length >= min_len (default LOCAL_LONG_TRACT).
+        Returns list of dicts: {start,end,base,len,score} with score derived from len.
+        """
+        if min_len is None:
+            min_len = self.LOCAL_LONG_TRACT
+        seq = sequence.upper()
+        results = []
+        # A runs
+        for m in re.finditer(r'A{' + str(min_len) + r',}', seq):
+            ln = m.end() - m.start()
+            # simple local score: normalized by (len/(len+6)) to saturate
+            score = float(ln) / (ln + 6.0)
+            results.append({'start': m.start(), 'end': m.end(), 'base': 'A', 'len': ln, 'score': round(score, 6), 'seq': seq[m.start():m.end()]})
+        # T runs
+        for m in re.finditer(r'T{' + str(min_len) + r',}', seq):
+            ln = m.end() - m.start()
+            score = float(ln) / (ln + 6.0)
+            results.append({'start': m.start(), 'end': m.end(), 'base': 'T', 'len': ln, 'score': round(score, 6), 'seq': seq[m.start():m.end()]})
+        # sort by start
+        results.sort(key=lambda x: x['start'])
+        return results
+
+    # -------------------------
+    # Scoring helpers (interpretability)
+    # -------------------------
+    def phasing_score(self, apr: Dict[str, Any]) -> float:
+        """Return APR phasing score (already stored in apr['score'])."""
+        return float(apr.get('score', 0.0))
+
+    def local_curvature_score(self, tract: Dict[str, Any]) -> float:
+        """Return local curvature score for a long tract (already stored)."""
+        return float(tract.get('score', 0.0))
+
+    # -------------------------
+    # Annotate (summary)
+    # -------------------------
+    def annotate_sequence(self, sequence: str) -> Dict[str, Any]:
+        """
+        Returns comprehensive annotation:
+         - a_tract_windows: raw outputs from find_a_tracts
+         - aprs: list of APRs with phasing scores
+         - long_tracts: list of local A/T long tracts
+         - summary counts and combined score
+        """
+        seq = sequence.upper()
+        a_windows = self.find_a_tracts(seq, minAT=self.MIN_AT_TRACT)
+        # filtered called a-tract centers
+        a_centers = [w for w in a_windows if w['call'] and w['a_center'] is not None]
+        aprs = self.find_aprs(seq, min_tract=self.MIN_AT_TRACT, min_apr_tracts=self.MIN_APR_TRACTS)
+        long_tracts = self.find_long_tracts(seq, min_len=self.LOCAL_LONG_TRACT)
+
+        # annotate aprs with constituent windows (optional)
+        for apr in aprs:
+            apr['constituent_windows'] = []
+            for center in apr['center_positions']:
+                # find closest a_window with that center
+                best = min(a_windows, key=lambda w: abs((w['a_center'] or 1e9) - center))
+                apr['constituent_windows'].append(best)
+
+        summary = {
+            'n_a_windows': len(a_windows),
+            'n_a_centers': len(a_centers),
+            'n_aprs': len(aprs),
+            'n_long_tracts': len(long_tracts),
+            'apr_score_sum': sum(self.phasing_score(a) for a in aprs),
+            'long_tract_score_sum': sum(self.local_curvature_score(l) for l in long_tracts),
+            'combined_score': sum(self.phasing_score(a) for a in aprs) + sum(self.local_curvature_score(l) for l in long_tracts)
+        }
+
+        return {
+            'a_tract_windows': a_windows,
+            'a_centers': a_centers,
+            'aprs': aprs,
+            'long_tracts': long_tracts,
+            'summary': summary
+        }
