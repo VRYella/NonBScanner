@@ -48,6 +48,60 @@ class CurvedDNADetector(BaseMotifDetector):
             ]
         }
 
+    def detect_motifs(self, sequence: str, sequence_name: str = "sequence") -> List[Dict[str, Any]]:
+        """Override base method to use sophisticated curved DNA detection"""
+        sequence = sequence.upper().strip()
+        motifs = []
+        
+        # Use the sophisticated annotation method
+        annotation = self.annotate_sequence(sequence)
+        
+        # Extract APR (A-phased repeat) motifs
+        for i, apr in enumerate(annotation.get('aprs', [])):
+            if apr.get('score', 0) > 0.1:  # Lower threshold for sensitivity
+                start_pos = int(min(apr['center_positions'])) - 10  # Estimate start
+                end_pos = int(max(apr['center_positions'])) + 10    # Estimate end
+                start_pos = max(0, start_pos)
+                end_pos = min(len(sequence), end_pos)
+                
+                motifs.append({
+                    'ID': f"{sequence_name}_CRV_APR_{start_pos+1}",
+                    'Sequence_Name': sequence_name,
+                    'Class': self.get_motif_class_name(),
+                    'Subclass': 'Global Curvature',
+                    'Start': start_pos + 1,  # 1-based coordinates
+                    'End': end_pos,
+                    'Length': end_pos - start_pos,
+                    'Sequence': sequence[start_pos:end_pos],
+                    'Score': round(apr.get('score', 0), 3),
+                    'Strand': '+',
+                    'Method': 'Curved_DNA_detection',
+                    'Pattern_ID': f'CRV_APR_{i+1}'
+                })
+        
+        # Extract long tract motifs
+        for i, tract in enumerate(annotation.get('long_tracts', [])):
+            if tract.get('score', 0) > 0.1:  # Lower threshold for sensitivity
+                start_pos = tract['start']
+                end_pos = tract['end']
+                
+                motifs.append({
+                    'ID': f"{sequence_name}_CRV_TRACT_{start_pos+1}",
+                    'Sequence_Name': sequence_name,
+                    'Class': self.get_motif_class_name(),
+                    'Subclass': 'Local Curvature',
+                    'Start': start_pos + 1,  # 1-based coordinates
+                    'End': end_pos,
+                    'Length': end_pos - start_pos,
+                    'Sequence': sequence[start_pos:end_pos],
+                    'Score': round(tract.get('score', 0), 3),
+                    'Strand': '+',
+                    'Method': 'Curved_DNA_detection',
+                    'Pattern_ID': f'CRV_TRACT_{i+1}'
+                })
+        
+        return motifs
+
     # -------------------------
     # Top-level scoring API
     # -------------------------

@@ -226,6 +226,37 @@ class ZDNADetector(BaseMotifDetector):
             annotations.append(ann)
         return annotations
 
+    def detect_motifs(self, sequence: str, sequence_name: str = "sequence") -> List[Dict[str, Any]]:
+        """Override base method to use sophisticated Z-DNA detection"""
+        sequence = sequence.upper().strip()
+        motifs = []
+        
+        # Use the annotation method to find Z-DNA regions
+        annotations = self.annotate_sequence(sequence)
+        
+        for i, region in enumerate(annotations):
+            # Filter by meaningful score threshold
+            if region.get('sum_score', 0) > 50.0 and region.get('n_10mers', 0) >= 1:
+                start_pos = region['start']
+                end_pos = region['end']
+                
+                motifs.append({
+                    'ID': f"{sequence_name}_ZDNA_{start_pos+1}",
+                    'Sequence_Name': sequence_name,
+                    'Class': self.get_motif_class_name(),
+                    'Subclass': 'Z-DNA',
+                    'Start': start_pos + 1,  # 1-based coordinates
+                    'End': end_pos,
+                    'Length': region['length'],
+                    'Sequence': sequence[start_pos:end_pos],
+                    'Score': round(region['sum_score'], 3),
+                    'Strand': '+',
+                    'Method': 'Z-DNA_detection',
+                    'Pattern_ID': f'ZDNA_{i+1}'
+                })
+        
+        return motifs
+
     # -------------------------
     # Core helpers
     # -------------------------

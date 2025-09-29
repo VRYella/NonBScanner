@@ -88,3 +88,45 @@ class RLoopDetector(BaseMotifDetector):
         tract_bonus = len(g_tracts) / 5  # Bonus for multiple tracts
         
         return min(g_density + tract_bonus * 0.3, 1.0)
+
+    def passes_quality_threshold(self, sequence: str, score: float, pattern_info: Tuple) -> bool:
+        """Lower threshold for R-loop detection"""
+        return score >= 0.3  # Lower threshold for better sensitivity
+
+    def detect_motifs(self, sequence: str, sequence_name: str = "sequence") -> List[Dict[str, Any]]:
+        """Override base method to use custom R-loop detection logic"""
+        sequence = sequence.upper().strip()
+        motifs = []
+        
+        # Use base method but with lowered thresholds
+        base_motifs = super().detect_motifs(sequence, sequence_name)
+        
+        # Also add simple GC-rich region detection
+        # Look for GC-rich regions that might form R-loops
+        gc_pattern = re.compile(r'[GC]{8,}', re.IGNORECASE)
+        for match in gc_pattern.finditer(sequence):
+            start, end = match.span()
+            motif_seq = sequence[start:end]
+            
+            # Calculate GC content
+            gc_content = len(re.findall(r'[GC]', motif_seq)) / len(motif_seq)
+            if gc_content >= 0.75:  # At least 75% GC
+                score = gc_content * 0.8  # Simple GC-based score
+                
+                motifs.append({
+                    'ID': f"{sequence_name}_RLP_GC_{start+1}",
+                    'Sequence_Name': sequence_name,
+                    'Class': self.get_motif_class_name(),
+                    'Subclass': 'R-loop formation sites',
+                    'Start': start + 1,  # 1-based coordinates
+                    'End': end,
+                    'Length': len(motif_seq),
+                    'Sequence': motif_seq,
+                    'Score': round(score, 3),
+                    'Strand': '+',
+                    'Method': 'R-Loop_detection',
+                    'Pattern_ID': f'RLP_GC_{start+1}'
+                })
+        
+        motifs.extend(base_motifs)
+        return motifs
