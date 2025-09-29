@@ -64,7 +64,7 @@ class TriplexDetector(BaseMotifDetector):
 
         for patinfo in patterns:
             pat, pid, name, cname, minlen, scoretype, cutoff, desc, ref = patinfo
-            for m in re.finditer(pat, seq, overlapped=False if "mirror" in name else True):
+            for m in re.finditer(pat, seq):
                 s, e = m.span()
                 if any(used[s:e]):
                     continue
@@ -131,3 +131,58 @@ class TriplexDetector(BaseMotifDetector):
         extras = sum(len(m) for m in re.findall(r'(?:GAA){2,}', sequence)) + sum(len(m) for m in re.findall(r'(?:TTC){2,}', sequence))
         cons_bonus = extras / len(sequence) if len(sequence) else 0
         return min(0.7 * density + 0.3 * cons_bonus, 1.0)
+
+    def passes_quality_threshold(self, sequence: str, score: float, pattern_info: Tuple) -> bool:
+        """Lower threshold for triplex detection"""
+        return score >= 0.2  # Lower threshold for better sensitivity
+
+    def detect_motifs(self, sequence: str, sequence_name: str = "sequence") -> List[Dict[str, Any]]:
+        """Override base method to use sophisticated triplex detection"""
+        sequence = sequence.upper().strip()
+        motifs = []
+        
+        # Use the annotate_sequence method which has the sophisticated logic
+        results = self.annotate_sequence(sequence)
+        
+        for i, result in enumerate(results):
+            motifs.append({
+                'ID': f"{sequence_name}_{result['pattern_id']}_{result['start']+1}",
+                'Sequence_Name': sequence_name,
+                'Class': self.get_motif_class_name(),
+                'Subclass': result['details']['type'],
+                'Start': result['start'] + 1,  # 1-based coordinates
+                'End': result['end'],
+                'Length': result['length'],
+                'Sequence': result['matched_seq'],
+                'Score': round(result['score'], 3),
+                'Strand': '+',
+                'Method': 'Triplex_detection',
+                'Pattern_ID': result['pattern_id']
+            })
+        
+        # Also add simple GAA/TTC repeat detection
+        gaa_pattern = re.compile(r'(GAA){4,}', re.IGNORECASE)
+        ttc_pattern = re.compile(r'(TTC){4,}', re.IGNORECASE)
+        
+        for pattern, name in [(gaa_pattern, 'GAA-repeat'), (ttc_pattern, 'TTC-repeat')]:
+            for match in pattern.finditer(sequence):
+                start, end = match.span()
+                motif_seq = sequence[start:end]
+                score = len(motif_seq) / 30.0  # Simple length-based score
+                
+                motifs.append({
+                    'ID': f"{sequence_name}_STICKY_{name}_{start+1}",
+                    'Sequence_Name': sequence_name,
+                    'Class': self.get_motif_class_name(),
+                    'Subclass': 'Sticky DNA',
+                    'Start': start + 1,  # 1-based coordinates
+                    'End': end,
+                    'Length': len(motif_seq),
+                    'Sequence': motif_seq,
+                    'Score': round(min(score, 1.0), 3),
+                    'Strand': '+',
+                    'Method': 'Triplex_detection',
+                    'Pattern_ID': f'STICKY_{name}'
+                })
+        
+        return motifs

@@ -204,3 +204,39 @@ class CruciformDetector(BaseMotifDetector):
             provided_thresh = None
         thresh = provided_thresh if provided_thresh is not None else 0.2
         return best_score >= thresh
+
+    def detect_motifs(self, sequence: str, sequence_name: str = "sequence") -> List[Dict[str, Any]]:
+        """Override base method to use sophisticated cruciform detection"""
+        sequence = sequence.upper().strip()
+        motifs = []
+        
+        # Use the find_inverted_repeats method which has the sophisticated logic
+        inverted_repeats = self.find_inverted_repeats(sequence, 
+                                                     min_arm=self.MIN_ARM,
+                                                     max_loop=self.MAX_LOOP,
+                                                     max_mismatches=self.MAX_MISMATCHES)
+        
+        for i, repeat in enumerate(inverted_repeats):
+            # Filter by meaningful score threshold
+            if repeat.get('score', 0) > 0.1:  # Lower threshold for sensitivity
+                start_pos = repeat['left_start']
+                end_pos = repeat['right_end'] 
+                full_length = end_pos - start_pos
+                full_seq = sequence[start_pos:end_pos]
+                
+                motifs.append({
+                    'ID': f"{sequence_name}_CRU_{start_pos+1}",
+                    'Sequence_Name': sequence_name,
+                    'Class': self.get_motif_class_name(),
+                    'Subclass': 'Inverted_Repeat',
+                    'Start': start_pos + 1,  # 1-based coordinates
+                    'End': end_pos,
+                    'Length': full_length,
+                    'Sequence': full_seq,
+                    'Score': round(repeat['score'], 3),
+                    'Strand': '+',
+                    'Method': 'Cruciform_detection',
+                    'Pattern_ID': f'CRU_{i+1}'
+                })
+        
+        return motifs

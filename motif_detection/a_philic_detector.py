@@ -318,6 +318,37 @@ class APhilicDetector(BaseMotifDetector):
             annotations.append(ann)
         return annotations
 
+    def detect_motifs(self, sequence: str, sequence_name: str = "sequence") -> List[Dict[str, Any]]:
+        """Override base method to use sophisticated A-philic detection"""
+        sequence = sequence.upper().strip()
+        motifs = []
+        
+        # Use the annotation method to find A-philic regions
+        annotations = self.annotate_sequence(sequence)
+        
+        for i, region in enumerate(annotations):
+            # Filter by meaningful score threshold - lowered for better sensitivity
+            if region.get('sum_log2', 0) > 0.5 and region.get('n_10mers', 0) >= 1:
+                start_pos = region['start']
+                end_pos = region['end']
+                
+                motifs.append({
+                    'ID': f"{sequence_name}_APHIL_{start_pos+1}",
+                    'Sequence_Name': sequence_name,
+                    'Class': self.get_motif_class_name(),
+                    'Subclass': 'A-philic DNA',
+                    'Start': start_pos + 1,  # 1-based coordinates
+                    'End': end_pos,
+                    'Length': region['length'],
+                    'Sequence': sequence[start_pos:end_pos],
+                    'Score': round(region['sum_log2'], 3),
+                    'Strand': '+',
+                    'Method': 'A-philic_detection',
+                    'Pattern_ID': f'APHIL_{i+1}'
+                })
+        
+        return motifs
+
     # -------------------------
     # Core match / merge / contrib helpers
     # -------------------------
