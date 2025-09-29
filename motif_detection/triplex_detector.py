@@ -64,7 +64,7 @@ class TriplexDetector(BaseMotifDetector):
 
         for patinfo in patterns:
             pat, pid, name, cname, minlen, scoretype, cutoff, desc, ref = patinfo
-            for m in re.finditer(pat, seq, overlapped=False if "mirror" in name else True):
+            for m in re.finditer(pat, seq):
                 s, e = m.span()
                 if any(used[s:e]):
                     continue

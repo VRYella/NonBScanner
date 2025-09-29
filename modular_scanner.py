@@ -87,7 +87,8 @@ class ModularMotifDetector:
             all_motifs.extend(pure_python_motifs)
             
             # Skip these classes from modular detection to avoid duplicates
-            skip_classes = {'slipped_dna', 'cruciform', 'triplex'}
+            # Note: Removing triplex from skip list since pure Python scanner doesn't handle it well
+            skip_classes = {'slipped_dna', 'cruciform'}
         else:
             skip_classes = set()
         
