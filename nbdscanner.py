@@ -441,12 +441,12 @@ class MotifDetector:
         return overlap_length / min_length if min_length > 0 else 0.0
     
     def _remove_overlapping_clusters(self, clusters: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-        """Remove overlapping cluster regions"""
+        """Remove overlapping cluster regions, keeping longest non-overlapping clusters"""
         if len(clusters) <= 1:
             return clusters
         
-        # Sort by score (density) descending
-        sorted_clusters = sorted(clusters, key=lambda x: x['Score'], reverse=True)
+        # Sort by length descending, then by score (density) descending
+        sorted_clusters = sorted(clusters, key=lambda x: (x['Length'], x['Score']), reverse=True)
         non_overlapping = []
         
         for cluster in sorted_clusters:

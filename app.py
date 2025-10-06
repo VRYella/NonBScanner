@@ -502,18 +502,9 @@ with tab_pages["Upload & Analyze"]:
                                       help="Validate detected motifs")
         
         
-        overlap_option = st.radio(
-            "Motif Overlap Handling:",
-            options=["Remove overlaps within subclasses", "Show all motifs (including overlaps)"],
-            index=0,
-            help="""
-            • **Remove overlaps within subclasses**: Filters out overlapping motifs within the same subclass, keeping only the best one. Allows overlaps between different subclasses and classes.
-            • **Show all motifs**: Shows all detected motifs regardless of overlaps. Useful for comprehensive analysis and understanding motif distribution.
-            """
-        )
-        
-        # Convert radio selection to boolean
-        nonoverlap = overlap_option == "Remove overlaps within subclasses"
+        # Hardcoded default overlap handling: always remove overlaps within subclasses
+        nonoverlap = True
+        overlap_option = "Remove overlaps within subclasses"
         
         
         # ========== RUN ANALYSIS BUTTON ========== 
