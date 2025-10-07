@@ -16,6 +16,18 @@ Comparison      | plot_class_comparison     | Multi-class comparison plots
 Interactive     | create_motif_browser      | Interactive motif browser
 Export          | save_all_plots            | Batch plot export
 
+ADVANCED VISUALIZATIONS (Publication-Quality):
+==============================================
+From advanced_visualizations module:
+- plot_genome_landscape_track      | Horizontal genomic ruler with motif glyphs
+- plot_sliding_window_heat_ribbon  | 1D density heatmap with score overlay
+- plot_ridge_plots_length_by_class | Stacked density ridges (joyplots)
+- plot_sunburst_treemap            | Hierarchical composition visualization
+- plot_hexbin_start_vs_score       | 2D hexbin with marginal histograms
+- plot_upset_intersection          | UpSet plot for motif overlaps
+- plot_score_violin_beeswarm       | Score distributions with individual points
+- plot_cluster_hotspot_map         | Cluster regions with annotations
+
 Author: Dr. Venkata Rajesh Yella
 License: MIT
 Version: 2024.1
@@ -30,6 +42,26 @@ from typing import Dict, List, Any, Optional, Tuple, Union
 from collections import Counter, defaultdict
 import warnings
 warnings.filterwarnings("ignore")
+
+# Import advanced visualizations
+try:
+    from advanced_visualizations import (
+        plot_genome_landscape_track,
+        plot_sliding_window_heat_ribbon,
+        plot_ridge_plots_length_by_class,
+        plot_sunburst_treemap,
+        plot_hexbin_start_vs_score,
+        plot_upset_intersection,
+        plot_score_violin_beeswarm,
+        plot_cluster_hotspot_map,
+        export_plot,
+        COLORBLIND_PALETTE,
+        MOTIF_CLASS_COLORS_CB
+    )
+    ADVANCED_VIZ_AVAILABLE = True
+except ImportError:
+    ADVANCED_VIZ_AVAILABLE = False
+    print("Advanced visualizations not available. Install advanced_visualizations.py")
 
 # Try to import plotly for interactive plots
 try:

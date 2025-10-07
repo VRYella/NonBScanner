@@ -12,6 +12,8 @@ NBDFinder is a state-of-the-art bioinformatics tool for detecting and analyzing 
 - **Hyperscan-accelerated** detection (40x+ speed improvement)
 - **Literature-validated** scoring algorithms
 - **Normalized scoring** (0-1 scale) for cross-class comparison
+- **✨ NEW: Enhanced hybrid/cluster detection** with actual sequence extraction
+- **✨ NEW: 9 advanced publication-quality visualizations** (colorblind-friendly)
 
 ## 🔬 Supported Motif Classes
 
@@ -124,12 +126,33 @@ curl http://localhost:8000/api/v1/stats
 
 ## 📈 Visualization Suite
 
-### Static Plots
+### Static Plots (Classic)
 - Motif distribution analysis
 - Coverage and density maps
 - Score distribution histograms
 - Sequence composition analysis
 - Class/subclass comparisons
+
+### Advanced Visualizations (NEW! 🎨)
+**Publication-quality static plots with colorblind-friendly palettes:**
+
+1. **Genome Landscape Track** - Horizontal ruler with colored glyphs showing motif positions
+2. **Sliding Window Heat Ribbon** - 1D heatmap with density and score overlay
+3. **Ridge Plots (Joyplots)** - Stacked density ridges for length distributions
+4. **Sunburst/Treemap** - Hierarchical composition visualization
+5. **Hexbin with Marginals** - 2D density plot with marginal histograms
+6. **UpSet Plot** - Clear intersection visualization (better than Venn diagrams)
+7. **Violin + Beeswarm** - Score distributions with individual data points
+8. **Cluster Hotspot Map** - Regional cluster analysis with annotations
+
+**Design Features:**
+- ✅ Export as SVG (vector, editable) and PNG @300 DPI
+- ✅ Okabe-Ito colorblind-safe palette (7 colors)
+- ✅ Clean sans-serif typography
+- ✅ Annotated peaks and top features
+- ✅ Publication-ready layouts
+
+See [ADVANCED_FEATURES.md](ADVANCED_FEATURES.md) for detailed documentation.
 
 ### Interactive Visualizations
 - Motif browser with zoom/pan
