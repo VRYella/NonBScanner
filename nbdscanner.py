@@ -283,6 +283,7 @@ class MotifDetector:
                 
                 # Calculate class-specific score
                 score = self._calculate_score(motif_seq, motif_class)
+                normalized_score = self._normalize_score(score, len(motif_seq), motif_class)
                 
                 # Apply quality thresholds
                 if self._passes_quality_threshold(motif_seq, motif_class, score):
@@ -294,6 +295,7 @@ class MotifDetector:
                         'Length': len(motif_seq),
                         'Sequence': motif_seq,
                         'Score': round(score, 3),
+                        'Normalized_Score': normalized_score,
                         'Strand': '+',
                         'Method': f'{motif_class.upper()}_detection'
                     })
@@ -313,6 +315,38 @@ class MotifDetector:
         else:
             # Default scoring based on length and composition
             return min(len(sequence) / 50, 1.0)
+    
+    def _normalize_score(self, raw_score: float, length: int, motif_class: str) -> float:
+        """
+        Normalize score to 0-1 range based on motif class, length, and stability.
+        Uses class-specific parameters based on literature.
+        """
+        # Class-specific normalization parameters
+        # (max_typical_score, length_weight)
+        class_params = {
+            'g_quadruplex': (3.0, 0.7),    # G4Hunter scores typically -3 to +3
+            'curved_dna': (1.0, 0.5),       # Curvature scores normalized
+            'z_dna': (100.0, 0.6),          # Z-DNA scores can be high
+            'triplex': (1.0, 0.6),          # Triplex potential 0-1
+            'r_loop': (1.0, 0.5),           # R-loop potential
+            'i_motif': (2.0, 0.6),          # i-Motif similar to G4
+            'slipped_dna': (1.0, 0.8),      # Instability based
+            'cruciform': (1.0, 0.7),        # Structural stability
+            'a_philic': (50.0, 0.5),        # A-philic scores
+        }
+        
+        max_score, length_weight = class_params.get(motif_class, (1.0, 0.5))
+        
+        # Sigmoid normalization of raw score
+        score_norm = raw_score / (raw_score + max_score)
+        
+        # Length-based adjustment (longer motifs are generally more stable)
+        length_factor = min(1.0, length / 50.0) * length_weight + (1.0 - length_weight)
+        
+        # Combined normalized score
+        normalized = score_norm * length_factor
+        
+        return round(min(1.0, max(0.0, normalized)), 4)
     
     def _passes_quality_threshold(self, sequence: str, motif_class: str, score: float) -> bool:
         """Apply class-specific quality thresholds"""
@@ -354,9 +388,9 @@ class MotifDetector:
         }
         return class_names.get(motif_class, motif_class.title())
     
-    def _detect_hybrid_motifs(self, motifs: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-        """Detect Class 10: Hybrid motifs (overlapping classes)"""
-        hybrids = []
+    def _detect_hybrid_motifs(self, motifs: List[Dict[str, Any]], sequence: str = None) -> List[Dict[str, Any]]:
+        """Detect Class 10: Hybrid motifs (overlapping classes) - longest non-overlapping regions"""
+        hybrid_candidates = []
         
         # Sort motifs by position
         sorted_motifs = sorted(motifs, key=lambda x: x['Start'])
@@ -367,29 +401,45 @@ class MotifDetector:
                 if motif1['Class'] != motif2['Class']:
                     overlap = self._calculate_overlap(motif1, motif2)
                     if 0.3 <= overlap <= 0.7:  # 30-70% overlap
+                        start = min(motif1['Start'], motif2['Start'])
+                        end = max(motif1['End'], motif2['End'])
+                        length = end - start
+                        
+                        # Extract actual sequence if provided
+                        seq_text = 'HYBRID_REGION'
+                        if sequence and 0 <= start - 1 < len(sequence) and 0 < end <= len(sequence):
+                            seq_text = sequence[start-1:end]
+                        
+                        # Calculate raw and normalized scores
+                        raw_score = (motif1.get('Score', 0) + motif2.get('Score', 0)) / 2
+                        normalized_score = self._normalize_hybrid_score(raw_score, length, 2)
+                        
                         hybrid = {
                             'Class': 'Hybrid',
                             'Subclass': f"{motif1['Class']}_{motif2['Class']}_Overlap",
-                            'Start': min(motif1['Start'], motif2['Start']),
-                            'End': max(motif1['End'], motif2['End']),
-                            'Length': max(motif1['End'], motif2['End']) - min(motif1['Start'], motif2['Start']),
-                            'Sequence': 'HYBRID_REGION',
-                            'Score': (motif1['Score'] + motif2['Score']) / 2,
+                            'Start': start,
+                            'End': end,
+                            'Length': length,
+                            'Sequence': seq_text,
+                            'Score': raw_score,
+                            'Normalized_Score': normalized_score,
                             'Strand': '+',
-                            'Method': 'Hybrid_Detection'
+                            'Method': 'Hybrid_Detection',
+                            'Component_Classes': [motif1['Class'], motif2['Class']]
                         }
-                        hybrids.append(hybrid)
+                        hybrid_candidates.append(hybrid)
         
-        return hybrids
+        # Select longest non-overlapping hybrids
+        return self._select_longest_nonoverlapping(hybrid_candidates)
     
-    def _detect_cluster_motifs(self, motifs: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-        """Detect Class 11: Non-B DNA Clusters (high-density regions)"""
-        clusters = []
+    def _detect_cluster_motifs(self, motifs: List[Dict[str, Any]], sequence: str = None) -> List[Dict[str, Any]]:
+        """Detect Class 11: Non-B DNA Clusters (high-density regions) - longest non-overlapping regions"""
+        cluster_candidates = []
         window_size = 100  # bp
         min_motifs = 3
         
         if len(motifs) < min_motifs:
-            return clusters
+            return cluster_candidates
         
         # Sort motifs by position
         sorted_motifs = sorted(motifs, key=lambda x: x['Start'])
@@ -409,20 +459,38 @@ class MotifDetector:
                 # Get unique classes in cluster
                 classes = set(m['Class'] for m in window_motifs)
                 if len(classes) >= 2:  # Multiple classes
+                    start = window_motifs[0]['Start']
+                    end = window_motifs[-1]['End']
+                    length = end - start
+                    motif_count = len(window_motifs)
+                    
+                    # Extract actual sequence if provided
+                    seq_text = 'CLUSTER_REGION'
+                    if sequence and 0 <= start - 1 < len(sequence) and 0 < end <= len(sequence):
+                        seq_text = sequence[start-1:end]
+                    
+                    # Calculate raw and normalized scores
+                    raw_score = motif_count / window_size * 100  # Density score
+                    normalized_score = self._normalize_cluster_score(raw_score, motif_count, len(classes))
+                    
                     cluster = {
                         'Class': 'Non-B_DNA_Clusters',
                         'Subclass': f"Mixed_Cluster_{len(classes)}_classes",
-                        'Start': window_motifs[0]['Start'],
-                        'End': window_motifs[-1]['End'],
-                        'Length': window_motifs[-1]['End'] - window_motifs[0]['Start'],
-                        'Sequence': 'CLUSTER_REGION',
-                        'Score': len(window_motifs) / window_size * 100,  # Density score
+                        'Start': start,
+                        'End': end,
+                        'Length': length,
+                        'Sequence': seq_text,
+                        'Score': raw_score,
+                        'Normalized_Score': normalized_score,
                         'Strand': '+',
-                        'Method': 'Cluster_Detection'
+                        'Method': 'Cluster_Detection',
+                        'Motif_Count': motif_count,
+                        'Class_Diversity': len(classes)
                     }
-                    clusters.append(cluster)
+                    cluster_candidates.append(cluster)
         
-        return self._remove_overlapping_clusters(clusters)
+        # Select longest non-overlapping clusters
+        return self._select_longest_nonoverlapping(cluster_candidates)
     
     def _calculate_overlap(self, motif1: Dict[str, Any], motif2: Dict[str, Any]) -> float:
         """Calculate overlap percentage between two motifs"""
@@ -440,26 +508,57 @@ class MotifDetector:
         
         return overlap_length / min_length if min_length > 0 else 0.0
     
-    def _remove_overlapping_clusters(self, clusters: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-        """Remove overlapping cluster regions, keeping longest non-overlapping clusters"""
-        if len(clusters) <= 1:
-            return clusters
+    def _normalize_hybrid_score(self, raw_score: float, length: int, num_classes: int) -> float:
+        """
+        Normalize hybrid score based on length and number of overlapping classes.
+        Returns value between 0 and 1.
+        """
+        # Weight by length (longer hybrids get higher normalized scores)
+        length_factor = min(1.0, length / 100.0)  # Normalize by 100bp reference
+        # Weight by class diversity (more classes = more interesting)
+        class_factor = min(1.0, num_classes / 3.0)  # Up to 3 classes as reference
+        # Combine with raw score (sigmoid normalization)
+        norm = (raw_score / (raw_score + 50.0)) * length_factor * class_factor
+        return round(norm, 4)
+    
+    def _normalize_cluster_score(self, raw_score: float, motif_count: int, class_diversity: int) -> float:
+        """
+        Normalize cluster score based on motif count and class diversity.
+        Returns value between 0 and 1.
+        """
+        # Weight by motif density
+        density_factor = min(1.0, motif_count / 10.0)  # 10 motifs as high density reference
+        # Weight by class diversity (more diverse = more interesting)
+        diversity_factor = min(1.0, class_diversity / 5.0)  # 5 classes as reference
+        # Combine with raw score (sigmoid normalization)
+        norm = (raw_score / (raw_score + 100.0)) * density_factor * diversity_factor
+        return round(norm, 4)
+    
+    def _select_longest_nonoverlapping(self, motifs: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        """
+        Select longest non-overlapping motifs from a list.
+        Prioritizes by length, then by score.
+        """
+        if not motifs:
+            return []
         
-        # Sort by length descending, then by score (density) descending
-        sorted_clusters = sorted(clusters, key=lambda x: (x['Length'], x['Score']), reverse=True)
-        non_overlapping = []
+        # Sort by length (descending), then by score (descending)
+        sorted_motifs = sorted(motifs, key=lambda x: (-x['Length'], -x.get('Score', 0)))
         
-        for cluster in sorted_clusters:
-            overlaps = False
-            for existing in non_overlapping:
-                if self._calculate_overlap(cluster, existing) > 0.5:
-                    overlaps = True
-                    break
+        selected = []
+        occupied_positions = set()
+        
+        for motif in sorted_motifs:
+            # Check if this motif overlaps with any selected motif
+            motif_positions = set(range(motif['Start'], motif['End'] + 1))
             
-            if not overlaps:
-                non_overlapping.append(cluster)
+            if not motif_positions & occupied_positions:
+                selected.append(motif)
+                occupied_positions |= motif_positions
         
-        return non_overlapping
+        # Sort by start position for output
+        return sorted(selected, key=lambda x: x['Start'])
+    
     
     def analyze_sequence(self, sequence: str, sequence_name: str = "sequence") -> List[Dict[str, Any]]:
         """
@@ -501,11 +600,11 @@ class MotifDetector:
         all_motifs = self._remove_class_overlaps(all_motifs)
         
         # Class 10: Hybrid motifs (overlapping different classes)
-        hybrid_motifs = self._detect_hybrid_motifs(all_motifs)
+        hybrid_motifs = self._detect_hybrid_motifs(all_motifs, sequence)
         all_motifs.extend(hybrid_motifs)
         
         # Class 11: Non-B DNA Clusters (high-density regions)
-        cluster_motifs = self._detect_cluster_motifs(all_motifs)
+        cluster_motifs = self._detect_cluster_motifs(all_motifs, sequence)
         all_motifs.extend(cluster_motifs)
         
         # Add metadata
