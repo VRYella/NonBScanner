@@ -181,6 +181,36 @@ print(f"Classes detected: {results['classes_detected']}")
 print(f"Subclasses detected: {results['subclasses_detected']}")
 ```
 
+## 🔗 Hybrid and Cluster Motif Separation (NEW)
+
+NBDScanner now separates hybrid and cluster motifs from regular Non-B DNA motifs for cleaner analysis:
+
+### What are Hybrid and Cluster Motifs?
+
+- **Hybrid Motifs**: Regions where different Non-B DNA classes overlap (30-70% overlap)
+  - Example: `R-Loop_Cruciform_Overlap` - indicates complex genomic regions
+  - Shows interaction between different structural elements
+
+- **Cluster Motifs**: High-density regions containing multiple Non-B DNA motifs from different classes
+  - Example: `Mixed_Cluster_10_classes` - hotspots of Non-B DNA activity
+  - Indicates regions with exceptional structural diversity
+
+### How It Works
+
+1. **Main Results**: Shows only primary Non-B DNA motifs (e.g., 52 motifs)
+2. **Cluster/Hybrid Tab**: Dedicated visualization tab for hybrid/cluster motifs (e.g., 71 motifs)
+3. **Downloads**: Export files contain only regular motifs for cleaner downstream analysis
+4. **Clear Messaging**: Info indicators guide users to the appropriate location
+
+### Benefits
+
+- ✅ **Cleaner Results**: Main results focus on primary motifs
+- ✅ **Focused Analysis**: Analyze regular motifs without complex overlaps
+- ✅ **Advanced Access**: Hybrid/cluster data still available in dedicated tab
+- ✅ **Better Downloads**: Export files contain clean datasets
+
+See [HYBRID_CLUSTER_SEPARATION.md](HYBRID_CLUSTER_SEPARATION.md) for detailed documentation.
+
 ## 📄 Citation
 
 If you use NBDFinder in your research, please cite:
