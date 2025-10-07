@@ -66,14 +66,14 @@ class ModularMotifDetector:
         }
     
     def analyze_sequence(self, sequence: str, sequence_name: str = "sequence", 
-                        use_pure_python: bool = True) -> List[Dict[str, Any]]:
+                        use_pure_python: bool = False) -> List[Dict[str, Any]]:
         """
         Main analysis function using modular detectors
         
         Args:
             sequence: DNA sequence to analyze
             sequence_name: Name identifier for the sequence
-            use_pure_python: Whether to use pure Python scanner for specific classes
+            use_pure_python: Whether to use pure Python scanner (DISABLED for performance)
             
         Returns:
             List of detected motifs with comprehensive metadata
@@ -81,18 +81,11 @@ class ModularMotifDetector:
         sequence = sequence.upper().strip()
         all_motifs = []
         
-        # Use pure Python scanner for specific classes if available
-        if use_pure_python and PURE_PYTHON_AVAILABLE:
-            pure_python_motifs = pure_python_scan(sequence, sequence_name)
-            all_motifs.extend(pure_python_motifs)
-            
-            # Skip these classes from modular detection to avoid duplicates
-            # Note: Removing triplex from skip list since pure Python scanner doesn't handle it well
-            skip_classes = {'slipped_dna', 'cruciform'}
-        else:
-            skip_classes = set()
+        # PERFORMANCE: Disable pure Python scanner - too slow on large sequences
+        # Use modular detectors only for better performance
+        skip_classes = set()
         
-        # Use modular detectors for remaining classes
+        # Use modular detectors for all classes
         for class_key, detector in self.detectors.items():
             if class_key not in skip_classes:
                 try:
