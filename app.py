@@ -612,21 +612,20 @@ with tab_pages["Results"]:
         if not motifs:
             st.warning("No motifs detected for this sequence.")
         else:
-            # Create enhanced motifs DataFrame
-            df = pd.DataFrame(motifs)
+            # Filter motifs for main display (exclude hybrid and cluster)
+            filtered_motifs = [m for m in motifs if m.get('Class') not in ['Hybrid', 'Non-B_DNA_Clusters']]
+            hybrid_cluster_motifs = [m for m in motifs if m.get('Class') in ['Hybrid', 'Non-B_DNA_Clusters']]
             
-            # Calculate and display enhanced coverage statistics
-            stats = get_basic_stats(st.session_state.seqs[seq_idx], motifs)
+            # Create enhanced motifs DataFrame (only non-hybrid/cluster motifs)
+            df = pd.DataFrame(filtered_motifs) if filtered_motifs else pd.DataFrame()
             
-            # Filter motifs for density calculation (exclude hybrid and cluster)
-            filtered_motifs = [m for m in motifs if m.get('Class') not in ['Hybrid', 'Non-B_DNA_Cluster']]
-            excluded_motifs = [m for m in motifs if m.get('Class') in ['Hybrid', 'Non-B_DNA_Cluster']]
+            # Calculate and display enhanced coverage statistics (using only filtered motifs)
+            stats = get_basic_stats(st.session_state.seqs[seq_idx], filtered_motifs)
             
-            motif_count = len(motifs)
-            filtered_count = len(filtered_motifs)
-            excluded_count = len(excluded_motifs)
+            motif_count = len(filtered_motifs)
+            hybrid_cluster_count = len(hybrid_cluster_motifs)
             coverage_pct = stats.get("Motif Coverage %", 0)
-            non_b_density = (filtered_count / sequence_length * 1000) if sequence_length > 0 else 0
+            non_b_density = (motif_count / sequence_length * 1000) if sequence_length > 0 else 0
             
             # Enhanced summary card using consolidated stats
             st.markdown(f"""
@@ -655,8 +654,12 @@ with tab_pages["Results"]:
             </div>
             """, unsafe_allow_html=True)
             
+            # Add info about hybrid/cluster motifs being shown separately
+            if hybrid_cluster_count > 0:
+                st.info(f"ℹ️ {hybrid_cluster_count} Hybrid/Cluster motifs detected. View them in the 'Cluster/Hybrid' tab below.")
+            
             # Score analysis section (using raw scores as requested)
-            if motifs:
+            if filtered_motifs:
                 st.markdown("### 📈 Score Analysis")
                 
                 score_col1, score_col2 = st.columns(2)
@@ -665,7 +668,7 @@ with tab_pages["Results"]:
                     # Raw score distribution
                     raw_scores = []
                     
-                    for m in motifs:
+                    for m in filtered_motifs:
                         # Get actual/raw score from various possible keys
                         raw_score = m.get('Actual_Score')
                         if raw_score is None:
@@ -696,11 +699,12 @@ with tab_pages["Results"]:
                         st.info("This could be due to:\n- Low sequence quality\n- Missing motif features\n- Scoring threshold too high")
                 
                 with score_col2:
-                    # Motif class distribution - show all classes even if 0
-                    motif_classes = [m.get('Class', 'Unknown') for m in motifs]
+                    # Motif class distribution - show all classes even if 0 (excluding Hybrid and Cluster)
+                    motif_classes = [m.get('Class', 'Unknown') for m in filtered_motifs]
                     
-                    # Initialize all classes with 0 counts  
-                    all_class_counts = {cls: 0 for cls in MOTIF_ORDER}
+                    # Initialize all classes with 0 counts (excluding Hybrid and Cluster)
+                    filtered_order = [cls for cls in MOTIF_ORDER if cls not in ['Hybrid', 'Non-B DNA Clusters']]
+                    all_class_counts = {cls: 0 for cls in filtered_order}
                     
                     # Update with actual counts
                     actual_counts = Counter(motif_classes)
@@ -779,22 +783,22 @@ with tab_pages["Results"]:
             # CONSOLIDATED VISUALIZATION SUITE
             st.markdown('<h3>📊 NBDScanner Visualizations</h3>', unsafe_allow_html=True)
             
-            # Create tabs for different visualization categories
-            viz_tabs = st.tabs(["📈 Distribution", "🗺️ Coverage Map", "📊 Statistics", "🎯 Interactive"])
+            # Create tabs for different visualization categories including Cluster/Hybrid tab
+            viz_tabs = st.tabs(["📈 Distribution", "🗺️ Coverage Map", "📊 Statistics", "🎯 Interactive", "🔗 Cluster/Hybrid"])
             
             with viz_tabs[0]:  # Distribution
                 st.subheader("Motif Distribution Analysis")
                 try:
-                    fig1 = plot_motif_distribution(motifs, by='Class', title=f"Motif Classes - {sequence_name}")
+                    fig1 = plot_motif_distribution(filtered_motifs, by='Class', title=f"Motif Classes - {sequence_name}")
                     st.pyplot(fig1)
                     plt.close(fig1)
                     
-                    fig2 = plot_motif_distribution(motifs, by='Subclass', title=f"Motif Subclasses - {sequence_name}")
+                    fig2 = plot_motif_distribution(filtered_motifs, by='Subclass', title=f"Motif Subclasses - {sequence_name}")
                     st.pyplot(fig2) 
                     plt.close(fig2)
                     
                     # Pie chart
-                    fig3 = plot_nested_pie_chart(motifs, title=f"Class-Subclass Distribution - {sequence_name}")
+                    fig3 = plot_nested_pie_chart(filtered_motifs, title=f"Class-Subclass Distribution - {sequence_name}")
                     st.pyplot(fig3)
                     plt.close(fig3)
                 except Exception as e:
@@ -803,7 +807,7 @@ with tab_pages["Results"]:
             with viz_tabs[1]:  # Coverage Map
                 st.subheader("Sequence Coverage Analysis")
                 try:
-                    fig4 = plot_coverage_map(motifs, sequence_length, title=f"Motif Coverage - {sequence_name}")
+                    fig4 = plot_coverage_map(filtered_motifs, sequence_length, title=f"Motif Coverage - {sequence_name}")
                     st.pyplot(fig4)
                     plt.close(fig4)
                 except Exception as e:
@@ -814,11 +818,11 @@ with tab_pages["Results"]:
                 try:
                     col1, col2 = st.columns(2)
                     with col1:
-                        fig5 = plot_score_distribution(motifs, by_class=True, title="Score Distribution by Class")
+                        fig5 = plot_score_distribution(filtered_motifs, by_class=True, title="Score Distribution by Class")
                         st.pyplot(fig5)
                         plt.close(fig5)
                     with col2:
-                        fig6 = plot_length_distribution(motifs, by_class=True, title="Length Distribution by Class") 
+                        fig6 = plot_length_distribution(filtered_motifs, by_class=True, title="Length Distribution by Class") 
                         st.pyplot(fig6)
                         plt.close(fig6)
                 except Exception as e:
@@ -828,7 +832,7 @@ with tab_pages["Results"]:
                 st.subheader("Interactive Analysis")
                 try:
                     from visualization import create_interactive_coverage_plot
-                    interactive_fig = create_interactive_coverage_plot(motifs, sequence_length, 
+                    interactive_fig = create_interactive_coverage_plot(filtered_motifs, sequence_length, 
                                                                      title=f"Interactive Motif Browser - {sequence_name}")
                     if hasattr(interactive_fig, 'show'):  # Plotly figure
                         st.plotly_chart(interactive_fig, use_container_width=True)
@@ -838,32 +842,124 @@ with tab_pages["Results"]:
                 except Exception as e:
                     st.error(f"Error generating interactive plots: {e}")
                     st.info("Interactive plots require plotly. Install with: pip install plotly")
-                    selected_viz = st.radio("Choose Visualization Category:", viz_options, horizontal=True)
-            
+                    
                     # Simple fallback visualization for error cases
                     st.markdown('<h4>📊 Fallback Visualization</h4>', unsafe_allow_html=True)
                     st.info("Using basic fallback visualizations since comprehensive analysis failed.")
                     
                     # Basic motif count chart
                     st.markdown('<span style="font-family:Montserrat,Arial;font-size:1.11rem;"><b>Motif Class Distribution</b></span>', unsafe_allow_html=True)
-                    fig, ax = plt.subplots(figsize=(10,6))
-                    class_counts = df['Class'].value_counts()
-                    ax.barh(class_counts.index, class_counts.values)
-                    ax.set_xlabel("Motif Count")
-                    ax.set_title("Basic Motif Class Distribution")
-                    st.pyplot(fig)
-                    plt.close(fig)
+                    if filtered_motifs:
+                        df_viz = pd.DataFrame(filtered_motifs)
+                        fig, ax = plt.subplots(figsize=(10,6))
+                        class_counts = df_viz['Class'].value_counts()
+                        ax.barh(class_counts.index, class_counts.values)
+                        ax.set_xlabel("Motif Count")
+                        ax.set_title("Basic Motif Class Distribution")
+                        st.pyplot(fig)
+                        plt.close(fig)
+                        
+                        # Basic motif map
+                        st.markdown('<span style="font-family:Montserrat,Arial;font-size:1.11rem;"><b>Motif Position Map</b></span>', unsafe_allow_html=True)
+                        fig, ax = plt.subplots(figsize=(12,4))
+                        for i, (_, row) in enumerate(df_viz.iterrows()):
+                            ax.plot([row['Start'], row['End']], [i, i], lw=3, alpha=0.7)
+                        ax.set_xlabel("Sequence Position (bp)")
+                        ax.set_ylabel("Motif Index")
+                        ax.set_title("Basic Motif Position Map")
+                        st.pyplot(fig)
+                        plt.close(fig)
+            
+            with viz_tabs[4]:  # Cluster/Hybrid
+                st.subheader("🔗 Hybrid and Cluster Motifs")
+                
+                if not hybrid_cluster_motifs:
+                    st.info("No Hybrid or Cluster motifs detected for this sequence.")
+                else:
+                    st.markdown(f"""
+                    <div style='background: #f0f8ff; border-left: 4px solid #1e88e5; padding: 15px; border-radius: 5px; margin: 10px 0;'>
+                    <h4 style='margin-top: 0; color: #1565c0;'>About Hybrid and Cluster Motifs</h4>
+                    <p><b>Hybrid Motifs:</b> Regions where different non-B DNA classes overlap (30-70% overlap between classes).</p>
+                    <p><b>Cluster Motifs:</b> High-density regions containing multiple non-B DNA motifs from different classes.</p>
+                    <p>These motifs represent complex genomic regions with potential biological significance.</p>
+                    </div>
+                    """, unsafe_allow_html=True)
                     
-                    # Basic motif map
-                    st.markdown('<span style="font-family:Montserrat,Arial;font-size:1.11rem;"><b>Motif Position Map</b></span>', unsafe_allow_html=True)
-                    fig, ax = plt.subplots(figsize=(12,4))
-                    for i, (_, row) in enumerate(df.iterrows()):
-                        ax.plot([row['Start'], row['End']], [i, i], lw=3, alpha=0.7)
-                    ax.set_xlabel("Sequence Position (bp)")
-                    ax.set_ylabel("Motif Index")
-                    ax.set_title("Basic Motif Position Map")
-                    st.pyplot(fig)
-                    plt.close(fig)
+                    # Create DataFrame for hybrid/cluster motifs
+                    hc_df = pd.DataFrame(hybrid_cluster_motifs)
+                    
+                    # Summary statistics
+                    col1, col2, col3 = st.columns(3)
+                    with col1:
+                        hybrid_count = len([m for m in hybrid_cluster_motifs if m.get('Class') == 'Hybrid'])
+                        st.metric("Hybrid Motifs", hybrid_count)
+                    with col2:
+                        cluster_count = len([m for m in hybrid_cluster_motifs if m.get('Class') == 'Non-B_DNA_Clusters'])
+                        st.metric("Cluster Motifs", cluster_count)
+                    with col3:
+                        avg_length = int(hc_df['Length'].mean()) if 'Length' in hc_df.columns else 0
+                        st.metric("Avg Length (bp)", avg_length)
+                    
+                    # Detailed table
+                    st.markdown("### 📋 Detailed Cluster/Hybrid Table")
+                    display_cols = ['Class', 'Subclass', 'Start', 'End', 'Length', 'Score', 'Normalized_Score']
+                    if 'Component_Classes' in hc_df.columns:
+                        display_cols.append('Component_Classes')
+                    if 'Motif_Count' in hc_df.columns:
+                        display_cols.append('Motif_Count')
+                    if 'Class_Diversity' in hc_df.columns:
+                        display_cols.append('Class_Diversity')
+                    
+                    # Filter to only show available columns
+                    available_display_cols = [col for col in display_cols if col in hc_df.columns]
+                    display_hc_df = hc_df[available_display_cols].copy()
+                    display_hc_df.columns = [col.replace('_', ' ') for col in display_hc_df.columns]
+                    st.dataframe(display_hc_df, use_container_width=True, height=300)
+                    
+                    # Visualizations for hybrid/cluster
+                    st.markdown("### 📊 Visualizations")
+                    
+                    viz_col1, viz_col2 = st.columns(2)
+                    
+                    with viz_col1:
+                        # Position map
+                        st.markdown("**Position Map**")
+                        fig, ax = plt.subplots(figsize=(10, 4))
+                        colors_map = {'Hybrid': '#ff6b6b', 'Non-B_DNA_Clusters': '#4ecdc4'}
+                        for i, motif in enumerate(hybrid_cluster_motifs):
+                            color = colors_map.get(motif.get('Class'), '#95a5a6')
+                            ax.barh(i, motif['End'] - motif['Start'], left=motif['Start'], 
+                                   height=0.8, color=color, alpha=0.7, label=motif.get('Class'))
+                        ax.set_xlabel("Sequence Position (bp)")
+                        ax.set_ylabel("Motif Index")
+                        ax.set_title("Hybrid/Cluster Position Map")
+                        # Remove duplicate labels
+                        handles, labels = ax.get_legend_handles_labels()
+                        by_label = dict(zip(labels, handles))
+                        ax.legend(by_label.values(), by_label.keys())
+                        plt.tight_layout()
+                        st.pyplot(fig)
+                        plt.close(fig)
+                    
+                    with viz_col2:
+                        # Score distribution
+                        st.markdown("**Score Distribution**")
+                        fig, ax = plt.subplots(figsize=(10, 4))
+                        hybrid_scores = [m.get('Normalized_Score', 0) for m in hybrid_cluster_motifs if m.get('Class') == 'Hybrid']
+                        cluster_scores = [m.get('Normalized_Score', 0) for m in hybrid_cluster_motifs if m.get('Class') == 'Non-B_DNA_Clusters']
+                        
+                        if hybrid_scores:
+                            ax.hist(hybrid_scores, bins=10, alpha=0.6, color='#ff6b6b', label='Hybrid')
+                        if cluster_scores:
+                            ax.hist(cluster_scores, bins=10, alpha=0.6, color='#4ecdc4', label='Cluster')
+                        
+                        ax.set_xlabel("Normalized Score")
+                        ax.set_ylabel("Frequency")
+                        ax.set_title("Normalized Score Distribution")
+                        ax.legend()
+                        plt.tight_layout()
+                        st.pyplot(fig)
+                        plt.close(fig)
 
 # ---------- DOWNLOAD ----------
 with tab_pages["Download"]:
@@ -892,21 +988,31 @@ with tab_pages["Download"]:
             include_sequences = st.checkbox("Include Full Sequences", value=True,
                                            help="Include full motif sequences in export")
         
-        # Prepare data for export using consolidated utilities
+        # Prepare data for export using consolidated utilities (exclude Hybrid and Cluster)
         all_motifs = []
+        hybrid_cluster_motifs_export = []
         for i, motifs in enumerate(st.session_state.results):
             for m in motifs:
                 export_motif = m.copy()
                 if 'Sequence_Name' not in export_motif:
                     export_motif['Sequence_Name'] = st.session_state.names[i]
-                all_motifs.append(export_motif)
+                
+                # Separate hybrid/cluster from regular motifs
+                if export_motif.get('Class') in ['Hybrid', 'Non-B_DNA_Clusters']:
+                    hybrid_cluster_motifs_export.append(export_motif)
+                else:
+                    all_motifs.append(export_motif)
+        
+        # Info about excluded motifs
+        if hybrid_cluster_motifs_export:
+            st.info(f"ℹ️ {len(hybrid_cluster_motifs_export)} Hybrid/Cluster motifs are excluded from downloads. These are shown only in the Cluster/Hybrid visualization tab.")
         
         # Display preview
         if all_motifs:
             df_preview = export_results_to_dataframe(all_motifs).head(10)
             st.markdown("### 👀 Export Preview")
             st.dataframe(df_preview, use_container_width=True)
-            st.caption(f"Showing first 10 of {len(all_motifs)} total records")
+            st.caption(f"Showing first 10 of {len(all_motifs)} total records (Hybrid/Cluster motifs excluded)")
         
         # Export buttons using consolidated functions
         st.markdown("### 💾 Download Files")
