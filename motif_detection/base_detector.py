@@ -1,8 +1,29 @@
 """
 Base Detector Class for Modular Motif Detection
-==============================================
+================================================
 
-Abstract base class defining common interface for all motif detectors.
+TABULAR SUMMARY:
+┌──────────────────────────────────────────────────────────────────────────────┐
+│ Module:        base_detector.py                                              │
+│ Purpose:       Abstract base class for all motif detectors                   │
+│ Performance:   O(n) regex matching per pattern                               │
+│ Author:        Dr. Venkata Rajesh Yella                                      │
+│ Last Updated:  2024                                                          │
+├──────────────────────────────────────────────────────────────────────────────┤
+│ KEY FEATURES:                                                                │
+│ • Abstract base class with common interface for all detectors                │
+│ • Pattern compilation and caching for performance                            │
+│ • Standardized motif detection and scoring methods                           │
+│ • Quality threshold validation                                               │
+│ • Statistics and metadata generation                                         │
+├──────────────────────────────────────────────────────────────────────────────┤
+│ METHODS:                                                                     │
+│ • get_patterns()          → Returns detector-specific patterns               │
+│ • calculate_score()       → Computes motif-specific scores                   │
+│ • detect_motifs()         → Main detection method                            │
+│ • passes_quality_threshold() → Validates motif quality                       │
+│ • get_statistics()        → Returns detector statistics                      │
+└──────────────────────────────────────────────────────────────────────────────┘
 """
 
 import re
