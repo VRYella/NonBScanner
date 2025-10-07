@@ -255,7 +255,7 @@ def plot_class_subclass_sunburst(motifs: List[Dict[str, Any]],
 def plot_nested_pie_chart(motifs: List[Dict[str, Any]], 
                          title: str = "Motif Distribution") -> plt.Figure:
     """
-    Create nested pie chart (matplotlib fallback for sunburst)
+    Create nested donut chart with improved text placement to avoid overlaps
     
     Args:
         motifs: List of motif dictionaries
@@ -275,24 +275,26 @@ def plot_nested_pie_chart(motifs: List[Dict[str, Any]],
         subclass_name = motif.get('Subclass', 'Unknown')
         class_subclass_counts[class_name][subclass_name] += 1
     
-    fig, ax = plt.subplots(figsize=(10, 10))
+    fig, ax = plt.subplots(figsize=(12, 10))
     
-    # Inner pie (classes)
+    # Inner donut (classes)
     class_names = list(class_counts.keys())
     class_values = list(class_counts.values())
     class_colors = [MOTIF_CLASS_COLORS.get(name, '#808080') for name in class_names]
     
+    # Create inner donut with better spacing
     wedges1, texts1, autotexts1 = ax.pie(
         class_values, 
         labels=class_names,
         colors=class_colors,
-        radius=0.7,
-        autopct='%1.1f%%',
-        pctdistance=0.85,
-        startangle=90
+        radius=0.65,
+        autopct=lambda pct: f'{pct:.1f}%' if pct > 5 else '',  # Only show % if > 5%
+        pctdistance=0.80,
+        startangle=90,
+        wedgeprops=dict(width=0.35, edgecolor='white', linewidth=2)  # Donut style
     )
     
-    # Outer pie (subclasses)
+    # Outer donut (subclasses) with improved text placement
     all_subclass_counts = []
     all_subclass_colors = []
     all_subclass_labels = []
@@ -303,22 +305,42 @@ def plot_nested_pie_chart(motifs: List[Dict[str, Any]],
         
         for subclass_name, count in subclass_dict.items():
             all_subclass_counts.append(count)
-            all_subclass_labels.append(f"{subclass_name}")
+            # Truncate long subclass names to avoid overlap
+            label = subclass_name if len(subclass_name) <= 15 else subclass_name[:12] + '...'
+            all_subclass_labels.append(label)
             # Create lighter shades for subclasses
             all_subclass_colors.append(base_color)
+    
+    # Only show subclass labels if we have room (< 25 subclasses)
+    if len(all_subclass_labels) > 25:
+        all_subclass_labels = ['' for _ in all_subclass_labels]
     
     wedges2, texts2 = ax.pie(
         all_subclass_counts,
         labels=all_subclass_labels,
         colors=all_subclass_colors,
         radius=1.0,
-        labeldistance=1.1,
-        startangle=90
+        labeldistance=1.15,
+        startangle=90,
+        wedgeprops=dict(width=0.35, edgecolor='white', linewidth=1.5),  # Donut style
+        textprops={'fontsize': 7}
     )
     
-    ax.set_title(title, fontsize=16, pad=20)
-    plt.setp(texts2, fontsize=8)
-    plt.setp(autotexts1, fontsize=10, fontweight='bold')
+    ax.set_title(title, fontsize=16, pad=20, fontweight='bold')
+    
+    # Improve text positioning to avoid overlap
+    for text in texts1:
+        text.set_fontsize(9)
+        text.set_fontweight('bold')
+    
+    for text in texts2:
+        text.set_fontsize(7)
+    
+    # Style percentage labels
+    for autotext in autotexts1:
+        autotext.set_fontsize(9)
+        autotext.set_fontweight('bold')
+        autotext.set_color('white')
     
     return fig
 
@@ -517,10 +539,10 @@ def plot_score_distribution(motifs: List[Dict[str, Any]],
         ax.set_title(title or 'Score Distribution')
         return fig
     
-    # Extract scores
+    # Extract normalized scores (with fallback to Score for backward compatibility)
     scores_data = []
     for motif in motifs:
-        score = motif.get('Score')
+        score = motif.get('Normalized_Score', motif.get('Score'))
         if isinstance(score, (int, float)):
             if by_class:
                 scores_data.append({
@@ -546,15 +568,15 @@ def plot_score_distribution(motifs: List[Dict[str, Any]],
         # Box plot by class
         sns.boxplot(data=df, x='Class', y='Score', ax=ax, palette='Set2')
         ax.set_xticklabels(ax.get_xticklabels(), rotation=45, ha='right')
-        ax.set_ylabel('Motif Score')
+        ax.set_ylabel('Normalized Score')
         ax.set_xlabel('Motif Class')
     else:
         # Simple histogram
         ax.hist(scores_data, bins=20, alpha=0.7, edgecolor='black')
-        ax.set_xlabel('Motif Score')
+        ax.set_xlabel('Normalized Score')
         ax.set_ylabel('Frequency')
     
-    ax.set_title(title or 'Motif Score Distribution')
+    ax.set_title(title or 'Motif Score Distribution (Normalized)')
     plt.tight_layout()
     return fig
 
