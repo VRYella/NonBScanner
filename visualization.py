@@ -154,23 +154,32 @@ def plot_motif_distribution(motifs: List[Dict[str, Any]],
     else:
         colors = sns.color_palette("husl", len(categories))
     
-    # Create plot
+    # Create plot with dynamic sizing based on number of categories
+    if len(categories) > 15:
+        figsize = (max(12, len(categories) * 0.6), 6)
+    
     fig, ax = plt.subplots(figsize=figsize)
     
     bars = ax.bar(range(len(categories)), values, color=colors, alpha=0.8, edgecolor='black', linewidth=0.5)
     
     # Customize plot
-    ax.set_xlabel(f'Motif {by}')
-    ax.set_ylabel('Count')
-    ax.set_title(title or f'Distribution of Motifs by {by}')
+    ax.set_xlabel(f'Motif {by}', fontsize=11, fontweight='bold')
+    ax.set_ylabel('Count', fontsize=11, fontweight='bold')
+    ax.set_title(title or f'Distribution of Motifs by {by}', fontsize=13, fontweight='bold')
     ax.set_xticks(range(len(categories)))
-    ax.set_xticklabels(categories, rotation=45, ha='right')
     
-    # Add count labels on bars
-    for bar, count in zip(bars, values):
-        height = bar.get_height()
-        ax.text(bar.get_x() + bar.get_width()/2., height + 0.1,
-                str(count), ha='center', va='bottom', fontweight='bold')
+    # Adjust label rotation and alignment based on number of categories
+    if len(categories) > 10:
+        ax.set_xticklabels(categories, rotation=60, ha='right', fontsize=8)
+    else:
+        ax.set_xticklabels(categories, rotation=45, ha='right', fontsize=9)
+    
+    # Add count labels on bars (only if not too crowded)
+    if len(categories) <= 20:
+        for bar, count in zip(bars, values):
+            height = bar.get_height()
+            ax.text(bar.get_x() + bar.get_width()/2., height + max(values) * 0.01,
+                    str(count), ha='center', va='bottom', fontweight='bold', fontsize=9)
     
     plt.tight_layout()
     return fig
@@ -862,16 +871,22 @@ def save_all_plots(motifs: List[Dict[str, Any]],
     
     saved_files = {}
     
-    # List of plots to generate
+    # List of plots to generate (diverse, non-repetitive visualization types)
     plots_to_generate = [
         ("motif_distribution_class", lambda: plot_motif_distribution(motifs, by='Class')),
-        ("motif_distribution_subclass", lambda: plot_motif_distribution(motifs, by='Subclass')),
         ("coverage_map", lambda: plot_coverage_map(motifs, sequence_length)),
         ("density_heatmap", lambda: plot_density_heatmap(motifs, sequence_length)),
         ("score_distribution", lambda: plot_score_distribution(motifs, by_class=True)),
         ("length_distribution", lambda: plot_length_distribution(motifs, by_class=True)),
-        ("nested_pie_chart", lambda: plot_nested_pie_chart(motifs))
+        ("nested_donut_chart", lambda: plot_nested_pie_chart(motifs))
     ]
+    
+    # Add advanced visualizations if available
+    if ADVANCED_VIZ_AVAILABLE:
+        plots_to_generate.extend([
+            ("sunburst_hierarchy", lambda: plot_sunburst_treemap(motifs, plot_type='sunburst')),
+            ("score_violin_beeswarm", lambda: plot_score_violin_beeswarm(motifs))
+        ])
     
     for plot_name, plot_func in plots_to_generate:
         try:
