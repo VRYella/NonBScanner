@@ -4,14 +4,30 @@ A-philic DNA Motif Detector
 
 Detects A-philic 10-mer motifs using a provided 10-mer -> avg_log2 table.
 
+MERGING GUARANTEE:
+------------------
+This detector ALWAYS outputs MERGED REGIONS, never individual 10-mers.
+All overlapping or adjacent 10-mer matches are automatically merged into 
+contiguous regions, ensuring no duplicate or split reporting.
+
 Behavior:
 - Use Hyperscan (if available) for blazing-fast exact matching of the 10-mer list.
 - Fallback to a pure-Python exact matcher if Hyperscan isn't installed.
-- Merge overlapping/adjacent 10-mer matches into contiguous regions.
+- **CRITICAL**: Merge overlapping/adjacent 10-mer matches into contiguous regions.
 - Redistribute each 10-mer's avg_log2 evenly across its 10 bases (L/10 per base)
   and sum per-base contributions inside merged regions to compute a region sum score.
 - calculate_score(sequence, pattern_info) returns the raw sum_log2 (float) for the
-  merged calls inside `sequence`. Use annotate_sequence(...) to get detailed region-level results.
+  merged regions inside `sequence`.
+- annotate_sequence(...) returns detailed merged region-level results.
+- detect_motifs(...) returns motif entries for merged regions meeting thresholds.
+
+Output Structure (from detect_motifs and annotate_sequence):
+- start, end: Region boundaries (0-based, end-exclusive)
+- length: Region length in bp
+- sequence: Full sequence of the merged region
+- n_10mers: Number of contributing 10-mer matches
+- score (sum_log2): Sum of per-base log2 contributions across the region
+- mean_log2_per10mer: Average of the individual 10-mer log2 values
 """
 
 import re
@@ -286,6 +302,11 @@ class APhilicDetector(BaseMotifDetector):
     def annotate_sequence(self, sequence: str) -> List[Dict[str, Any]]:
         """
         Return list of region annotations (merged regions).
+        
+        MERGING GUARANTEE: This method ALWAYS merges overlapping/adjacent 10-mer 
+        matches into contiguous regions. No individual 10-mers are returned; only 
+        merged regions covering all contributing 10-mer matches.
+        
         Each dict contains:
           - start, end (0-based, end-exclusive)
           - length (bp)
@@ -295,17 +316,29 @@ class APhilicDetector(BaseMotifDetector):
           - contributing_10mers: list of (tenmer, start, log2)
         """
         seq = sequence.upper()
+        
+        # Step 1: Find all 10-mer matches (may overlap)
         matches = self._find_10mer_matches(seq)
         if not matches:
             return []
+        
+        # Step 2: Merge overlapping/adjacent matches into regions
+        # This is the critical step that ensures no duplicate/split reporting
         merged = self._merge_matches(matches)
+        
+        # Step 3: Build per-base contribution array for scoring
         contrib = self._build_per_base_contrib(seq)
+        
+        # Step 4: Create annotation for each merged region
         annotations = []
         for region in merged:
             s, e, region_matches = region
+            # Sum contributions across the merged region
             sum_log2 = sum(contrib[s:e])
             n_10 = len(region_matches)
             mean_per10 = (sum(m[2] for m in region_matches) / n_10) if n_10 > 0 else 0.0
+            
+            # Build merged region annotation
             ann = {
                 "start": s,
                 "end": e,
@@ -319,11 +352,22 @@ class APhilicDetector(BaseMotifDetector):
         return annotations
 
     def detect_motifs(self, sequence: str, sequence_name: str = "sequence") -> List[Dict[str, Any]]:
-        """Override base method to use sophisticated A-philic detection"""
+        """
+        Override base method to use sophisticated A-philic detection.
+        
+        IMPORTANT: This method ALWAYS outputs merged regions, not individual 10-mers.
+        All overlapping/adjacent 10-mer matches are merged into contiguous regions
+        via annotate_sequence(), ensuring no duplicate or split reporting.
+        
+        Returns:
+            List of motif dictionaries, each representing a merged A-philic region
+            with start, end, length, sequence, score, and contributing 10-mer count.
+        """
         sequence = sequence.upper().strip()
         motifs = []
         
-        # Use the annotation method to find A-philic regions
+        # Use the annotation method to find A-philic regions.
+        # This GUARANTEES that overlapping/adjacent 10-mer matches are merged.
         annotations = self.annotate_sequence(sequence)
         
         for i, region in enumerate(annotations):
@@ -354,8 +398,14 @@ class APhilicDetector(BaseMotifDetector):
     # -------------------------
     def _find_10mer_matches(self, seq: str) -> List[Tuple[int, str, float]]:
         """
-        Return list of exact 10-mer matches (start, tenmer, avg_log2).
-        Uses hyperscan if available; otherwise pure-python scanning.
+        Find all exact 10-mer matches in the sequence.
+        
+        Returns list of (start, tenmer, avg_log2) tuples for each match found.
+        Uses Hyperscan if available for high performance; otherwise falls back
+        to pure-Python scanning. Matches may overlap (e.g., positions 0,1,2...).
+        
+        Note: This method finds ALL matches, including overlapping ones.
+        Merging into regions happens in _merge_matches().
         """
         if _HYPERSCAN_AVAILABLE:
             try:
@@ -406,24 +456,50 @@ class APhilicDetector(BaseMotifDetector):
     def _merge_matches(self, matches: List[Tuple[int, str, float]],
                        merge_gap: int = 0) -> List[Tuple[int, int, List[Tuple[int, str, float]]]]:
         """
-        Merge overlapping/adjacent 10-mer matches into regions.
-        Returns list of (region_start, region_end, list_of_matches_in_region).
+        Merge overlapping/adjacent 10-mer matches into contiguous regions.
+        
+        This is the CORE MERGING LOGIC that ensures no duplicate or split reporting
+        of overlapping 10-mers. All 10-mers that overlap or are within merge_gap 
+        bases of each other are combined into a single region.
+        
+        Args:
+            matches: List of (start, tenmer, log2) tuples, sorted by start position
+            merge_gap: Maximum gap (in bases) between matches to still merge them.
+                      Default 0 means only overlapping/adjacent matches are merged.
+        
+        Returns:
+            List of (region_start, region_end, list_of_matches_in_region) tuples.
+            region_end is exclusive (Python slice convention).
+        
+        Example:
+            If 10-mers at positions 0, 1, 2 all match (overlapping by 9bp each),
+            they will be merged into ONE region [0, 12) containing all 3 matches.
         """
         if not matches:
             return []
+        
         merged = []
+        # Initialize with first match
         cur_start, cur_end = matches[0][0], matches[0][0] + 10
         cur_matches = [matches[0]]
+        
+        # Iterate through remaining matches and merge if overlapping/adjacent
         for m in matches[1:]:
             s = m[0]
             m_end = s + 10
+            
+            # Check if this match overlaps or is within merge_gap of current region
             if s <= cur_end + merge_gap:
+                # Extend current region and add match
                 cur_end = max(cur_end, m_end)
                 cur_matches.append(m)
             else:
+                # Gap too large; finalize current region and start new one
                 merged.append((cur_start, cur_end, cur_matches))
                 cur_start, cur_end = s, m_end
                 cur_matches = [m]
+        
+        # Don't forget to add the last region
         merged.append((cur_start, cur_end, cur_matches))
         return merged
 
@@ -434,14 +510,27 @@ class APhilicDetector(BaseMotifDetector):
 
     def _build_per_base_contrib(self, seq: str) -> List[float]:
         """
-        Build per-base contribution array `contrib` of length len(seq).
-        For each matched 10-mer (start j, log2 L), add L/10 to bases j..j+9.
+        Build per-base contribution array for the sequence.
+        
+        For each matched 10-mer starting at position j with log2 value L,
+        we distribute L equally across its 10 bases by adding L/10 to 
+        positions j, j+1, ..., j+9 in the contribution array.
+        
+        This redistribution allows us to compute region scores as the sum
+        of per-base contributions, properly accounting for overlapping matches.
+        
+        Returns:
+            List of floats of length len(seq), where contrib[i] is the total
+            contribution from all 10-mers covering position i.
         """
         n = len(seq)
         contrib = [0.0] * n
         matches = self._find_10mer_matches(seq)
+        
+        # Distribute each 10-mer's log2 value across its 10 bases
         for (start, ten, log2) in matches:
             per_base = float(log2) / 10.0
             for k in range(start, min(start + 10, n)):
                 contrib[k] += per_base
+        
         return contrib
