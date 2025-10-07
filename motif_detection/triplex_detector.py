@@ -142,6 +142,7 @@ class TriplexDetector(BaseMotifDetector):
         motifs = []
         
         # Use the annotate_sequence method which has the sophisticated logic
+        # and already includes GAA/TTC detection via patterns
         results = self.annotate_sequence(sequence)
         
         for i, result in enumerate(results):
@@ -159,30 +160,5 @@ class TriplexDetector(BaseMotifDetector):
                 'Method': 'Triplex_detection',
                 'Pattern_ID': result['pattern_id']
             })
-        
-        # Also add simple GAA/TTC repeat detection
-        gaa_pattern = re.compile(r'(GAA){4,}', re.IGNORECASE)
-        ttc_pattern = re.compile(r'(TTC){4,}', re.IGNORECASE)
-        
-        for pattern, name in [(gaa_pattern, 'GAA-repeat'), (ttc_pattern, 'TTC-repeat')]:
-            for match in pattern.finditer(sequence):
-                start, end = match.span()
-                motif_seq = sequence[start:end]
-                score = len(motif_seq) / 30.0  # Simple length-based score
-                
-                motifs.append({
-                    'ID': f"{sequence_name}_STICKY_{name}_{start+1}",
-                    'Sequence_Name': sequence_name,
-                    'Class': self.get_motif_class_name(),
-                    'Subclass': 'Sticky DNA',
-                    'Start': start + 1,  # 1-based coordinates
-                    'End': end,
-                    'Length': len(motif_seq),
-                    'Sequence': motif_seq,
-                    'Score': round(min(score, 1.0), 3),
-                    'Strand': '+',
-                    'Method': 'Triplex_detection',
-                    'Pattern_ID': f'STICKY_{name}'
-                })
         
         return motifs
