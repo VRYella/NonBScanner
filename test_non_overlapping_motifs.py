@@ -184,6 +184,48 @@ def test_slipped_dna_detector():
     return result
 
 
+def test_curved_dna_detector():
+    """Test Curved DNA detector for non-overlapping motifs"""
+    print("\n" + "=" * 70)
+    print("TEST: Curved DNA Detector")
+    print("=" * 70)
+    
+    from motif_detection.curved_dna_detector import CurvedDNADetector
+    from collections import defaultdict
+    
+    # Test sequence with A-tracts
+    seq = 'AAAAAAAATGCAAAAAAAATGCAAAAAAAATGCAAAAAAA'
+    detector = CurvedDNADetector()
+    motifs = detector.detect_motifs(seq, 'test_curved')
+    
+    print(f"Sequence length: {len(seq)} bp")
+    print(f"Found {len(motifs)} motif(s)")
+    
+    for i, m in enumerate(motifs[:5]):  # Show first 5
+        print(f"  {i+1}. {m['Subclass']}: [{m['Start']}, {m['End']}) len={m['Length']} score={m['Score']}")
+    
+    # Check overlaps within each subclass (not across subclasses)
+    groups = defaultdict(list)
+    for m in motifs:
+        groups[m['Subclass']].append(m)
+    
+    all_good = True
+    for subclass, group in groups.items():
+        overlaps = False
+        for i in range(len(group) - 1):
+            for j in range(i + 1, len(group)):
+                m1, m2 = group[i], group[j]
+                if not (m1['End'] <= m2['Start'] or m2['End'] <= m1['Start']):
+                    print(f"  ✗ OVERLAP in {subclass}: motif {i} overlaps with motif {j}")
+                    overlaps = False
+                    all_good = False
+        
+    if all_good:
+        print("  ✓ No overlaps detected within subclasses")
+    
+    return all_good
+
+
 def main():
     """Run all tests and report results."""
     print("\n" + "=" * 70)
@@ -200,6 +242,7 @@ def main():
         ("R-Loop Detector", test_rloop_detector),
         ("G-Quadruplex Detector", test_g4_detector),
         ("Slipped DNA Detector", test_slipped_dna_detector),
+        ("Curved DNA Detector", test_curved_dna_detector),
     ]
     
     results = []
