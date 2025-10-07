@@ -154,23 +154,32 @@ def plot_motif_distribution(motifs: List[Dict[str, Any]],
     else:
         colors = sns.color_palette("husl", len(categories))
     
-    # Create plot
+    # Create plot with dynamic sizing based on number of categories
+    if len(categories) > 15:
+        figsize = (max(12, len(categories) * 0.6), 6)
+    
     fig, ax = plt.subplots(figsize=figsize)
     
     bars = ax.bar(range(len(categories)), values, color=colors, alpha=0.8, edgecolor='black', linewidth=0.5)
     
     # Customize plot
-    ax.set_xlabel(f'Motif {by}')
-    ax.set_ylabel('Count')
-    ax.set_title(title or f'Distribution of Motifs by {by}')
+    ax.set_xlabel(f'Motif {by}', fontsize=11, fontweight='bold')
+    ax.set_ylabel('Count', fontsize=11, fontweight='bold')
+    ax.set_title(title or f'Distribution of Motifs by {by}', fontsize=13, fontweight='bold')
     ax.set_xticks(range(len(categories)))
-    ax.set_xticklabels(categories, rotation=45, ha='right')
     
-    # Add count labels on bars
-    for bar, count in zip(bars, values):
-        height = bar.get_height()
-        ax.text(bar.get_x() + bar.get_width()/2., height + 0.1,
-                str(count), ha='center', va='bottom', fontweight='bold')
+    # Adjust label rotation and alignment based on number of categories
+    if len(categories) > 10:
+        ax.set_xticklabels(categories, rotation=60, ha='right', fontsize=8)
+    else:
+        ax.set_xticklabels(categories, rotation=45, ha='right', fontsize=9)
+    
+    # Add count labels on bars (only if not too crowded)
+    if len(categories) <= 20:
+        for bar, count in zip(bars, values):
+            height = bar.get_height()
+            ax.text(bar.get_x() + bar.get_width()/2., height + max(values) * 0.01,
+                    str(count), ha='center', va='bottom', fontweight='bold', fontsize=9)
     
     plt.tight_layout()
     return fig
@@ -255,7 +264,7 @@ def plot_class_subclass_sunburst(motifs: List[Dict[str, Any]],
 def plot_nested_pie_chart(motifs: List[Dict[str, Any]], 
                          title: str = "Motif Distribution") -> plt.Figure:
     """
-    Create nested pie chart (matplotlib fallback for sunburst)
+    Create nested donut chart with improved text placement to avoid overlaps
     
     Args:
         motifs: List of motif dictionaries
@@ -275,24 +284,26 @@ def plot_nested_pie_chart(motifs: List[Dict[str, Any]],
         subclass_name = motif.get('Subclass', 'Unknown')
         class_subclass_counts[class_name][subclass_name] += 1
     
-    fig, ax = plt.subplots(figsize=(10, 10))
+    fig, ax = plt.subplots(figsize=(12, 10))
     
-    # Inner pie (classes)
+    # Inner donut (classes)
     class_names = list(class_counts.keys())
     class_values = list(class_counts.values())
     class_colors = [MOTIF_CLASS_COLORS.get(name, '#808080') for name in class_names]
     
+    # Create inner donut with better spacing
     wedges1, texts1, autotexts1 = ax.pie(
         class_values, 
         labels=class_names,
         colors=class_colors,
-        radius=0.7,
-        autopct='%1.1f%%',
-        pctdistance=0.85,
-        startangle=90
+        radius=0.65,
+        autopct=lambda pct: f'{pct:.1f}%' if pct > 5 else '',  # Only show % if > 5%
+        pctdistance=0.80,
+        startangle=90,
+        wedgeprops=dict(width=0.35, edgecolor='white', linewidth=2)  # Donut style
     )
     
-    # Outer pie (subclasses)
+    # Outer donut (subclasses) with improved text placement
     all_subclass_counts = []
     all_subclass_colors = []
     all_subclass_labels = []
@@ -303,22 +314,42 @@ def plot_nested_pie_chart(motifs: List[Dict[str, Any]],
         
         for subclass_name, count in subclass_dict.items():
             all_subclass_counts.append(count)
-            all_subclass_labels.append(f"{subclass_name}")
+            # Truncate long subclass names to avoid overlap
+            label = subclass_name if len(subclass_name) <= 15 else subclass_name[:12] + '...'
+            all_subclass_labels.append(label)
             # Create lighter shades for subclasses
             all_subclass_colors.append(base_color)
+    
+    # Only show subclass labels if we have room (< 25 subclasses)
+    if len(all_subclass_labels) > 25:
+        all_subclass_labels = ['' for _ in all_subclass_labels]
     
     wedges2, texts2 = ax.pie(
         all_subclass_counts,
         labels=all_subclass_labels,
         colors=all_subclass_colors,
         radius=1.0,
-        labeldistance=1.1,
-        startangle=90
+        labeldistance=1.15,
+        startangle=90,
+        wedgeprops=dict(width=0.35, edgecolor='white', linewidth=1.5),  # Donut style
+        textprops={'fontsize': 7}
     )
     
-    ax.set_title(title, fontsize=16, pad=20)
-    plt.setp(texts2, fontsize=8)
-    plt.setp(autotexts1, fontsize=10, fontweight='bold')
+    ax.set_title(title, fontsize=16, pad=20, fontweight='bold')
+    
+    # Improve text positioning to avoid overlap
+    for text in texts1:
+        text.set_fontsize(9)
+        text.set_fontweight('bold')
+    
+    for text in texts2:
+        text.set_fontsize(7)
+    
+    # Style percentage labels
+    for autotext in autotexts1:
+        autotext.set_fontsize(9)
+        autotext.set_fontweight('bold')
+        autotext.set_color('white')
     
     return fig
 
@@ -517,10 +548,10 @@ def plot_score_distribution(motifs: List[Dict[str, Any]],
         ax.set_title(title or 'Score Distribution')
         return fig
     
-    # Extract scores
+    # Extract normalized scores (with fallback to Score for backward compatibility)
     scores_data = []
     for motif in motifs:
-        score = motif.get('Score')
+        score = motif.get('Normalized_Score', motif.get('Score'))
         if isinstance(score, (int, float)):
             if by_class:
                 scores_data.append({
@@ -546,15 +577,15 @@ def plot_score_distribution(motifs: List[Dict[str, Any]],
         # Box plot by class
         sns.boxplot(data=df, x='Class', y='Score', ax=ax, palette='Set2')
         ax.set_xticklabels(ax.get_xticklabels(), rotation=45, ha='right')
-        ax.set_ylabel('Motif Score')
+        ax.set_ylabel('Normalized Score')
         ax.set_xlabel('Motif Class')
     else:
         # Simple histogram
         ax.hist(scores_data, bins=20, alpha=0.7, edgecolor='black')
-        ax.set_xlabel('Motif Score')
+        ax.set_xlabel('Normalized Score')
         ax.set_ylabel('Frequency')
     
-    ax.set_title(title or 'Motif Score Distribution')
+    ax.set_title(title or 'Motif Score Distribution (Normalized)')
     plt.tight_layout()
     return fig
 
@@ -840,16 +871,22 @@ def save_all_plots(motifs: List[Dict[str, Any]],
     
     saved_files = {}
     
-    # List of plots to generate
+    # List of plots to generate (diverse, non-repetitive visualization types)
     plots_to_generate = [
         ("motif_distribution_class", lambda: plot_motif_distribution(motifs, by='Class')),
-        ("motif_distribution_subclass", lambda: plot_motif_distribution(motifs, by='Subclass')),
         ("coverage_map", lambda: plot_coverage_map(motifs, sequence_length)),
         ("density_heatmap", lambda: plot_density_heatmap(motifs, sequence_length)),
         ("score_distribution", lambda: plot_score_distribution(motifs, by_class=True)),
         ("length_distribution", lambda: plot_length_distribution(motifs, by_class=True)),
-        ("nested_pie_chart", lambda: plot_nested_pie_chart(motifs))
+        ("nested_donut_chart", lambda: plot_nested_pie_chart(motifs))
     ]
+    
+    # Add advanced visualizations if available
+    if ADVANCED_VIZ_AVAILABLE:
+        plots_to_generate.extend([
+            ("sunburst_hierarchy", lambda: plot_sunburst_treemap(motifs, plot_type='sunburst')),
+            ("score_violin_beeswarm", lambda: plot_score_violin_beeswarm(motifs))
+        ])
     
     for plot_name, plot_func in plots_to_generate:
         try:

@@ -200,22 +200,22 @@ def scan_sequence(seq,seq_name="sequence",verbose=False):
     all_motifs=[];motif_id=1
     for r in strs:
         motif={'ID':f"{seq_name}_motif_{motif_id}",'Sequence_Name':seq_name,'Class':r["class"],'Subclass':r["subclass"],'Start':r["start"],
-            'End':r["end"],'Length':r["length"],'Sequence':r["sequence"],'Score':r["normalized_score"],'Strand':r["strand"],
+            'End':r["end"],'Length':r["length"],'Sequence':r["sequence"],'Score':r["raw_score"],'Normalized_Score':r["normalized_score"],'Strand':r["strand"],
             'Method':'Pure_Python_STR','Details':f"unit_len={r['unit_len']};copies={r['copies']}"}
         all_motifs.append(motif);motif_id+=1
     for r in directs:
         motif={'ID':f"{seq_name}_motif_{motif_id}",'Sequence_Name':seq_name,'Class':r["class"],'Subclass':r["subclass"],'Start':r["start"],
-            'End':r["end2"],'Length':r["length"],'Sequence':r["sequence1"]+"|"+r["sequence2"],'Score':r["normalized_score"],'Strand':r["strand"],
+            'End':r["end2"],'Length':r["length"],'Sequence':r["sequence1"]+"|"+r["sequence2"],'Score':r["raw_score"],'Normalized_Score':r["normalized_score"],'Strand':r["strand"],
             'Method':'Pure_Python_Direct','Details':f"unit_len={r['length']};left={r['start']}:{r['end']};right={r['start2']}:{r['end2']};spacer={r['spacer']}"}
         all_motifs.append(motif);motif_id+=1
     for r in cruciforms:
         motif={'ID':f"{seq_name}_motif_{motif_id}",'Sequence_Name':seq_name,'Class':r["class"],'Subclass':r["subclass"],'Start':r['left_start'],
-            'End':r['right_end'],'Length':r['arm_len'],'Sequence':r["sequence_left"]+"|"+r["sequence_right"],'Score':r["normalized_score"],'Strand':r["strand"],
+            'End':r['right_end'],'Length':r['arm_len'],'Sequence':r["sequence_left"]+"|"+r["sequence_right"],'Score':r["raw_score"],'Normalized_Score':r["normalized_score"],'Strand':r["strand"],
             'Method':'Pure_Python_Cruciform','Details':f"arm_len={r['arm_len']};left={r['left_start']}:{r['left_end']};right={r['right_start']}:{r['right_end']};spacer={r['spacer']}"}
         all_motifs.append(motif);motif_id+=1
     for r in triplexes:
         motif={'ID':f"{seq_name}_motif_{motif_id}",'Sequence_Name':seq_name,'Class':r["class"],'Subclass':r["subclass"],'Start':r['left_start'],
-            'End':r['right_end'],'Length':r['arm_len'],'Sequence':r["sequence_arm"],'Score':r["normalized_score"],'Strand':r["strand"],
+            'End':r['right_end'],'Length':r['arm_len'],'Sequence':r["sequence_arm"],'Score':r["raw_score"],'Normalized_Score':r["normalized_score"],'Strand':r["strand"],
             'Method':'Pure_Python_Triplex','Details':f"arm_len={r['arm_len']};left={r['left_start']}:{r['left_end']};right={r['right_start']}:{r['right_end']};spacer={r['spacer']};purity={r['purity']:.3f}"}
         all_motifs.append(motif);motif_id+=1
     if verbose: print(f"# Detected: STRs={len(strs)} directs={len(directs)} cruciforms={len(cruciforms)} triplexes={len(triplexes)}",file=sys.stderr)
