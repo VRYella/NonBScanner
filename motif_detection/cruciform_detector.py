@@ -205,6 +205,33 @@ class CruciformDetector(BaseMotifDetector):
         thresh = provided_thresh if provided_thresh is not None else 0.2
         return best_score >= thresh
 
+    def _remove_overlaps(self, inverted_repeats: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        """Remove overlapping inverted repeats, keeping highest scoring non-overlapping set"""
+        if not inverted_repeats:
+            return []
+        
+        # Sort by score (descending), then by length (descending)
+        sorted_repeats = sorted(inverted_repeats, 
+                               key=lambda x: (-x['score'], -(x['right_end'] - x['left_start'])))
+        
+        non_overlapping = []
+        for repeat in sorted_repeats:
+            # Check if this repeat overlaps with any already selected
+            overlaps = False
+            for selected in non_overlapping:
+                # Two repeats overlap if their full regions (left_start to right_end) overlap
+                if not (repeat['right_end'] <= selected['left_start'] or 
+                       repeat['left_start'] >= selected['right_end']):
+                    overlaps = True
+                    break
+            
+            if not overlaps:
+                non_overlapping.append(repeat)
+        
+        # Sort by start position for output
+        non_overlapping.sort(key=lambda x: x['left_start'])
+        return non_overlapping
+
     def detect_motifs(self, sequence: str, sequence_name: str = "sequence") -> List[Dict[str, Any]]:
         """Override base method to use sophisticated cruciform detection"""
         sequence = sequence.upper().strip()
@@ -216,27 +243,31 @@ class CruciformDetector(BaseMotifDetector):
                                                      max_loop=self.MAX_LOOP,
                                                      max_mismatches=self.MAX_MISMATCHES)
         
-        for i, repeat in enumerate(inverted_repeats):
-            # Filter by meaningful score threshold
-            if repeat.get('score', 0) > 0.1:  # Lower threshold for sensitivity
-                start_pos = repeat['left_start']
-                end_pos = repeat['right_end'] 
-                full_length = end_pos - start_pos
-                full_seq = sequence[start_pos:end_pos]
-                
-                motifs.append({
-                    'ID': f"{sequence_name}_CRU_{start_pos+1}",
-                    'Sequence_Name': sequence_name,
-                    'Class': self.get_motif_class_name(),
-                    'Subclass': 'Inverted_Repeat',
-                    'Start': start_pos + 1,  # 1-based coordinates
-                    'End': end_pos,
-                    'Length': full_length,
-                    'Sequence': full_seq,
-                    'Score': round(repeat['score'], 3),
-                    'Strand': '+',
-                    'Method': 'Cruciform_detection',
-                    'Pattern_ID': f'CRU_{i+1}'
-                })
+        # Filter by meaningful score threshold before overlap removal
+        filtered_repeats = [r for r in inverted_repeats if r.get('score', 0) > 0.1]
+        
+        # Remove overlapping repeats
+        non_overlapping_repeats = self._remove_overlaps(filtered_repeats)
+        
+        for i, repeat in enumerate(non_overlapping_repeats):
+            start_pos = repeat['left_start']
+            end_pos = repeat['right_end'] 
+            full_length = end_pos - start_pos
+            full_seq = sequence[start_pos:end_pos]
+            
+            motifs.append({
+                'ID': f"{sequence_name}_CRU_{start_pos+1}",
+                'Sequence_Name': sequence_name,
+                'Class': self.get_motif_class_name(),
+                'Subclass': 'Inverted_Repeat',
+                'Start': start_pos + 1,  # 1-based coordinates
+                'End': end_pos,
+                'Length': full_length,
+                'Sequence': full_seq,
+                'Score': round(repeat['score'], 3),
+                'Strand': '+',
+                'Method': 'Cruciform_detection',
+                'Pattern_ID': f'CRU_{i+1}'
+            })
         
         return motifs

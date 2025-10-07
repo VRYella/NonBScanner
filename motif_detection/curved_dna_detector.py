@@ -48,6 +48,49 @@ class CurvedDNADetector(BaseMotifDetector):
             ]
         }
 
+    def _remove_overlaps(self, motifs: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        """
+        Remove overlapping motifs within the same subclass.
+        Allows overlaps between different subclasses (Global vs Local curvature).
+        """
+        if not motifs:
+            return []
+        
+        from collections import defaultdict
+        
+        # Group by subclass
+        groups = defaultdict(list)
+        for motif in motifs:
+            subclass = motif.get('Subclass', 'unknown')
+            groups[subclass].append(motif)
+        
+        non_overlapping = []
+        
+        # Process each subclass separately
+        for subclass, group_motifs in groups.items():
+            # Sort by score (descending), then by length (descending)
+            sorted_motifs = sorted(group_motifs, 
+                                  key=lambda x: (-x.get('Score', 0), -x.get('Length', 0)))
+            
+            selected = []
+            for motif in sorted_motifs:
+                # Check if this motif overlaps with any already selected in this subclass
+                overlaps = False
+                for selected_motif in selected:
+                    if not (motif['End'] <= selected_motif['Start'] or 
+                           motif['Start'] >= selected_motif['End']):
+                        overlaps = True
+                        break
+                
+                if not overlaps:
+                    selected.append(motif)
+            
+            non_overlapping.extend(selected)
+        
+        # Sort by start position for output
+        non_overlapping.sort(key=lambda x: x['Start'])
+        return non_overlapping
+
     def detect_motifs(self, sequence: str, sequence_name: str = "sequence") -> List[Dict[str, Any]]:
         """Override base method to use sophisticated curved DNA detection"""
         sequence = sequence.upper().strip()
@@ -99,6 +142,9 @@ class CurvedDNADetector(BaseMotifDetector):
                     'Method': 'Curved_DNA_detection',
                     'Pattern_ID': f'CRV_TRACT_{i+1}'
                 })
+        
+        # Remove overlaps within each subclass
+        motifs = self._remove_overlaps(motifs)
         
         return motifs
 

@@ -93,6 +93,33 @@ class RLoopDetector(BaseMotifDetector):
         """Lower threshold for R-loop detection"""
         return score >= 0.3  # Lower threshold for better sensitivity
 
+    def _remove_overlaps(self, motifs: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        """Remove overlapping motifs, keeping highest scoring non-overlapping set"""
+        if not motifs:
+            return []
+        
+        # Sort by score (descending), then by length (descending)
+        sorted_motifs = sorted(motifs, 
+                              key=lambda x: (-x.get('Score', 0), -x.get('Length', 0)))
+        
+        non_overlapping = []
+        for motif in sorted_motifs:
+            # Check if this motif overlaps with any already selected
+            overlaps = False
+            for selected in non_overlapping:
+                # Two motifs overlap if their regions overlap
+                if not (motif['End'] <= selected['Start'] or 
+                       motif['Start'] >= selected['End']):
+                    overlaps = True
+                    break
+            
+            if not overlaps:
+                non_overlapping.append(motif)
+        
+        # Sort by start position for output
+        non_overlapping.sort(key=lambda x: x['Start'])
+        return non_overlapping
+
     def detect_motifs(self, sequence: str, sequence_name: str = "sequence") -> List[Dict[str, Any]]:
         """Override base method to use custom R-loop detection logic"""
         sequence = sequence.upper().strip()
@@ -129,4 +156,8 @@ class RLoopDetector(BaseMotifDetector):
                 })
         
         motifs.extend(base_motifs)
+        
+        # Remove overlapping motifs
+        motifs = self._remove_overlaps(motifs)
+        
         return motifs
