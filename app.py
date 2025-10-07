@@ -58,75 +58,83 @@ st.markdown("""
         background: #f7fafd !important;
         font-family: 'Montserrat', Arial, sans-serif !important;
     }
-    /* Tabs: medium-large, bold, clean */
+    /* Tabs: consistent, professional sizing */
     .stTabs [data-baseweb="tab-list"] {
         width: 95vw !important;
         justify-content: stretch !important;
         border-bottom: 2px solid #1565c0;
         background: linear-gradient(90deg,#eaf3fa 0%,#f7fafd 100%) !important;
         box-shadow: 0 2px 8px #dae5f2;
-        margin-bottom: 0;
+        margin-bottom: 1em;
     }
     .stTabs [data-baseweb="tab"] {
-        font-size: 1.75rem !important;
-        font-weight: 750 !important;
+        font-size: 1.15rem !important;
+        font-weight: 650 !important;
         flex: 1 1 0%;
         min-width: 0 !important;
-        padding: 15px 0 15px 0 !important;
+        padding: 12px 0 12px 0 !important;
         text-align: center;
         color: #1565c0 !important;
         background: #eaf3fa !important;
         border-right: 1px solid #eee !important;
-        letter-spacing: 0.03em;
+        letter-spacing: 0.02em;
     }
     .stTabs [aria-selected="true"] {
         color: #002147 !important;
-        border-bottom: 5px solid #1565c0 !important;
+        border-bottom: 4px solid #1565c0 !important;
         background: #f7fafd !important;
-        box-shadow: 0 4px 8px #e0e5ea;
+        box-shadow: 0 3px 6px #e0e5ea;
     }
     .stTabs [data-baseweb="tab"]:last-child {
         border-right: none !important;
     }
-    /* Headings: harmonized medium size */
+    /* Headings: clean, professional hierarchy */
     h1, h2, h3, h4 {
         font-family: 'Montserrat', Arial, sans-serif !important;
         color: #1565c0 !important;
-        font-weight: 800 !important;
-        margin-top: 0.8em;
-        margin-bottom: 0.8em;
+        font-weight: 700 !important;
+        margin-top: 1em;
+        margin-bottom: 0.6em;
     }
-    h1 { font-size:2.05rem !important; }
-    h2 { font-size:1.55rem !important; }
-    h3 { font-size:1.19rem !important; }
-    h4 { font-size:1.09rem !important; }
-    /* Markdown/text: medium size, easy reading with proper spacing */
-    .stMarkdown, .markdown-text-container, .stText, p, span, label, input, .stTextInput>div>div>input, .stSelectbox>div>div>div, .stMultiSelect>div>div>div, .stRadio>div>div>label>div {
-        font-size: 1.08rem !important;
+    h1 { font-size: 1.9rem !important; }
+    h2 { font-size: 1.4rem !important; }
+    h3 { font-size: 1.15rem !important; }
+    h4 { font-size: 1.05rem !important; }
+    /* Body text: optimal readability with clean spacing */
+    .stMarkdown, .markdown-text-container, .stText, p, span, label {
+        font-size: 1.0rem !important;
         font-family: 'Montserrat', Arial, sans-serif !important;
-        line-height: 1.6 !important;
-        margin-bottom: 0.5rem !important;
+        line-height: 1.65 !important;
+        margin-bottom: 0.6em !important;
     }
-    /* Buttons: modern, medium */
+    /* Input fields: consistent sizing */
+    input, .stTextInput>div>div>input, .stSelectbox>div>div>div, .stMultiSelect>div>div>div, .stRadio>div>div>label>div {
+        font-size: 1.0rem !important;
+        font-family: 'Montserrat', Arial, sans-serif !important;
+    }
+    /* Buttons: professional, medium size */
     .stButton>button {
-        font-size: 1.08rem !important;
+        font-size: 1.05rem !important;
         font-family: 'Montserrat', Arial, sans-serif !important;
-        padding: 0.45em 1.2em !important;
+        padding: 0.5em 1.3em !important;
         background: linear-gradient(90deg,#1565c0 0%,#2e8bda 100%) !important;
         color: #fff !important;
-        border-radius: 7px !important;
+        border-radius: 8px !important;
         border: none !important;
         font-weight: 600 !important;
         box-shadow: 0 2px 8px #b5cbe6;
-        transition: background 0.2s;
+        transition: all 0.2s;
     }
     .stButton>button:hover {
         background: linear-gradient(90deg,#2e8bda 0%,#1565c0 100%) !important;
+        box-shadow: 0 4px 12px #a0b9d8;
+        transform: translateY(-1px);
     }
-    /* DataFrame font with better spacing */
+    /* DataFrames: clean table presentation */
     .stDataFrame, .stTable {
-        font-size: 1.05rem !important;
+        font-size: 0.95rem !important;
         font-family: 'Montserrat', Arial, sans-serif !important;
+        line-height: 1.5 !important;
     }
     /* Improved tab content spacing to prevent overlap */
     .stTabs [data-baseweb="tab-panel"] {
