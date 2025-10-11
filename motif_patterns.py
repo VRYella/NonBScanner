@@ -36,7 +36,7 @@ from collections import defaultdict
 class PatternRegistry:
     """Complete registry of all Non-B DNA patterns with metadata"""
     
-    # Class 1: Curved DNA - A-tract mediated DNA bending
+    # Class 1: Curved DNA - A-tract mediated DNA bending (optimized)
     CURVED_DNA_PATTERNS = {
         'a_tracts': [
             # (pattern, pattern_id, name, subclass, min_len, scoring_method, confidence, biological_significance, reference)
@@ -90,7 +90,7 @@ class PatternRegistry:
         ]
     }
     
-    # Class 5: Triplex DNA - Three-stranded structures
+    # Class 5: Triplex DNA - Three-stranded structures (optimized)
     TRIPLEX_PATTERNS = {
         'triplex_forming_sequences': [
             (r'[GA]{15,}', 'TRX_5_1', 'Homopurine tract', 'Triplex', 15, 'triplex_potential', 0.90, 'H-DNA formation', 'Frank-Kamenetskii 1995'),

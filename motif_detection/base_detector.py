@@ -54,7 +54,7 @@ class BaseMotifDetector(ABC):
         pass
     
     def _compile_patterns(self) -> Dict[str, List[Tuple]]:
-        """Compile all regex patterns for performance"""
+        """Compile all regex patterns for performance with optimized flags"""
         compiled_patterns = {}
         
         for pattern_group, patterns in self.patterns.items():
@@ -62,7 +62,8 @@ class BaseMotifDetector(ABC):
             for pattern_info in patterns:
                 pattern, pattern_id, name, subclass = pattern_info[:4]
                 try:
-                    compiled_pattern = re.compile(pattern, re.IGNORECASE)
+                    # Use IGNORECASE | ASCII for better performance on DNA sequences
+                    compiled_pattern = re.compile(pattern, re.IGNORECASE | re.ASCII)
                     compiled_group.append((compiled_pattern, pattern_id, name, subclass, pattern_info))
                 except re.error as e:
                     print(f"Warning: Invalid pattern {pattern}: {e}")

@@ -91,7 +91,8 @@ class IMotifDetector(BaseMotifDetector):
             for patt in pats:
                 regex = patt[0]
                 pid = patt[1] if len(patt) > 1 else f"{class_name}_pat"
-                for m in re.finditer(regex, seq, flags=re.I):
+                # Use IGNORECASE | ASCII for better performance
+                for m in re.finditer(regex, seq, flags=re.IGNORECASE | re.ASCII):
                     s, e = m.start(), m.end()
                     if (e - s) < MIN_REGION_LEN:
                         continue

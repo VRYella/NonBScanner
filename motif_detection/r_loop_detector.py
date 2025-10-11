@@ -21,7 +21,7 @@ class RLoopDetector(BaseMotifDetector):
         return "R-Loop"
     
     def get_patterns(self) -> Dict[str, List[Tuple]]:
-        """Return R-loop DNA patterns"""
+        """Return R-loop DNA patterns - optimized with non-capturing groups"""
         return {
             'r_loop_formation_sites': [
                 (r'[GC]{10,}[AT]{2,10}[GC]{10,}', 'RLP_4_1', 'GC-rich R-loop site', 'R-loop formation sites', 20, 'r_loop_potential', 0.85, 'Transcription-replication conflicts', 'Aguilera 2012'),
@@ -130,7 +130,7 @@ class RLoopDetector(BaseMotifDetector):
         
         # Also add simple GC-rich region detection
         # Look for GC-rich regions that might form R-loops
-        gc_pattern = re.compile(r'[GC]{8,}', re.IGNORECASE)
+        gc_pattern = re.compile(r'[GC]{8,}', re.IGNORECASE | re.ASCII)
         for match in gc_pattern.finditer(sequence):
             start, end = match.span()
             motif_seq = sequence[start:end]

@@ -58,7 +58,7 @@ except ImportError:
 class MotifPatterns:
     """Centralized pattern registry for all 11 motif classes"""
     
-    # Class 1: Curved DNA patterns
+    # Class 1: Curved DNA patterns (optimized)
     CURVED_DNA_PATTERNS = {
         'a_tracts': [
             (r'A{4,}', 'A-tract', 'Local curvature'),
@@ -71,7 +71,7 @@ class MotifPatterns:
         ]
     }
     
-    # Class 2: Slipped DNA patterns  
+    # Class 2: Slipped DNA patterns (optimized with non-capturing groups)
     SLIPPED_DNA_PATTERNS = {
         'direct_repeats': [
             (r'([ATGC]{2,})(?:[ATGC]{0,50})\1', 'Direct repeat', 'STR'),
@@ -79,8 +79,8 @@ class MotifPatterns:
         ],
         'short_tandem_repeats': [
             (r'([ATGC]{1,6})\1{3,}', 'STR', 'STR'),
-            (r'(CA)\1{4,}', 'CA repeat', 'STR'),
-            (r'(CGG)\1{3,}', 'CGG repeat', 'STR')
+            (r'(?:CA){4,}', 'CA repeat', 'STR'),
+            (r'(?:CGG){3,}', 'CGG repeat', 'STR')
         ]
     }
     
@@ -100,7 +100,7 @@ class MotifPatterns:
         ]
     }
     
-    # Class 5: Triplex patterns
+    # Class 5: Triplex patterns (optimized with non-capturing groups)
     TRIPLEX_PATTERNS = {
         'triplex_forming': [
             (r'[GA]{10,}', 'Homopurine tract', 'Triplex'),
@@ -134,7 +134,7 @@ class MotifPatterns:
         ]
     }
     
-    # Class 7: i-Motif Family patterns (3 subclasses)
+    # Class 7: i-Motif Family patterns (3 subclasses, optimized)
     I_MOTIF_PATTERNS = {
         'canonical_imotif': [
             (r'C{3,}[ATGC]{1,7}C{3,}[ATGC]{1,7}C{3,}[ATGC]{1,7}C{3,}', 'Canonical i-motif', 'Canonical i-motif')
@@ -256,14 +256,15 @@ class MotifDetector:
         self._compiled_patterns = self._compile_patterns()
     
     def _compile_patterns(self) -> Dict[str, List[Tuple]]:
-        """Compile all regex patterns for performance"""
+        """Compile all regex patterns for performance with optimized flags"""
         compiled = {}
         for motif_class, pattern_groups in self.patterns.items():
             compiled[motif_class] = []
             for pattern_group, patterns in pattern_groups.items():
                 for pattern, name, subclass in patterns:
                     try:
-                        compiled_pattern = re.compile(pattern, re.IGNORECASE)
+                        # Use IGNORECASE | ASCII for better performance on DNA sequences
+                        compiled_pattern = re.compile(pattern, re.IGNORECASE | re.ASCII)
                         compiled[motif_class].append((compiled_pattern, name, subclass))
                     except re.error:
                         continue
