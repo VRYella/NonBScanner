@@ -36,6 +36,18 @@ NBDFinder is a state-of-the-art bioinformatics tool for detecting and analyzing 
 | **9** | Hybrid | Multi-class Overlap, Composite | Overlapping motifs |
 | **10** | Cluster | Motif Hotspot, Mixed Cluster | High-density regions |
 
+## 📚 Documentation
+
+Comprehensive documentation is available:
+
+- **[QUICK_START.md](QUICK_START.md)** - Fast installation and first analysis guide
+- **[TOOL_DOCUMENTATION.md](TOOL_DOCUMENTATION.md)** - Complete technical documentation (nature paper-level writeup)
+- **[VISUAL_FLOWCHARTS.md](VISUAL_FLOWCHARTS.md)** - 20+ interactive flowcharts and diagrams
+- **[ISSUE_RESOLUTION.md](ISSUE_RESOLUTION.md)** - Troubleshooting and common issues
+- **[CODE_ORGANIZATION_SUMMARY.md](CODE_ORGANIZATION_SUMMARY.md)** - Code structure and organization
+- **[OPTIMIZATION_SUMMARY.md](OPTIMIZATION_SUMMARY.md)** - Performance optimization details
+- **[PERFORMANCE_OPTIMIZATION.md](PERFORMANCE_OPTIMIZATION.md)** - Detailed performance guide
+
 ## 🚀 Quick Start
 
 ### Web Interface
@@ -48,6 +60,8 @@ pip install -r requirements.txt
 # Launch web interface
 streamlit run app.py                    # Web interface on :8501
 ```
+
+**New to NBDScanner?** Start with [QUICK_START.md](QUICK_START.md) for a step-by-step guide!
 
 ## 📱 User Interfaces
 
