@@ -79,6 +79,7 @@ NonBScanner/
 ├── requirements.txt          # All dependencies
 ├── nbdcircle.JPG            # Logo image
 ├── motif_detection/         # Detector modules
+│   ├── __init__.py
 │   ├── base_detector.py
 │   ├── g_quadruplex_detector.py
 │   ├── z_dna_detector.py
@@ -89,9 +90,17 @@ NonBScanner/
 │   ├── slipped_dna_detector.py
 │   ├── a_philic_detector.py
 │   └── cruciform_detector.py
-├── modular_scanner.py
-├── nbdscanner.py
-└── motif_patterns.py
+├── utils/                   # Utility modules
+│   ├── __init__.py
+│   ├── modular_scanner.py
+│   ├── nbdscanner.py
+│   ├── motif_patterns.py
+│   ├── utils.py
+│   ├── visualization.py
+│   └── advanced_visualizations.py
+├── README.md
+├── OPTIMIZATION_SUMMARY.md
+└── PERFORMANCE_OPTIMIZATION.md
 ```
 
 ## Performance Metrics

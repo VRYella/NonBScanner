@@ -51,13 +51,16 @@ NonBScanner/
 │   ├── slipped_dna_detector.py
 │   ├── a_philic_detector.py
 │   └── cruciform_detector.py
-├── modular_scanner.py       # Recommended production scanner
-├── nbdscanner.py            # Wrapper with legacy support
-├── motif_patterns.py        # Pattern registry
-├── utils.py                 # Helper functions
-├── visualization.py         # Visualization suite
-├── advanced_visualizations.py  # Advanced plots
+├── utils/                   # Utility modules
+│   ├── __init__.py
+│   ├── modular_scanner.py   # Recommended production scanner
+│   ├── nbdscanner.py        # Wrapper with legacy support
+│   ├── motif_patterns.py    # Pattern registry
+│   ├── utils.py             # Helper functions
+│   ├── visualization.py     # Visualization suite
+│   └── advanced_visualizations.py  # Advanced plots
 ├── README.md                # Documentation
+├── CLEANUP_SUMMARY.md       # Cleanup guide
 ├── OPTIMIZATION_SUMMARY.md  # Optimization guide
 └── PERFORMANCE_OPTIMIZATION.md  # Performance details
 ```
