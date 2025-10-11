@@ -35,7 +35,7 @@ class CurvedDNADetector(BaseMotifDetector):
     # --------------------------------------------
 
     def get_patterns(self) -> Dict[str, List[Tuple]]:
-        """Metadata only — actual logic in find_* methods."""
+        """Metadata only — actual logic in find_* methods. Optimized patterns."""
         return {
             'a_tracts': [
                 (r'A{3,}', 'CRV_1_1', 'A-tract (global)', 'Global Curvature', 3, 'phasing_score', 0.95, 'A-phased repeats (APRs)', 'Koo/Crothers'),

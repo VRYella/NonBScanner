@@ -45,6 +45,8 @@ class GQuadruplexDetector(BaseMotifDetector):
           - bulged/imperfect: Lim 2009[web:22], Adrian 2014, Kuryavyi 2010, Webba da Silva 2007, Papp 2023[web:25]
           - multimeric/bipartite: Guédin 2010, Kolesnikova 2019, Frasson 2022[web:42][web:73]
           - g_triplex: Sen 1988, Williamson 1989[web:70]
+        
+        Optimized with non-capturing groups for performance.
         """
         return {
             'canonical_g4': [

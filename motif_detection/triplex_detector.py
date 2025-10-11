@@ -26,6 +26,7 @@ class TriplexDetector(BaseMotifDetector):
         return {
             'triplex_forming_sequences': [
                 # Homopurine mirror repeat: (arm)-(loop)-(mirror_arm), each arm ≥10bp, loop ≤100bp, >90% purine
+                # Using capturing groups here for arm1, loop, arm2 extraction
                 (r'((?:[GA]{1,}){10,})'
                  r'([ATGC]{1,100})'
                  r'((?:[GA]{1,}){10,})',
@@ -49,9 +50,9 @@ class TriplexDetector(BaseMotifDetector):
                  0.90,
                  'H-DNA formation (homopyrimidine)',
                  'Frank-Kamenetskii 1995'),
-                # GAA sticky DNA
+                # GAA sticky DNA - optimized with non-capturing group
                 (r'(?:GAA){4,}', 'TRX_5_4', 'GAA repeat', 'Sticky_DNA', 12, 'sticky_dna_score', 0.95, 'Disease-associated repeats', 'Sakamoto 1999'),
-                # TTC sticky DNA
+                # TTC sticky DNA - optimized with non-capturing group
                 (r'(?:TTC){4,}', 'TRX_5_5', 'TTC repeat', 'Sticky_DNA', 12, 'sticky_dna_score', 0.95, 'Disease-associated repeats', 'Sakamoto 1999'),
             ]
         }
