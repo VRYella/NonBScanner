@@ -6,16 +6,16 @@ import numpy as np
 from collections import Counter
 
 # Import consolidated NBDScanner modules
-from nbdscanner import (
+from utils.nbdscanner import (
     analyze_sequence, analyze_multiple_sequences,
     get_motif_classification_info, export_results_to_dataframe
 )
-from utils import (
+from utils.utils import (
     parse_fasta, gc_content, reverse_complement, wrap,
     get_basic_stats, export_to_bed, export_to_csv, export_to_json,
     validate_sequence, quality_check_motifs
 )
-from visualization import (
+from utils.visualization import (
     plot_motif_distribution, plot_coverage_map, plot_score_distribution,
     plot_length_distribution, plot_nested_pie_chart, save_all_plots,
     MOTIF_CLASS_COLORS

@@ -669,7 +669,7 @@ def analyze_sequence(sequence: str, sequence_name: str = "sequence",
     if use_modular:
         # Use the new modular architecture
         try:
-            from modular_scanner import analyze_sequence as modular_analyze
+            from .modular_scanner import analyze_sequence as modular_analyze
             return modular_analyze(sequence, sequence_name, detailed)
         except ImportError:
             print("Warning: Modular scanner not available, falling back to legacy approach")
@@ -697,7 +697,7 @@ def get_motif_classification_info() -> Dict[str, Any]:
     """Get comprehensive information about the 11-class, 22+ subclass system"""
     # Try to get info from modular architecture first
     try:
-        from modular_scanner import get_motif_classification_info as modular_info
+        from .modular_scanner import get_motif_classification_info as modular_info
         modular_data = modular_info()
         
         # Enhanced info combining modular data with classification details
