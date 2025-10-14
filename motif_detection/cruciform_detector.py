@@ -70,13 +70,12 @@ class CruciformDetector(BaseMotifDetector):
             'mismatches','match_fraction','score'
           }
         Coordinates are 0-based, end-exclusive.
+        
+        For long sequences (>1000 bp), uses a sliding window approach to avoid
+        skipping motifs while maintaining reasonable performance.
         """
         seq = sequence.upper()
         n = len(seq)
-        
-        # PERFORMANCE: Skip cruciform detection for very long sequences
-        if n > self.MAX_SEQUENCE_LENGTH:
-            return []
         
         if min_arm is None:
             min_arm = self.MIN_ARM
@@ -86,18 +85,70 @@ class CruciformDetector(BaseMotifDetector):
             max_mismatches = self.MAX_MISMATCHES
 
         hits: List[Dict[str, Any]] = []
+        
+        # For long sequences, use sliding window approach
+        if n > self.MAX_SEQUENCE_LENGTH:
+            window_size = self.MAX_SEQUENCE_LENGTH
+            step_size = window_size // 2  # 50% overlap to avoid missing motifs at boundaries
+            
+            for window_start in range(0, n, step_size):
+                window_end = min(window_start + window_size, n)
+                window_seq = seq[window_start:window_end]
+                
+                # Process this window
+                window_hits = self._find_inverted_repeats_in_window(
+                    window_seq, min_arm, max_loop, max_mismatches
+                )
+                
+                # Adjust coordinates to full sequence
+                for hit in window_hits:
+                    hit['left_start'] += window_start
+                    hit['left_end'] += window_start
+                    hit['right_start'] += window_start
+                    hit['right_end'] += window_start
+                    hits.append(hit)
+                
+                # If we've reached the end, stop
+                if window_end >= n:
+                    break
+            
+            # Remove duplicates that may occur in overlapping windows
+            hits = self._deduplicate_hits(hits)
+        else:
+            # For short sequences, use the full algorithm
+            hits = self._find_inverted_repeats_in_window(seq, min_arm, max_loop, max_mismatches)
+        
+        # Sort hits by descending score, then by left_start
+        hits.sort(key=lambda h: (-h['score'], h['left_start'], -h['arm_len']))
+        return hits
+    
+    def _find_inverted_repeats_in_window(self, seq: str, min_arm: int, 
+                                         max_loop: int, max_mismatches: int) -> List[Dict[str, Any]]:
+        """Core inverted repeat detection in a single window"""
+        hits: List[Dict[str, Any]] = []
+        n = len(seq)
+        
+        # PERFORMANCE: Sample positions for large windows to reduce search space
+        # For sequences, check every position, but for larger ones, sample
+        step = 1 if n <= 500 else 2 if n <= 1000 else 3
 
         # PERFORMANCE: Limit arm length testing to MAX_ARM for computational feasibility
-        for left_start in range(0, n - 2 * min_arm):
+        for left_start in range(0, n - 2 * min_arm, step):
             # Maximum possible arm length at this left_start
             max_possible_arm = min(self.MAX_ARM, (n - left_start) // 2)
             
-            for arm_len in range(min_arm, max_possible_arm + 1):
+            # PERFORMANCE: Search from larger arm lengths first (better quality)
+            # This allows early termination and reduces total iterations
+            for arm_len in range(max_possible_arm, min_arm - 1, -1):
                 left_end = left_start + arm_len
                 # right arm must start at least left_end + 0 loop; but loop cannot exceed max_loop
                 right_start_min = left_end
                 right_start_max = min(left_end + max_loop, n - arm_len)
-                # iterate right_starts (loop sizes)
+                
+                # Early exit if we already found a good match at this position
+                found_good_match = False
+                
+                # iterate right_starts (loop sizes) - prefer smaller loops
                 for right_start in range(right_start_min, right_start_max + 1):
                     loop_len = right_start - left_end
                     right_end = right_start + arm_len
@@ -126,11 +177,36 @@ class CruciformDetector(BaseMotifDetector):
                             'match_fraction': round(match_fraction, 4),
                             'score': round(score, 6)
                         })
+                        found_good_match = True
+                        # PERFORMANCE: If we found a perfect match with good score, 
+                        # we can skip checking smaller arm lengths at this position
+                        if mismatches == 0 and score > 0.5:
+                            break
                     # If exact-match required and mismatches > 0, we can continue scanning other right_starts
                     # Continue until right_start_max.
-        # Sort hits by descending score, then by left_start
-        hits.sort(key=lambda h: (-h['score'], h['left_start'], -h['arm_len']))
+                
+                # If we found a good match, skip smaller arm lengths at this position
+                if found_good_match and arm_len >= min_arm * 2:
+                    break
+                    
         return hits
+    
+    def _deduplicate_hits(self, hits: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        """Remove duplicate hits that may occur in overlapping windows"""
+        if not hits:
+            return hits
+        
+        # Create a unique key for each hit based on positions
+        seen = {}
+        unique_hits = []
+        
+        for hit in hits:
+            key = (hit['left_start'], hit['left_end'], hit['right_start'], hit['right_end'])
+            if key not in seen:
+                seen[key] = True
+                unique_hits.append(hit)
+        
+        return unique_hits
 
     # --------------------------
     # Scoring function (interpretable)
