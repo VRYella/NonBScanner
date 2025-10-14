@@ -192,7 +192,7 @@ def plot_sliding_window_heat_ribbon(motifs: List[Dict[str, Any]],
     for motif in motifs:
         start = motif.get('Start', 0)
         end = motif.get('End', 0)
-        score = motif.get('Normalized_Score', motif.get('Score', 0))
+        score = motif.get('Score', motif.get('Normalized_Score', 0))
         
         # Find which windows this motif overlaps
         start_window = start // window_size
@@ -502,7 +502,7 @@ def plot_hexbin_start_vs_score(motifs: List[Dict[str, Any]],
     
     # Extract data
     starts = [m.get('Start', 0) for m in motifs]
-    scores = [m.get('Normalized_Score', m.get('Score', 0)) for m in motifs]
+    scores = [m.get('Score', m.get('Normalized_Score', 0)) for m in motifs]
     
     # Main hexbin plot
     hexbin = ax_main.hexbin(starts, scores, gridsize=30, cmap='YlOrRd', 
@@ -712,7 +712,7 @@ def plot_score_violin_beeswarm(motifs: List[Dict[str, Any]],
     class_scores = defaultdict(list)
     for motif in motifs:
         motif_class = motif.get('Class', 'Unknown')
-        score = motif.get('Normalized_Score', motif.get('Score', 0))
+        score = motif.get('Score', motif.get('Normalized_Score', 0))
         if score > 0:
             class_scores[motif_class].append(score)
     

@@ -1,4 +1,8 @@
 def canonicalize_motif(m):
+    """
+    Canonicalize motif dictionary to standard format.
+    Maintains backward compatibility with Normalized_Score but doesn't require it.
+    """
     mapping = {
         'Actual Score': 'Actual_Score',
         'ActualScore': 'Actual_Score',
@@ -30,7 +34,9 @@ def canonicalize_motif(m):
     out['Subclass'] = str(out.get('Subclass') or 'Other')
     out['Actual_Score'] = float(out.get('Actual_Score') or m.get('Actual_Score') or m.get('Score') or 0.0)
     out['Score'] = float(out.get('Score') or out['Actual_Score'])
+    # Keep Normalized_Score for backward compatibility if it exists, but set to 0 if not present
     out['Normalized_Score'] = float(out.get('Normalized_Score') or m.get('Normalized_Score') or 0.0)
     out['Motif'] = m.get('Motif') or m.get('matched_seq') or ''
     out['Sequence_Name'] = out.get('Sequence_Name') or m.get('sequence_name') or ''
     return out
+
