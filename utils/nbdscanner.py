@@ -284,7 +284,6 @@ class MotifDetector:
                 
                 # Calculate class-specific score
                 score = self._calculate_score(motif_seq, motif_class)
-                normalized_score = self._normalize_score(score, len(motif_seq), motif_class)
                 
                 # Apply quality thresholds
                 if self._passes_quality_threshold(motif_seq, motif_class, score):
@@ -296,7 +295,6 @@ class MotifDetector:
                         'Length': len(motif_seq),
                         'Sequence': motif_seq,
                         'Score': round(score, 3),
-                        'Normalized_Score': normalized_score,
                         'Strand': '+',
                         'Method': f'{motif_class.upper()}_detection'
                     })
@@ -317,37 +315,7 @@ class MotifDetector:
             # Default scoring based on length and composition
             return min(len(sequence) / 50, 1.0)
     
-    def _normalize_score(self, raw_score: float, length: int, motif_class: str) -> float:
-        """
-        Normalize score to 0-1 range based on motif class, length, and stability.
-        Uses class-specific parameters based on literature.
-        """
-        # Class-specific normalization parameters
-        # (max_typical_score, length_weight)
-        class_params = {
-            'g_quadruplex': (3.0, 0.7),    # G4Hunter scores typically -3 to +3
-            'curved_dna': (1.0, 0.5),       # Curvature scores normalized
-            'z_dna': (100.0, 0.6),          # Z-DNA scores can be high
-            'triplex': (1.0, 0.6),          # Triplex potential 0-1
-            'r_loop': (1.0, 0.5),           # R-loop potential
-            'i_motif': (2.0, 0.6),          # i-Motif similar to G4
-            'slipped_dna': (1.0, 0.8),      # Instability based
-            'cruciform': (1.0, 0.7),        # Structural stability
-            'a_philic': (50.0, 0.5),        # A-philic scores
-        }
-        
-        max_score, length_weight = class_params.get(motif_class, (1.0, 0.5))
-        
-        # Sigmoid normalization of raw score
-        score_norm = raw_score / (raw_score + max_score)
-        
-        # Length-based adjustment (longer motifs are generally more stable)
-        length_factor = min(1.0, length / 50.0) * length_weight + (1.0 - length_weight)
-        
-        # Combined normalized score
-        normalized = score_norm * length_factor
-        
-        return round(min(1.0, max(0.0, normalized)), 4)
+
     
     def _passes_quality_threshold(self, sequence: str, motif_class: str, score: float) -> bool:
         """Apply class-specific quality thresholds"""
@@ -411,9 +379,8 @@ class MotifDetector:
                         if sequence and 0 <= start - 1 < len(sequence) and 0 < end <= len(sequence):
                             seq_text = sequence[start-1:end]
                         
-                        # Calculate raw and normalized scores
+                        # Calculate raw score
                         raw_score = (motif1.get('Score', 0) + motif2.get('Score', 0)) / 2
-                        normalized_score = self._normalize_hybrid_score(raw_score, length, 2)
                         
                         hybrid = {
                             'Class': 'Hybrid',
@@ -423,7 +390,6 @@ class MotifDetector:
                             'Length': length,
                             'Sequence': seq_text,
                             'Score': raw_score,
-                            'Normalized_Score': normalized_score,
                             'Strand': '+',
                             'Method': 'Hybrid_Detection',
                             'Component_Classes': [motif1['Class'], motif2['Class']]
@@ -470,9 +436,8 @@ class MotifDetector:
                     if sequence and 0 <= start - 1 < len(sequence) and 0 < end <= len(sequence):
                         seq_text = sequence[start-1:end]
                     
-                    # Calculate raw and normalized scores
+                    # Calculate raw score (density score)
                     raw_score = motif_count / window_size * 100  # Density score
-                    normalized_score = self._normalize_cluster_score(raw_score, motif_count, len(classes))
                     
                     cluster = {
                         'Class': 'Non-B_DNA_Clusters',
@@ -482,7 +447,6 @@ class MotifDetector:
                         'Length': length,
                         'Sequence': seq_text,
                         'Score': raw_score,
-                        'Normalized_Score': normalized_score,
                         'Strand': '+',
                         'Method': 'Cluster_Detection',
                         'Motif_Count': motif_count,
@@ -509,31 +473,6 @@ class MotifDetector:
         
         return overlap_length / min_length if min_length > 0 else 0.0
     
-    def _normalize_hybrid_score(self, raw_score: float, length: int, num_classes: int) -> float:
-        """
-        Normalize hybrid score based on length and number of overlapping classes.
-        Returns value between 0 and 1.
-        """
-        # Weight by length (longer hybrids get higher normalized scores)
-        length_factor = min(1.0, length / 100.0)  # Normalize by 100bp reference
-        # Weight by class diversity (more classes = more interesting)
-        class_factor = min(1.0, num_classes / 3.0)  # Up to 3 classes as reference
-        # Combine with raw score (sigmoid normalization)
-        norm = (raw_score / (raw_score + 50.0)) * length_factor * class_factor
-        return round(norm, 4)
-    
-    def _normalize_cluster_score(self, raw_score: float, motif_count: int, class_diversity: int) -> float:
-        """
-        Normalize cluster score based on motif count and class diversity.
-        Returns value between 0 and 1.
-        """
-        # Weight by motif density
-        density_factor = min(1.0, motif_count / 10.0)  # 10 motifs as high density reference
-        # Weight by class diversity (more diverse = more interesting)
-        diversity_factor = min(1.0, class_diversity / 5.0)  # 5 classes as reference
-        # Combine with raw score (sigmoid normalization)
-        norm = (raw_score / (raw_score + 100.0)) * density_factor * diversity_factor
-        return round(norm, 4)
     
     def _select_longest_nonoverlapping(self, motifs: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         """
@@ -637,7 +576,8 @@ class MotifDetector:
             for motif in sorted_motifs:
                 overlaps = False
                 for existing in non_overlapping:
-                    if self._calculate_overlap(motif, existing) > 0.5:
+                    # Strict overlap check: any overlap at all (>0) is rejected within same subclass
+                    if self._calculate_overlap(motif, existing) > 0.0:
                         overlaps = True
                         break
                 

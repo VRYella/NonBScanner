@@ -548,10 +548,10 @@ def plot_score_distribution(motifs: List[Dict[str, Any]],
         ax.set_title(title or 'Score Distribution')
         return fig
     
-    # Extract normalized scores (with fallback to Score for backward compatibility)
+    # Extract scores (use Score field, fallback to Normalized_Score for backward compatibility)
     scores_data = []
     for motif in motifs:
-        score = motif.get('Normalized_Score', motif.get('Score'))
+        score = motif.get('Score', motif.get('Normalized_Score'))
         if isinstance(score, (int, float)):
             if by_class:
                 scores_data.append({

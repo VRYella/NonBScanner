@@ -136,7 +136,7 @@ class ModularMotifDetector:
         return final_motifs
     
     def _remove_overlaps(self, motifs: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-        """Remove overlapping motifs within the same class/subclass"""
+        """Remove overlapping motifs within the same class/subclass - ensures NO overlaps"""
         if not motifs:
             return motifs
         
@@ -149,14 +149,15 @@ class ModularMotifDetector:
         filtered_motifs = []
         
         for group_motifs in groups.values():
-            # Sort by score (highest first)
-            group_motifs.sort(key=lambda x: x.get('Score', 0), reverse=True)
+            # Sort by score (highest first), then by length (longest first)
+            group_motifs.sort(key=lambda x: (x.get('Score', 0), x.get('Length', 0)), reverse=True)
             
             non_overlapping = []
             for motif in group_motifs:
                 overlaps = False
                 for existing in non_overlapping:
-                    if self._calculate_overlap(motif, existing) > 0.5:
+                    # Strict overlap check: any overlap at all (>0) is rejected
+                    if self._calculate_overlap(motif, existing) > 0.0:
                         overlaps = True
                         break
                 
