@@ -4,8 +4,9 @@ Slipped DNA Motif Detector (Optimized for Performance)
 PERFORMANCE OPTIMIZATIONS:
 - Removed catastrophic backtracking patterns
 - Uses efficient linear scanning for STRs
-- Direct repeats detection optimized with limits
-- O(n) complexity for large sequences
+- Direct repeats detection with adaptive sampling (no skipping!)
+- Optimized scoring function: O(N) instead of O(N²)
+- Adaptive parameters based on sequence length
 
 Detects and annotates complete repeat regions, following:
 - STRs: Unit size 1–9 bp, ≥10 bp in span, non-overlapping, match full region[web:79][web:78]

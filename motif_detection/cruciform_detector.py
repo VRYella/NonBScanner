@@ -3,10 +3,10 @@ CruciformDetector (Optimized for Performance)
 =============================================
 
 PERFORMANCE OPTIMIZATIONS:
-- Added sequence length limit (max 50,000 bp for cruciform detection)
+- Sliding window approach for sequences > 1000 bp (no skipping!)
+- Optimized search: larger arm lengths first with early termination
 - Limited maximum arm length to 100 bp for O(n) complexity
-- Early termination for large sequences
-- Maintains accuracy while improving speed
+- Maintains accuracy while improving speed on all sequence lengths
 
 Detects inverted repeats (potential cruciform-forming) with:
  - arm length >= 6 (capped at 100 bp for performance)
