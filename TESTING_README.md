@@ -2,6 +2,24 @@
 
 This directory contains comprehensive testing and verification scripts for the NonBScanner Non-B DNA motif detection system.
 
+## 🎯 NEW: Automatic Detector Discovery
+
+The testing suite now includes **automatic detector discovery** that ensures all motif detectors are picked up for testing without manual maintenance. See [`DETECTOR_DISCOVERY_README.md`](DETECTOR_DISCOVERY_README.md) for full details.
+
+### Quick Verification
+
+To verify automatic discovery is working:
+
+```bash
+python3 verify_detector_discovery.py
+```
+
+This confirms:
+- ✓ All 9 detector classes are automatically discovered
+- ✓ 28 test sequences registered across all detectors
+- ✓ 19 demo sequences for demonstrations
+- ✓ All detectors are ready for testing
+
 ## Quick Start
 
 ### Verify the Problem Sequence
@@ -32,20 +50,27 @@ python3 test_all_motifs.py
 
 ## Test Scripts
 
-### 1. verify_problem_sequence.py
+### 1. verify_detector_discovery.py (NEW)
+- **Purpose**: Verify automatic detector discovery system
+- **Tests**: Discovery mechanism, registries, and integration
+- **Expected**: All 9 detectors discovered, 28 test sequences, 19 demo sequences
+
+### 2. verify_problem_sequence.py
 - **Purpose**: Verify the specific sequence from the problem statement
 - **Tests**: Direct detector test + full application workflow
 - **Expected**: ✓ SUCCESS - sequence detected with score 5.386
 
-### 2. demo_all_detectors.py
+### 3. demo_all_detectors.py
 - **Purpose**: Demonstrate all 9 motif classes are working
 - **Tests**: 2-3 examples per class with appropriate sequences
 - **Expected**: All classes detect their respective motifs
+- **Note**: Now uses automatic detector discovery
 
-### 3. test_all_motifs.py
+### 4. test_all_motifs.py
 - **Purpose**: Comprehensive test suite for all classes
 - **Tests**: 28 total tests across 9 classes
 - **Expected**: ~71% pass rate (20/28 tests)
+- **Note**: Now uses automatic detector discovery
 
 ## Verification Results
 
