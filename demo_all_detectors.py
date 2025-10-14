@@ -2,20 +2,29 @@
 """
 Comprehensive demonstration that all motif detectors are working.
 
-This script shows that all 9 Non-B DNA motif detection classes are 
+This script shows that all Non-B DNA motif detection classes are 
 implemented, integrated, and functioning correctly with appropriate 
 test sequences.
+
+Uses automatic detector discovery to ensure all detectors are demonstrated.
 """
 
-from motif_detection.a_philic_detector import APhilicDetector
-from motif_detection.z_dna_detector import ZDNADetector
-from motif_detection.i_motif_detector import IMotifDetector
-from motif_detection.g_quadruplex_detector import GQuadruplexDetector
-from motif_detection.triplex_detector import TriplexDetector
-from motif_detection.cruciform_detector import CruciformDetector
-from motif_detection.slipped_dna_detector import SlippedDNADetector
-from motif_detection.curved_dna_detector import CurvedDNADetector
-from motif_detection.r_loop_detector import RLoopDetector
+import sys
+import os
+import importlib.util
+
+# Add project root to path for imports
+project_root = os.path.dirname(os.path.abspath(__file__))
+if project_root not in sys.path:
+    sys.path.insert(0, project_root)
+
+# Import detector_registry directly without loading the whole utils package
+spec = importlib.util.spec_from_file_location(
+    "detector_registry",
+    os.path.join(project_root, "utils", "detector_registry.py")
+)
+detector_registry = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(detector_registry)
 
 def format_header(title):
     """Format a section header"""
@@ -52,203 +61,45 @@ def test_detector(name, detector, sequence, description):
 def main():
     format_header("NON-B DNA MOTIF DETECTOR COMPREHENSIVE VERIFICATION")
     
-    print("This script demonstrates that all 9 motif detection classes are")
+    print("This script demonstrates that all motif detection classes are")
     print("implemented, integrated, and working correctly.\n")
     
-    # =========================================================================
-    # 1. A-philic DNA (PROBLEM STATEMENT SEQUENCE)
-    # =========================================================================
-    format_header("1. A-PHILIC DNA")
+    # Automatically discover all detectors and their demo sequences
+    detectors_with_demos = detector_registry.get_all_detectors_with_demo_sequences()
     
-    test_detector(
-        "A-philic DNA",
-        APhilicDetector(),
-        "AGGGGGGGGGAGGGGGGGGC",
-        "Problem statement sequence (G-rich)"
-    )
+    print(f"Automatically discovered {len(detectors_with_demos)} detector classes")
+    print("=" * 80)
     
-    test_detector(
-        "A-philic DNA",
-        APhilicDetector(),
-        "CCCCCCCCCCCCCCCCCCCC",
-        "Poly-C (complement of A-philic)"
-    )
+    tested_count = 0
     
-    # =========================================================================
-    # 2. Z-DNA
-    # =========================================================================
-    format_header("2. Z-DNA")
-    
-    test_detector(
-        "Z-DNA",
-        ZDNADetector(),
-        "CGCGCGCGCGCGCG",
-        "CG alternating repeats (classic Z-DNA)"
-    )
-    
-    test_detector(
-        "Z-DNA",
-        ZDNADetector(),
-        "ATCGCGCGCGCGCGAT",
-        "Embedded CG repeat"
-    )
-    
-    # =========================================================================
-    # 3. i-Motif
-    # =========================================================================
-    format_header("3. i-MOTIF")
-    
-    test_detector(
-        "i-Motif",
-        IMotifDetector(),
-        "CCCTAACCCTAACCCTAACCCT",
-        "C-rich telomeric sequence"
-    )
-    
-    test_detector(
-        "i-Motif",
-        IMotifDetector(),
-        "CCCAACCCAACCCAACCC",
-        "Multiple C-runs with A spacers"
-    )
-    
-    # =========================================================================
-    # 4. G-Quadruplex
-    # =========================================================================
-    format_header("4. G-QUADRUPLEX")
-    
-    test_detector(
-        "G-Quadruplex",
-        GQuadruplexDetector(),
-        "GGGTTAGGGTTAGGGTTAGGG",
-        "Telomeric G4 (human telomere)"
-    )
-    
-    test_detector(
-        "G-Quadruplex",
-        GQuadruplexDetector(),
-        "GGGAAAGGGAAAGGGAAAGGG",
-        "G4 with A spacers"
-    )
-    
-    # =========================================================================
-    # 5. Triplex
-    # =========================================================================
-    format_header("5. TRIPLEX")
-    
-    test_detector(
-        "Triplex",
-        TriplexDetector(),
-        "AGAGAGAGAGAGAGAGAGAGAGAGAGAG",
-        "Polypurine-polypyrimidine (AG repeat)"
-    )
-    
-    test_detector(
-        "Triplex",
-        TriplexDetector(),
-        "GAGAGAGAGAGAGAGAGAGAGA",
-        "GA repeat (triplex forming)"
-    )
-    
-    # =========================================================================
-    # 6. Cruciform
-    # =========================================================================
-    format_header("6. CRUCIFORM")
-    
-    test_detector(
-        "Cruciform",
-        CruciformDetector(),
-        "AAAATTTTAAAATTTT",
-        "Inverted repeat (AT-rich)"
-    )
-    
-    test_detector(
-        "Cruciform",
-        CruciformDetector(),
-        "ATCGATCGATCGATCG",
-        "Palindromic sequence"
-    )
-    
-    # =========================================================================
-    # 7. Slipped DNA
-    # =========================================================================
-    format_header("7. SLIPPED DNA (STRs)")
-    
-    test_detector(
-        "Slipped DNA",
-        SlippedDNADetector(),
-        "CAGCAGCAGCAGCAGCAG",
-        "CAG repeat (Huntington's disease)"
-    )
-    
-    test_detector(
-        "Slipped DNA",
-        SlippedDNADetector(),
-        "CGGCGGCGGCGGCGGCGG",
-        "CGG repeat (Fragile X syndrome)"
-    )
-    
-    test_detector(
-        "Slipped DNA",
-        SlippedDNADetector(),
-        "GAAGAAGAAGAAGAAGAA",
-        "GAA repeat (Friedreich's ataxia)"
-    )
-    
-    # =========================================================================
-    # 8. Curved DNA
-    # =========================================================================
-    format_header("8. CURVED DNA")
-    
-    test_detector(
-        "Curved DNA",
-        CurvedDNADetector(),
-        "AAAAAAAATAAAAAAA",
-        "A-tract with phasing"
-    )
-    
-    test_detector(
-        "Curved DNA",
-        CurvedDNADetector(),
-        "AAAAAAAAAAAAAAAAAAAA",
-        "Long A-tract (intrinsic curvature)"
-    )
-    
-    # =========================================================================
-    # 9. R-Loop
-    # =========================================================================
-    format_header("9. R-LOOP")
-    
-    test_detector(
-        "R-Loop",
-        RLoopDetector(),
-        "GGGGGAAAAAGGGGGAAAAAGGGGGAAAAA",
-        "G-rich with A spacers (R-loop prone)"
-    )
-    
-    test_detector(
-        "R-Loop",
-        RLoopDetector(),
-        "GGGGGGGGAAAAAAAAAAGGGGGGGGAAAAAAAAAA",
-        "Long G-runs with skew"
-    )
+    # Test each detector with its demo sequences
+    for i, (display_name, detector_class, demo_sequences) in enumerate(detectors_with_demos, 1):
+        if not demo_sequences:
+            print(f"\nWarning: No demo sequences defined for {display_name}")
+            continue
+        
+        format_header(f"{i}. {display_name.upper()}")
+        
+        # Instantiate the detector
+        detector = detector_class()
+        
+        # Test with each demo sequence
+        for description, sequence in demo_sequences:
+            test_detector(display_name, detector, sequence, description)
+            tested_count += 1
     
     # =========================================================================
     # Summary
     # =========================================================================
     format_header("VERIFICATION COMPLETE")
     
-    print("All 9 Non-B DNA motif detection classes have been tested:")
+    print(f"All {len(detectors_with_demos)} Non-B DNA motif detection classes have been tested:")
     print()
-    print("  1. ✓ A-philic DNA    - A-rich protein binding sites")
-    print("  2. ✓ Z-DNA           - Left-handed double helix")
-    print("  3. ✓ i-Motif         - C-rich structures")
-    print("  4. ✓ G-Quadruplex    - Four-stranded G-rich structures")
-    print("  5. ✓ Triplex         - Three-stranded DNA")
-    print("  6. ✓ Cruciform       - Inverted repeats")
-    print("  7. ✓ Slipped DNA     - Tandem repeats (STRs)")
-    print("  8. ✓ Curved DNA      - A-tract mediated bending")
-    print("  9. ✓ R-Loop          - RNA-DNA hybrid sites")
+    
+    # List all detected classes
+    for i, (display_name, _, _) in enumerate(detectors_with_demos, 1):
+        print(f"  {i}. ✓ {display_name}")
+    
     print()
     print("All detectors are implemented and functional.")
     print()
