@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 import io
 import numpy as np
 from collections import Counter
+from utils.canonicalize_motif import canonicalize_motif
 
 # Import consolidated NBDScanner modules
 from utils.nbdscanner import (
@@ -553,18 +554,19 @@ with tab_pages["Upload & Analyze"]:
                     all_results = []
                     all_hotspots = []
                     
-                    with st.progress(0, text="Analyzing sequences..."):
-                        for i, (seq, name) in enumerate(zip(st.session_state.seqs, st.session_state.names)):
-                            progress = (i + 1) / len(st.session_state.seqs)
-                            
-                            # Run the consolidated NBDScanner analysis
-                            results = analyze_sequence(seq, name)
-                            
-                            # Ensure all motifs have required fields
-                            results = [ensure_subclass(motif) for motif in results]
-                            all_results.append(results)
-                            
-                            st.progress(progress, text=f"Analyzed {i+1}/{len(st.session_state.seqs)} sequences")
+                    pbar = st.progress(0)
+                    st.text("Analyzing sequences...")
+                    for i, (seq, name) in enumerate(zip(st.session_state.seqs, st.session_state.names)):
+                        progress = (i + 1) / len(st.session_state.seqs)
+                        
+                        # Run the consolidated NBDScanner analysis
+                        results = analyze_sequence(seq, name)
+                        
+                        # Ensure all motifs have required fields
+                        results = [ensure_subclass(motif) for motif in results]
+                        all_results.append(results)
+                        
+                        pbar.progress(progress, text=f"Analyzed {i+1}/{len(st.session_state.seqs)} sequences")
                     
                     # Store results
                     st.session_state.results = all_results
