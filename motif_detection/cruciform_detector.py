@@ -128,9 +128,18 @@ class CruciformDetector(BaseMotifDetector):
         hits: List[Dict[str, Any]] = []
         n = len(seq)
         
+        # PERFORMANCE: Adaptive max_loop based on sequence length
+        # For large sequences, reduce max_loop to speed up search
+        if n > 500:
+            max_loop = min(max_loop, 50)  # Reduce from 100 to 50 for large sequences
+        
         # PERFORMANCE: Sample positions for large windows to reduce search space
-        # For sequences, check every position, but for larger ones, sample
-        step = 1 if n <= 500 else 2 if n <= 1000 else 3
+        # More aggressive sampling for random/complex sequences
+        step = 1 if n <= 300 else 3 if n <= 600 else 5 if n <= 1000 else 10
+        
+        # PERFORMANCE: Limit total iterations to prevent timeout on complex sequences
+        max_iterations = 10000  # Hard cap on iterations
+        iteration_count = 0
 
         # PERFORMANCE: Limit arm length testing to MAX_ARM for computational feasibility
         for left_start in range(0, n - 2 * min_arm, step):
@@ -147,6 +156,11 @@ class CruciformDetector(BaseMotifDetector):
                 
                 # Early exit if we already found a good match at this position
                 found_good_match = False
+                
+                # PERFORMANCE: Check iteration limit
+                iteration_count += 1
+                if iteration_count > max_iterations:
+                    return hits  # Return what we've found so far
                 
                 # iterate right_starts (loop sizes) - prefer smaller loops
                 for right_start in range(right_start_min, right_start_max + 1):
