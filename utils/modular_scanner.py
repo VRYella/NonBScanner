@@ -12,8 +12,8 @@ TABULAR SUMMARY:
 ├──────────────────────────────────────────────────────────────────────────────┤
 │ MOTIF CLASSES (9 detectors):                                                 │
 │ ✓ CurvedDNA      - A-tract mediated DNA bending                              │
-│ ✓ SlippedDNA     - Tandem repeats (optimized, <50K bp)                       │
-│ ✓ Cruciform      - Inverted repeats (limited to <1K bp)                      │
+│ ✓ SlippedDNA     - Tandem repeats (adaptive sampling for large sequences)    │
+│ ✓ Cruciform      - Inverted repeats (sliding window for large sequences)    │
 │ ✓ R-Loop         - RNA-DNA hybrid formation sites                            │
 │ ✓ Triplex        - Three-stranded DNA structures                             │
 │ ✓ G-Quadruplex   - Four-stranded G-rich structures                           │
@@ -23,8 +23,8 @@ TABULAR SUMMARY:
 ├──────────────────────────────────────────────────────────────────────────────┤
 │ PERFORMANCE OPTIMIZATIONS:                                                   │
 │ • Pure Python scanner DISABLED (too slow - O(n³) complexity)                 │
-│ • Cruciform detection limited to <1000 bp sequences                          │
-│ • SlippedDNA skips sequences >50K bp for direct repeats                      │
+│ • Cruciform uses sliding window for sequences >1K bp                         │
+│ • SlippedDNA uses adaptive sampling for sequences >10K bp                    │
 │ • Pattern compilation and caching                                            │
 │ • Hybrid and cluster detection post-processing                               │
 ├──────────────────────────────────────────────────────────────────────────────┤
