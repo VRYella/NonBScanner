@@ -576,7 +576,8 @@ class MotifDetector:
             for motif in sorted_motifs:
                 overlaps = False
                 for existing in non_overlapping:
-                    if self._calculate_overlap(motif, existing) > 0.5:
+                    # Strict overlap check: any overlap at all (>0) is rejected within same subclass
+                    if self._calculate_overlap(motif, existing) > 0.0:
                         overlaps = True
                         break
                 
