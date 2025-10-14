@@ -4,17 +4,26 @@ Comprehensive test script for all Non-B DNA motif classes.
 
 This script tests each motif detector with appropriate test sequences
 to ensure they are working correctly.
+
+Uses automatic detector discovery to ensure all detectors are tested.
 """
 
-from motif_detection.a_philic_detector import APhilicDetector
-from motif_detection.z_dna_detector import ZDNADetector
-from motif_detection.i_motif_detector import IMotifDetector
-from motif_detection.g_quadruplex_detector import GQuadruplexDetector
-from motif_detection.triplex_detector import TriplexDetector
-from motif_detection.cruciform_detector import CruciformDetector
-from motif_detection.slipped_dna_detector import SlippedDNADetector
-from motif_detection.curved_dna_detector import CurvedDNADetector
-from motif_detection.r_loop_detector import RLoopDetector
+import sys
+import os
+import importlib.util
+
+# Add project root to path for imports
+project_root = os.path.dirname(os.path.abspath(__file__))
+if project_root not in sys.path:
+    sys.path.insert(0, project_root)
+
+# Import detector_registry directly without loading the whole utils package
+spec = importlib.util.spec_from_file_location(
+    "detector_registry",
+    os.path.join(project_root, "utils", "detector_registry.py")
+)
+detector_registry = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(detector_registry)
 
 
 def test_motif_class(name, detector, test_sequences):
@@ -90,89 +99,26 @@ def main():
     print("COMPREHENSIVE NON-B DNA MOTIF DETECTOR TEST SUITE")
     print("=" * 80)
     
+    # Automatically discover all detectors and their test sequences
+    detectors_with_tests = detector_registry.get_all_detectors_with_test_sequences()
+    
+    print(f"\nAutomatically discovered {len(detectors_with_tests)} detector classes")
+    print("=" * 80)
+    
     all_results = []
     
-    # 1. A-philic DNA Tests
-    a_philic_tests = [
-        ("Problem statement sequence", "AGGGGGGGGGAGGGGGGGGC"),
-        ("Multiple G-runs", "AGGGGGGGGGTGGGGGGGGC"),
-        ("C-rich (complement)", "CCCCCCCCCCCCCCCCCCCC"),
-        ("Mixed GC-rich", "GGGGGCCCCCGGGGGCCCCC"),
-    ]
-    results = test_motif_class("A-philic DNA", APhilicDetector(), a_philic_tests)
-    all_results.append(results)
-    
-    # 2. Z-DNA Tests
-    z_dna_tests = [
-        ("CG alternating repeats", "CGCGCGCGCGCGCG"),
-        ("Longer CG repeat", "CGCGCGCGCGCGCGCGCGCG"),
-        ("Embedded CG repeat", "ATCGCGCGCGCGCGAT"),
-    ]
-    results = test_motif_class("Z-DNA", ZDNADetector(), z_dna_tests)
-    all_results.append(results)
-    
-    # 3. i-Motif Tests
-    i_motif_tests = [
-        ("C-rich telomeric", "CCCTAACCCTAACCCTAACCCT"),
-        ("C-tract region", "CCCCTTCCCCTTCCCC"),
-        ("Multiple C-runs", "CCCAACCCAACCCAACCC"),
-    ]
-    results = test_motif_class("i-Motif", IMotifDetector(), i_motif_tests)
-    all_results.append(results)
-    
-    # 4. G-Quadruplex Tests
-    g4_tests = [
-        ("G4 telomeric", "GGGTTAGGGTTAGGGTTAGGG"),
-        ("Canonical G4", "GGGGTTTTGGGGTTTTGGGG"),
-        ("Long loop G4", "GGGGAAAAAAAGGGGAAAAAAAGGGG"),
-    ]
-    results = test_motif_class("G-Quadruplex", GQuadruplexDetector(), g4_tests)
-    all_results.append(results)
-    
-    # 5. Triplex Tests
-    triplex_tests = [
-        ("Polypurine-Polypyrimidine", "AGAGAGAGAGAGAGAGAGAGAGAGAGAG"),
-        ("GA repeat", "GAGAGAGAGAGAGAGAGAGAGA"),
-        ("Purine tract", "AAAAGGGGAAAAGGGGAAAA"),
-    ]
-    results = test_motif_class("Triplex", TriplexDetector(), triplex_tests)
-    all_results.append(results)
-    
-    # 6. Cruciform Tests
-    cruciform_tests = [
-        ("Inverted repeat", "AAAATTTTAAAATTTT"),
-        ("Palindrome", "ATCGATCGATCGATCG"),
-        ("Long inverted repeat", "AAAAATTTTGGGGGCCCCCCCCCCCCCCGGGGG"),
-    ]
-    results = test_motif_class("Cruciform", CruciformDetector(), cruciform_tests)
-    all_results.append(results)
-    
-    # 7. Slipped DNA Tests
-    slipped_tests = [
-        ("CAG repeat (Huntington's)", "CAGCAGCAGCAGCAGCAG"),
-        ("CGG repeat (Fragile X)", "CGGCGGCGGCGGCGGCGG"),
-        ("GAA repeat", "GAAGAAGAAGAAGAAGAA"),
-    ]
-    results = test_motif_class("Slipped DNA", SlippedDNADetector(), slipped_tests)
-    all_results.append(results)
-    
-    # 8. Curved DNA Tests
-    curved_tests = [
-        ("A-tract with phasing", "AAAAAAAATAAAAAAA"),
-        ("Multiple A-tracts", "AAAAATTTTTAAAAATTTTTAAAAA"),
-        ("AT-rich region", "AAAAAATTTTTTAAAAAATTTTTT"),
-    ]
-    results = test_motif_class("Curved DNA", CurvedDNADetector(), curved_tests)
-    all_results.append(results)
-    
-    # 9. R-Loop Tests
-    r_loop_tests = [
-        ("G-rich skew", "GGGGGAAAAAGGGGGAAAAAGGGGGAAAAA"),
-        ("Long G-skew", "GGGGGGGGAAAAAAAAAAGGGGGGGGAAAAAAAAAA"),
-        ("Multiple G clusters", "GGGGGTTGGGGGTTGGGGG"),
-    ]
-    results = test_motif_class("R-Loop", RLoopDetector(), r_loop_tests)
-    all_results.append(results)
+    # Test each detector with its test sequences
+    for display_name, detector_class, test_sequences in detectors_with_tests:
+        if not test_sequences:
+            print(f"\nWarning: No test sequences defined for {display_name}")
+            continue
+        
+        # Instantiate the detector
+        detector = detector_class()
+        
+        # Run tests
+        results = test_motif_class(display_name, detector, test_sequences)
+        all_results.append(results)
     
     # Summary
     print("\n" + "=" * 80)
