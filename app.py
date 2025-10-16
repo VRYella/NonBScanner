@@ -52,123 +52,257 @@ def ensure_subclass(motif):
         return {'Subclass': 'Other', 'Motif': motif}
 
 
-# ---------- PROFESSIONAL CSS FOR BALANCED DESIGN ----------
+# ---------- ENHANCED PROFESSIONAL CSS FOR RESEARCH-QUALITY UI ----------
 st.markdown("""
     <style>
+    /* Import Google Fonts for professional typography */
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+    
+    /* Main app background with subtle gradient */
     body, [data-testid="stAppViewContainer"], .main {
-        background: #f7fafd !important;
-        font-family: 'Montserrat', Arial, sans-serif !important;
+        background: linear-gradient(135deg, #f8fbff 0%, #f0f7ff 100%) !important;
+        font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif !important;
     }
-    /* Tabs: consistent, professional sizing */
+    
+    /* Tabs: Enhanced research-quality design */
     .stTabs [data-baseweb="tab-list"] {
-        width: 95vw !important;
+        width: 98vw !important;
         justify-content: stretch !important;
-        border-bottom: 2px solid #1565c0;
-        background: linear-gradient(90deg,#eaf3fa 0%,#f7fafd 100%) !important;
-        box-shadow: 0 2px 8px #dae5f2;
-        margin-bottom: 1em;
+        border-bottom: 3px solid #1976d2;
+        background: linear-gradient(90deg, #ffffff 0%, #f8fbff 100%) !important;
+        box-shadow: 0 4px 12px rgba(25, 118, 210, 0.08);
+        margin-bottom: 1.5em;
+        border-radius: 8px 8px 0 0;
     }
     .stTabs [data-baseweb="tab"] {
-        font-size: 1.15rem !important;
-        font-weight: 650 !important;
+        font-size: 1.1rem !important;
+        font-weight: 600 !important;
         flex: 1 1 0%;
         min-width: 0 !important;
-        padding: 12px 0 12px 0 !important;
+        padding: 14px 8px !important;
         text-align: center;
-        color: #1565c0 !important;
-        background: #eaf3fa !important;
-        border-right: 1px solid #eee !important;
-        letter-spacing: 0.02em;
+        color: #546e7a !important;
+        background: transparent !important;
+        border-right: 1px solid rgba(0,0,0,0.06) !important;
+        letter-spacing: 0.03em;
+        transition: all 0.3s ease;
+    }
+    .stTabs [data-baseweb="tab"]:hover {
+        background: rgba(25, 118, 210, 0.04) !important;
+        color: #1976d2 !important;
     }
     .stTabs [aria-selected="true"] {
-        color: #002147 !important;
-        border-bottom: 4px solid #1565c0 !important;
-        background: #f7fafd !important;
-        box-shadow: 0 3px 6px #e0e5ea;
+        color: #1976d2 !important;
+        border-bottom: 4px solid #1976d2 !important;
+        background: #f8fbff !important;
+        box-shadow: 0 -2px 8px rgba(25, 118, 210, 0.12);
+        font-weight: 700 !important;
     }
     .stTabs [data-baseweb="tab"]:last-child {
         border-right: none !important;
     }
-    /* Headings: clean, professional hierarchy */
+    
+    /* Headings: Professional research hierarchy */
     h1, h2, h3, h4 {
-        font-family: 'Montserrat', Arial, sans-serif !important;
-        color: #1565c0 !important;
+        font-family: 'Inter', 'Segoe UI', system-ui, sans-serif !important;
+        color: #0d47a1 !important;
         font-weight: 700 !important;
-        margin-top: 1em;
-        margin-bottom: 0.6em;
+        letter-spacing: -0.02em;
+        margin-top: 1.2em;
+        margin-bottom: 0.7em;
     }
-    h1 { font-size: 1.9rem !important; }
-    h2 { font-size: 1.4rem !important; }
-    h3 { font-size: 1.15rem !important; }
-    h4 { font-size: 1.05rem !important; }
-    /* Body text: optimal readability with clean spacing */
+    h1 { 
+        font-size: 2.2rem !important; 
+        background: linear-gradient(135deg, #1976d2 0%, #0d47a1 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+    h2 { font-size: 1.6rem !important; color: #1565c0 !important; }
+    h3 { font-size: 1.25rem !important; color: #1976d2 !important; }
+    h4 { font-size: 1.1rem !important; color: #1976d2 !important; }
+    
+    /* Body text: Enhanced readability */
     .stMarkdown, .markdown-text-container, .stText, p, span, label {
         font-size: 1.0rem !important;
-        font-family: 'Montserrat', Arial, sans-serif !important;
-        line-height: 1.65 !important;
-        margin-bottom: 0.6em !important;
+        font-family: 'Inter', 'Segoe UI', system-ui, sans-serif !important;
+        line-height: 1.7 !important;
+        color: #263238 !important;
+        margin-bottom: 0.7em !important;
     }
-    /* Input fields: consistent sizing */
-    input, .stTextInput>div>div>input, .stSelectbox>div>div>div, .stMultiSelect>div>div>div, .stRadio>div>div>label>div {
+    
+    /* Input fields: Modern, clean design */
+    input, .stTextInput>div>div>input, .stSelectbox>div>div>div, 
+    .stMultiSelect>div>div>div, .stRadio>div>div>label>div {
         font-size: 1.0rem !important;
-        font-family: 'Montserrat', Arial, sans-serif !important;
+        font-family: 'Inter', 'Segoe UI', system-ui, sans-serif !important;
+        border-radius: 6px !important;
+        border: 1px solid #e0e7ff !important;
+        transition: all 0.2s ease;
     }
-    /* Buttons: professional, medium size */
+    input:focus, .stTextInput>div>div>input:focus {
+        border-color: #1976d2 !important;
+        box-shadow: 0 0 0 3px rgba(25, 118, 210, 0.1) !important;
+    }
+    
+    /* Buttons: Premium gradient design */
     .stButton>button {
         font-size: 1.05rem !important;
-        font-family: 'Montserrat', Arial, sans-serif !important;
-        padding: 0.5em 1.3em !important;
-        background: linear-gradient(90deg,#1565c0 0%,#2e8bda 100%) !important;
+        font-family: 'Inter', 'Segoe UI', system-ui, sans-serif !important;
+        padding: 0.65em 1.5em !important;
+        background: linear-gradient(135deg, #1976d2 0%, #1565c0 100%) !important;
         color: #fff !important;
-        border-radius: 8px !important;
+        border-radius: 10px !important;
         border: none !important;
         font-weight: 600 !important;
-        box-shadow: 0 2px 8px #b5cbe6;
-        transition: all 0.2s;
+        box-shadow: 0 4px 14px rgba(25, 118, 210, 0.3);
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        letter-spacing: 0.02em;
     }
     .stButton>button:hover {
-        background: linear-gradient(90deg,#2e8bda 0%,#1565c0 100%) !important;
-        box-shadow: 0 4px 12px #a0b9d8;
-        transform: translateY(-1px);
+        background: linear-gradient(135deg, #1565c0 0%, #0d47a1 100%) !important;
+        box-shadow: 0 6px 20px rgba(25, 118, 210, 0.4);
+        transform: translateY(-2px);
     }
-    /* DataFrames: clean table presentation */
+    .stButton>button:active {
+        transform: translateY(0px);
+        box-shadow: 0 3px 10px rgba(25, 118, 210, 0.3);
+    }
+    
+    /* DataFrames: Enhanced table styling */
     .stDataFrame, .stTable {
         font-size: 0.95rem !important;
-        font-family: 'Montserrat', Arial, sans-serif !important;
-        line-height: 1.5 !important;
+        font-family: 'Inter', 'Segoe UI', system-ui, sans-serif !important;
+        line-height: 1.6 !important;
+        border-radius: 8px !important;
+        overflow: hidden;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.05) !important;
     }
-    /* Improved tab content spacing to prevent overlap */
+    
+    /* Tab content spacing */
     .stTabs [data-baseweb="tab-panel"] {
-        padding-top: 2rem !important;
-        padding-left: 1rem !important;
-        padding-right: 1rem !important;
+        padding-top: 2.5rem !important;
+        padding-left: 1.5rem !important;
+        padding-right: 1.5rem !important;
+        padding-bottom: 2rem !important;
     }
-    /* Better spacing for analysis summary cards */
+    
+    /* Analysis summary cards with modern shadows */
     .analysis-summary-card {
         margin: 1.5rem 0 !important;
-        padding: 1.5rem !important;
+        padding: 2rem !important;
+        background: white !important;
+        border-radius: 12px !important;
+        box-shadow: 0 4px 16px rgba(0,0,0,0.08) !important;
+        border: 1px solid rgba(25, 118, 210, 0.08) !important;
     }
-    /* Fix potential text overlap in selectbox and multiselect */
+    
+    /* Select boxes and multiselect */
     .stSelectbox > div > div > div, .stMultiSelect > div > div > div {
-        min-height: 3.0rem !important;
-        padding: 0.8rem !important;
-        line-height: 1.5 !important;
+        min-height: 3.2rem !important;
+        padding: 0.9rem !important;
+        line-height: 1.6 !important;
+        border-radius: 8px !important;
     }
-    /* Enhanced input field spacing to prevent placeholder overlap */
+    
+    /* Enhanced input field spacing */
     .stTextInput > div > div > input, .stTextArea textarea {
-        padding: 0.75rem 1rem !important;
-        min-height: 2.8rem !important;
-        line-height: 1.4 !important;
+        padding: 0.85rem 1.1rem !important;
+        min-height: 3rem !important;
+        line-height: 1.5 !important;
+        border-radius: 8px !important;
     }
-    /* Better spacing for radio button options */
+    
+    /* Radio buttons with better spacing */
     .stRadio > div > div > label {
-        margin-bottom: 0.5rem !important;
-        padding: 0.3rem 0.5rem !important;
+        margin-bottom: 0.6rem !important;
+        padding: 0.4rem 0.6rem !important;
+        border-radius: 6px !important;
+        transition: background 0.2s ease;
     }
-    /* Number input spacing */
+    .stRadio > div > div > label:hover {
+        background: rgba(25, 118, 210, 0.04) !important;
+    }
+    
+    /* Number input styling */
     .stNumberInput > div > div > input {
-        padding: 0.75rem 1rem !important;
-        min-height: 2.8rem !important;
+        padding: 0.85rem 1.1rem !important;
+        min-height: 3rem !important;
+        border-radius: 8px !important;
+    }
+    
+    /* Info boxes and alerts */
+    .stAlert {
+        border-radius: 10px !important;
+        border-left: 4px solid #1976d2 !important;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.05) !important;
+    }
+    
+    /* Progress bars */
+    .stProgress > div > div {
+        background: linear-gradient(90deg, #1976d2 0%, #42a5f5 100%) !important;
+        border-radius: 10px !important;
+    }
+    
+    /* File uploader */
+    [data-testid="stFileUploader"] {
+        border: 2px dashed #1976d2 !important;
+        border-radius: 12px !important;
+        background: rgba(25, 118, 210, 0.02) !important;
+        padding: 2rem !important;
+        transition: all 0.3s ease;
+    }
+    [data-testid="stFileUploader"]:hover {
+        border-color: #1565c0 !important;
+        background: rgba(25, 118, 210, 0.04) !important;
+    }
+    
+    /* Checkboxes */
+    .stCheckbox {
+        padding: 0.3rem 0 !important;
+    }
+    
+    /* Expander styling */
+    .streamlit-expanderHeader {
+        border-radius: 8px !important;
+        background: rgba(25, 118, 210, 0.03) !important;
+        font-weight: 600 !important;
+    }
+    
+    /* Metric cards */
+    [data-testid="stMetricValue"] {
+        font-size: 2rem !important;
+        font-weight: 700 !important;
+        color: #1976d2 !important;
+    }
+    
+    /* Spinner */
+    .stSpinner > div {
+        border-top-color: #1976d2 !important;
+    }
+    
+    /* Code blocks */
+    .stCodeBlock {
+        border-radius: 8px !important;
+        border: 1px solid #e0e7ff !important;
+        background: #f8fbff !important;
+    }
+    
+    /* Scrollbar styling */
+    ::-webkit-scrollbar {
+        width: 10px;
+        height: 10px;
+    }
+    ::-webkit-scrollbar-track {
+        background: #f1f5f9;
+        border-radius: 10px;
+    }
+    ::-webkit-scrollbar-thumb {
+        background: linear-gradient(135deg, #1976d2 0%, #42a5f5 100%);
+        border-radius: 10px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+        background: linear-gradient(135deg, #1565c0 0%, #1976d2 100%);
     }
     </style>
 """, unsafe_allow_html=True)
@@ -303,25 +437,26 @@ with tab_pages["Home"]:
             """, unsafe_allow_html=True)
     with right:
         st.markdown("""
-        <div style='font-family:Montserrat, Arial; font-size:1.14rem; color:#222; line-height:1.7; padding:18px; background:#f8f9fa; border-radius:14px; box-shadow:0 2px 8px #eee;'>
-        <b>Non-canonical DNA structures</b> play key roles in genome stability, regulation, and evolution.<br>
-        This application detects and analyzes <b>11 major classes with 22+ subclasses</b> of Non-B DNA motifs in any DNA sequence or multi-FASTA file.<br>
-        <b>Motif Classes (11 classes, 22+ subclasses):</b><br>
-        <span style='color:#1565c0;'>
-            <b>1. Curved DNA</b> (Global curvature, Local Curvature),<br>
-            <b>2. Slipped DNA</b> (Direct Repeat, STR),<br>
-            <b>3. Cruciform DNA</b> (Inverted Repeats),<br>
-            <b>4. R-loop</b> (R-loop formation sites),<br>
-            <b>5. Triplex</b> (Triplex, Sticky DNA),<br>
-            <b>6. G-Quadruplex Family</b> (Multimeric G4, Canonical G4, Relaxed G4, Bulged G4, Bipartite G4, Imperfect G4, G-Triplex intermediate),<br>
-            <b>7. i-Motif Family</b> (Canonical i-motif, Relaxed i-motif, AC-motif),<br>
-            <b>8. Z-DNA</b> (Z-DNA, eGZ (Extruded-G) DNA),<br>
-            <b>9. A-philic DNA</b> (A-philic DNA),<br>
-            <b>10. Hybrid</b> (dynamic overlaps),<br>
-            <b>11. Non-B DNA Clusters</b> (dynamic clusters).
-        </span>
-        <br>
-        <b>Upload single or multi-FASTA files...</b>
+        <div style='font-family: Inter, system-ui, sans-serif; font-size:1.05rem; color:#263238; 
+                    line-height:1.8; padding:2rem; background:white; border-radius:16px; 
+                    box-shadow:0 4px 16px rgba(0,0,0,0.08); border: 1px solid rgba(25, 118, 210, 0.1);'>
+        <p style='margin-top:0;'><b style='color:#0d47a1; font-size:1.15rem;'>Non-canonical DNA structures</b> play key roles in genome stability, regulation, and evolution.</p>
+        <p>This application detects and analyzes <b style='color:#1976d2;'>11 major classes with 22+ subclasses</b> of Non-B DNA motifs in any DNA sequence or multi-FASTA file.</p>
+        <p style='margin-bottom:0.8rem;'><b style='color:#0d47a1;'>Motif Classes (11 classes, 22+ subclasses):</b></p>
+        <div style='color:#37474f; font-size:0.98rem; line-height:1.9; padding-left:1rem;'>
+            <div style='margin-bottom:0.4rem;'><b style='color:#1976d2;'>1. Curved DNA</b> <span style='color:#546e7a;'>(Global curvature, Local Curvature)</span></div>
+            <div style='margin-bottom:0.4rem;'><b style='color:#1976d2;'>2. Slipped DNA</b> <span style='color:#546e7a;'>(Direct Repeat, STR)</span></div>
+            <div style='margin-bottom:0.4rem;'><b style='color:#1976d2;'>3. Cruciform DNA</b> <span style='color:#546e7a;'>(Inverted Repeats)</span></div>
+            <div style='margin-bottom:0.4rem;'><b style='color:#1976d2;'>4. R-loop</b> <span style='color:#546e7a;'>(R-loop formation sites)</span></div>
+            <div style='margin-bottom:0.4rem;'><b style='color:#1976d2;'>5. Triplex</b> <span style='color:#546e7a;'>(Triplex, Sticky DNA)</span></div>
+            <div style='margin-bottom:0.4rem;'><b style='color:#1976d2;'>6. G-Quadruplex Family</b> <span style='color:#546e7a;'>(Multimeric G4, Canonical G4, Relaxed G4, Bulged G4, Bipartite G4, Imperfect G4, G-Triplex intermediate)</span></div>
+            <div style='margin-bottom:0.4rem;'><b style='color:#1976d2;'>7. i-Motif Family</b> <span style='color:#546e7a;'>(Canonical i-motif, Relaxed i-motif, AC-motif)</span></div>
+            <div style='margin-bottom:0.4rem;'><b style='color:#1976d2;'>8. Z-DNA</b> <span style='color:#546e7a;'>(Z-DNA, eGZ (Extruded-G) DNA)</span></div>
+            <div style='margin-bottom:0.4rem;'><b style='color:#1976d2;'>9. A-philic DNA</b> <span style='color:#546e7a;'>(A-philic DNA)</span></div>
+            <div style='margin-bottom:0.4rem;'><b style='color:#1976d2;'>10. Hybrid</b> <span style='color:#546e7a;'>(dynamic overlaps)</span></div>
+            <div style='margin-bottom:0.4rem;'><b style='color:#1976d2;'>11. Non-B DNA Clusters</b> <span style='color:#546e7a;'>(dynamic clusters)</span></div>
+        </div>
+        <p style='margin-top:1.2rem; margin-bottom:0; color:#1976d2; font-weight:600;'>📤 Upload single or multi-FASTA files to begin analysis...</p>
         </div>
         """, unsafe_allow_html=True)
 
@@ -637,30 +772,53 @@ with tab_pages["Results"]:
             coverage_pct = stats.get("Motif Coverage %", 0)
             non_b_density = (motif_count / sequence_length * 1000) if sequence_length > 0 else 0
             
-            # Enhanced summary card using consolidated stats
+            # Enhanced summary card with modern research-quality styling
             st.markdown(f"""
-            <div style='background: linear-gradient(90deg, #667eea 0%, #764ba2 100%); 
-                        border-radius: 12px; padding: 15px; margin: 10px 0; color: white;'>
-                <h3 style='margin: 0; color: white; text-align: center;'>NBDScanner Analysis Results</h3>
-                <div style='display: flex; justify-content: space-around; margin-top: 15px; flex-wrap: wrap;'>
-                    <div style='text-align: center; min-width: 120px;'>
-                        <h2 style='margin: 5px; color: #FFD700;'>{stats.get("Coverage%", 0):.2f}%</h2>
-                        <p style='margin: 0; font-size: 16px;'>Sequence Coverage</p>
+            <div style='background: linear-gradient(135deg, #1976d2 0%, #1565c0 100%); 
+                        border-radius: 16px; padding: 2rem; margin: 1.5rem 0; color: white;
+                        box-shadow: 0 8px 24px rgba(25, 118, 210, 0.25);'>
+                <h3 style='margin: 0 0 1.5rem 0; color: white; text-align: center; font-size: 1.5rem; font-weight: 700;'>
+                    🧬 NBDScanner Analysis Results
+                </h3>
+                <div style='display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); 
+                            gap: 1.5rem; margin-top: 1rem;'>
+                    <div style='text-align: center; background: rgba(255,255,255,0.15); 
+                                padding: 1.2rem; border-radius: 12px; backdrop-filter: blur(10px);'>
+                        <h2 style='margin: 0 0 0.5rem 0; color: #FFD700; font-size: 2.2rem; font-weight: 800;'>
+                            {stats.get("Coverage%", 0):.2f}%
+                        </h2>
+                        <p style='margin: 0; font-size: 0.95rem; opacity: 0.95; font-weight: 500;'>
+                            Sequence Coverage
+                        </p>
                     </div>
-                    <div style='text-align: center; min-width: 120px;'>
-                        <h2 style='margin: 5px; color: #FFD700;'>{stats.get("Density", 0):.2f}</h2>
-                        <p style='margin: 0; font-size: 16px;'>Motif Density<br>(motifs/kb)</p>
+                    <div style='text-align: center; background: rgba(255,255,255,0.15); 
+                                padding: 1.2rem; border-radius: 12px; backdrop-filter: blur(10px);'>
+                        <h2 style='margin: 0 0 0.5rem 0; color: #FFD700; font-size: 2.2rem; font-weight: 800;'>
+                            {stats.get("Density", 0):.2f}
+                        </h2>
+                        <p style='margin: 0; font-size: 0.95rem; opacity: 0.95; font-weight: 500;'>
+                            Motif Density<br>(motifs/kb)
+                        </p>
                     </div>
-                    <div style='text-align: center; min-width: 120px;'>
-                        <h2 style='margin: 5px; color: #FFD700;'>{motif_count}</h2>
-                        <p style='margin: 0; font-size: 16px;'>Total Motifs</p>
+                    <div style='text-align: center; background: rgba(255,255,255,0.15); 
+                                padding: 1.2rem; border-radius: 12px; backdrop-filter: blur(10px);'>
+                        <h2 style='margin: 0 0 0.5rem 0; color: #FFD700; font-size: 2.2rem; font-weight: 800;'>
+                            {motif_count}
+                        </h2>
+                        <p style='margin: 0; font-size: 0.95rem; opacity: 0.95; font-weight: 500;'>
+                            Total Motifs
+                        </p>
                     </div>
-                    <div style='text-align: center; min-width: 120px;'>
-                        <h2 style='margin: 5px; color: #FFD700;'>{sequence_length:,}</h2>
-                        <p style='margin: 0; font-size: 16px;'>Sequence Length (bp)</p>
+                    <div style='text-align: center; background: rgba(255,255,255,0.15); 
+                                padding: 1.2rem; border-radius: 12px; backdrop-filter: blur(10px);'>
+                        <h2 style='margin: 0 0 0.5rem 0; color: #FFD700; font-size: 2.2rem; font-weight: 800;'>
+                            {sequence_length:,}
+                        </h2>
+                        <p style='margin: 0; font-size: 0.95rem; opacity: 0.95; font-weight: 500;'>
+                            Sequence Length (bp)
+                        </p>
                     </div>
                 </div>
-               
             </div>
             """, unsafe_allow_html=True)
             
