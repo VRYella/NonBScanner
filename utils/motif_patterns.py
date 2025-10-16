@@ -29,6 +29,13 @@ import numpy as np
 from typing import Dict, List, Tuple, Any, Optional
 from collections import defaultdict
 
+# Try to import Hyperscan for high-performance pattern matching
+try:
+    import hyperscan
+    HYPERSCAN_AVAILABLE = True
+except (ImportError, Exception):
+    HYPERSCAN_AVAILABLE = False
+
 # =============================================================================
 # COMPREHENSIVE PATTERN REGISTRY
 # =============================================================================
