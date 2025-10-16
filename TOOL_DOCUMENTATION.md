@@ -1,8 +1,8 @@
-# NBDScanner: A Comprehensive Non-B DNA Structure Detection and Analysis Platform
+# NonBScanner: A Comprehensive Non-B DNA Structure Detection and Analysis Platform
 
 ## Abstract
 
-NBDScanner is a high-performance bioinformatics tool designed for the systematic detection, classification, and analysis of Non-B DNA structures in genomic sequences. The platform implements a modular architecture supporting 11 major motif classes and 22+ specialized subclasses, achieving processing speeds of 24,674 bp/s through optimized algorithms and optional Hyperscan acceleration. This document provides a comprehensive technical overview of the tool's architecture, workflow, and scientific foundation.
+NonBScanner is a high-performance bioinformatics tool designed for the systematic detection, classification, and analysis of Non-B DNA structures in genomic sequences. The platform implements a modular architecture supporting 11 major motif classes and 22+ specialized subclasses, achieving processing speeds of 24,674 bp/s through optimized algorithms and optional Hyperscan acceleration. This document provides a comprehensive technical overview of the tool's architecture, workflow, and scientific foundation.
 
 **Keywords:** Non-B DNA, Genomic Structure, Motif Detection, Bioinformatics, Structural Genomics
 
@@ -27,7 +27,7 @@ Existing tools for Non-B DNA detection often suffer from:
 - Lack of standardized scoring methods
 - Insufficient visualization capabilities
 
-NBDScanner addresses these limitations through:
+NonBScanner addresses these limitations through:
 - **Comprehensive coverage:** 11 major classes, 22+ subclasses
 - **High performance:** Optimized algorithms with 24,674 bp/s throughput
 - **Scientific rigor:** Literature-validated scoring methods
@@ -41,7 +41,7 @@ NBDScanner addresses these limitations through:
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                      NBDScanner Platform                        │
+│                      NonBScanner Platform                       │
 ├─────────────────────────────────────────────────────────────────┤
 │                                                                 │
 │  ┌──────────────────┐         ┌─────────────────────────────┐  │
@@ -59,7 +59,7 @@ NBDScanner addresses these limitations through:
 │        ┌──────────────────┼──────────────────┐                 │
 │        │                  │                  │                 │
 │  ┌─────▼──────┐  ┌───────▼───────┐  ┌──────▼──────┐          │
-│  │  Modular   │  │   NBDScanner  │  │ Visualization│          │
+│  │  Modular   │  │   NonBScanner │  │ Visualization│          │
 │  │  Scanner   │  │   (Legacy)    │  │   Engine     │          │
 │  └─────┬──────┘  └───────┬───────┘  └──────┬──────┘          │
 │        │                  │                  │                 │
@@ -869,7 +869,7 @@ Example: G-Quadruplex scoring correlation with experimental stability:
 
 | Method | Correlation (r²) | p-value |
 |--------|------------------|---------|
-| NBDScanner Score | 0.87 | < 0.001 |
+| NonBScanner Score | 0.87 | < 0.001 |
 | Literature Score | 0.85 | < 0.001 |
 | Folding Energy | 0.82 | < 0.001 |
 
@@ -902,7 +902,7 @@ Example: G-Quadruplex scoring correlation with experimental stability:
 ### 13.2 Example Workflow: Analyzing Cancer Gene Promoters
 
 ```python
-# Import NBDScanner
+# Import NonBScanner
 from utils import analyze_sequence, export_to_csv
 
 # Load promoter sequence
@@ -964,17 +964,17 @@ We welcome contributions in:
 
 ### 15.1 How to Cite
 
-If you use NBDScanner in your research, please cite:
+If you use NonBScanner in your research, please cite:
 
 ```
-Yella, V.R. (2024). NBDScanner: A Comprehensive Platform for Non-B DNA 
+Yella, V.R. (2024). NonBScanner: A Comprehensive Platform for Non-B DNA 
 Structure Detection and Analysis. [Software]. 
 GitHub: https://github.com/VRYella/NonBScanner
 ```
 
 ### 15.2 License
 
-NBDScanner is released under the MIT License.
+NonBScanner is released under the MIT License.
 
 ```
 MIT License
@@ -998,7 +998,7 @@ furnished to do so, subject to the following conditions:
 ### 16.1 Contact Information
 
 - **Author:** Dr. Venkata Rajesh Yella
-- **Email:** raazbiochem@gmail.com
+- **Email:** yvrajesh_bt@kluniversity.in
 - **GitHub:** https://github.com/VRYella/NonBScanner
 - **Issues:** https://github.com/VRYella/NonBScanner/issues
 
@@ -1013,7 +1013,7 @@ furnished to do so, subject to the following conditions:
 
 ## 17. Acknowledgments
 
-NBDScanner development is supported by:
+NonBScanner development is supported by:
 
 - Computational resources from [Institution]
 - Validation datasets from public databases
