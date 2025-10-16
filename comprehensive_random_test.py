@@ -16,13 +16,27 @@ if project_root not in sys.path:
 from utils.detector_registry import get_all_detectors_with_test_sequences
 
 
-def generate_random_dna(length):
-    """Generate random DNA sequence of given length."""
+def generate_random_dna(length, seed=None):
+    """Generate random DNA sequence of given length.
+    
+    Args:
+        length: Length of sequence to generate
+        seed: Optional seed for reproducibility
+    """
+    if seed is not None:
+        random.seed(seed)
     return ''.join(random.choices('ATGC', k=length))
 
 
-def generate_test_sequences():
-    """Generate comprehensive test sequences for each motif class."""
+def generate_test_sequences(use_seed=True):
+    """Generate comprehensive test sequences for each motif class.
+    
+    Args:
+        use_seed: If True, use fixed seed for reproducibility
+    """
+    # Set seed for reproducible test sequences
+    if use_seed:
+        random.seed(42)
     
     test_cases = {
         'G-Quadruplex': [
@@ -151,15 +165,24 @@ def run_comprehensive_test():
     
     all_results = []
     
+    # Create explicit mapping between motif classes and detector names
+    motif_to_detector = {
+        'G-Quadruplex': 'G-Quadruplex',
+        'i-Motif': 'i-Motif',
+        'Curved_DNA': 'Curved_DNA',
+        'Z-DNA': 'Z-DNA',
+        'Slipped_DNA': 'Slipped_DNA',
+        'Cruciform': 'Cruciform',
+        'R-Loop': 'R-Loop',
+        'Triplex': 'Triplex',
+        'A-philic_DNA': 'A-philic_DNA',
+    }
+    
     for motif_class, test_cases in test_sequences.items():
-        # Find matching detector
-        detector_name = None
-        for name in detector_map.keys():
-            if motif_class.lower() in name.lower() or name.lower() in motif_class.lower():
-                detector_name = name
-                break
+        # Find matching detector using explicit mapping
+        detector_name = motif_to_detector.get(motif_class)
         
-        if not detector_name:
+        if not detector_name or detector_name not in detector_map:
             print(f"\n⚠️  No detector found for {motif_class}")
             continue
         
