@@ -35,6 +35,7 @@ TABULAR SUMMARY:
 """
 
 import re
+import os
 import numpy as np
 import pandas as pd
 from typing import List, Dict, Any, Optional, Union
@@ -72,6 +73,16 @@ try:
 except ImportError:
     PURE_PYTHON_AVAILABLE = False
 
+# Import motif_patterns for registry loading
+try:
+    from utils import motif_patterns
+    _MOTIF_PATTERNS_AVAILABLE = True
+except ImportError:
+    motif_patterns = None
+    _MOTIF_PATTERNS_AVAILABLE = False
+
+DEFAULT_REGISTRY_DIR = os.environ.get("NBD_REGISTRY_DIR", "registry")
+
 
 class ModularMotifDetector:
     """
@@ -79,8 +90,9 @@ class ModularMotifDetector:
     Each motif class has its own dedicated detector.
     """
     
-    def __init__(self):
+    def __init__(self, registry_dir: str = DEFAULT_REGISTRY_DIR):
         """Initialize all individual detectors"""
+        self.registry_dir = registry_dir
         self.detectors = {
             'curved_dna': CurvedDNADetector(),
             'slipped_dna': SlippedDNADetector(),
@@ -92,6 +104,51 @@ class ModularMotifDetector:
             'z_dna': ZDNADetector(),
             'a_philic': APhilicDetector()
         }
+        # Preload Hyperscan DBs for detectors that have registries
+        self._preload_detector_dbs()
+    
+    def _preload_detector_dbs(self):
+        """
+        Attempt to load precompiled Hyperscan DBs for detectors that benefit from them.
+        This is optional and non-fatal — detectors still have their own fallback code paths.
+        """
+        if not _MOTIF_PATTERNS_AVAILABLE:
+            # motif_patterns module not available, skip preloading
+            return
+        
+        # list of detector class names (keys) that we prebuilt registries for
+        candidate_classes = ["ZDNA", "APhilic"]
+        
+        for cls in candidate_classes:
+            try:
+                db, id_to_ten, id_to_score = motif_patterns.get_hs_db_for_class(cls, registry_dir=self.registry_dir)
+                # Pass to detectors: detectors should check for availability when scanning
+                # Store in a class-level map for detectors to access
+                if not hasattr(self, "hsdb_map"):
+                    self.hsdb_map = {}
+                self.hsdb_map[cls] = {"db": db, "id_to_ten": id_to_ten, "id_to_score": id_to_score}
+                
+                # Optionally, set into detector classes for direct use
+                try:
+                    # Map class names to detector attributes
+                    detector_map = {
+                        "ZDNA": ("z_dna", ZDNADetector),
+                        "APhilic": ("a_philic", APhilicDetector)
+                    }
+                    if cls in detector_map:
+                        det_key, det_cls = detector_map[cls]
+                        # Set class-level attribute for detectors to access
+                        setattr(det_cls, "HS_DB_INFO", {"db": db, "id_to_ten": id_to_ten, "id_to_score": id_to_score})
+                except Exception:
+                    # ignore if structure differs; detectors can still call motif_patterns.get_hs_db_for_class themselves
+                    pass
+            except FileNotFoundError:
+                # registry not built — continue silently
+                continue
+            except Exception as e:
+                # protect scanner initialization from any DB loading error
+                print(f"[WARN] failed to preload HS DB for {cls}: {e}")
+                continue
     
     def analyze_sequence(self, sequence: str, sequence_name: str = "sequence", 
                         use_pure_python: bool = False) -> List[Dict[str, Any]]:

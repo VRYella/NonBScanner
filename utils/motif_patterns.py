@@ -24,6 +24,7 @@ Class | Patterns | Subclasses | Scoring Method            | References
 Total: 207+ patterns across 22+ subclasses
 """
 
+import os
 import re
 import numpy as np
 from typing import Dict, List, Tuple, Any, Optional
@@ -697,6 +698,70 @@ def run_pattern_tests() -> bool:
     print(f"\nOverall validation: {'PASSED' if all_passed else 'FAILED'}")
     
     return all_passed
+
+# =============================================================================
+# HYPERSCAN REGISTRY LOADER INTEGRATION
+# =============================================================================
+
+try:
+    from .load_hsdb import load_db_for_class
+    _LOAD_HSDB_AVAILABLE = True
+except ImportError:
+    _LOAD_HSDB_AVAILABLE = False
+    load_db_for_class = None
+
+# In-memory cache to avoid repeated compiles/deserializes
+_HS_DB_CACHE = {}
+_REGISTRY_CACHE = {}
+
+
+def get_pattern_registry(class_name: str, registry_dir: str = "registry"):
+    """
+    Returns parsed registry dict (as saved by generator): contains 'patterns' list etc.
+    Caches the result.
+    """
+    if not _LOAD_HSDB_AVAILABLE:
+        raise ImportError("load_hsdb module not available")
+    
+    key = f"{registry_dir}/{class_name}"
+    if key in _REGISTRY_CACHE:
+        return _REGISTRY_CACHE[key]
+    
+    # Read registry directly from file
+    import pickle
+    import json
+    pkl_path = os.path.join(registry_dir, f"{class_name}_registry.pkl")
+    json_path = os.path.join(registry_dir, f"{class_name}_registry.json")
+    
+    if os.path.isfile(pkl_path):
+        with open(pkl_path, "rb") as fh:
+            full = pickle.load(fh)
+    elif os.path.isfile(json_path):
+        with open(json_path, "r") as fh:
+            full = json.load(fh)
+    else:
+        raise FileNotFoundError(f"No registry found for {class_name} in {registry_dir}")
+    
+    _REGISTRY_CACHE[key] = full
+    return full
+
+
+def get_hs_db_for_class(class_name: str, registry_dir: str = "registry"):
+    """
+    Return (db, id_to_ten, id_to_score). Caches DB in process memory.
+    db is a hyperscan.Database instance (or None if hyperscan not available).
+    """
+    if not _LOAD_HSDB_AVAILABLE:
+        raise ImportError("load_hsdb module not available")
+    
+    key = f"{registry_dir}/{class_name}"
+    if key in _HS_DB_CACHE:
+        return _HS_DB_CACHE[key]
+    
+    db, id_to_ten, id_to_score = load_db_for_class(class_name, registry_dir)
+    _HS_DB_CACHE[key] = (db, id_to_ten, id_to_score)
+    return db, id_to_ten, id_to_score
+
 
 # =============================================================================
 # PATTERN STATISTICS & INFORMATION

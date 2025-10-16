@@ -1,0 +1,1051 @@
+{
+  "class": "APhilic",
+  "generated_at": "2025-10-16T10:48:58.586387Z",
+  "n_patterns": 208,
+  "patterns": [
+    {
+      "id": 0,
+      "tenmer": "ACCCCCCCCA",
+      "score": 2.2284142857142855
+    },
+    {
+      "id": 1,
+      "tenmer": "ACCCCCCCCC",
+      "score": 2.294942857142857
+    },
+    {
+      "id": 2,
+      "tenmer": "ACCCCCCCCG",
+      "score": 2.053785714285714
+    },
+    {
+      "id": 3,
+      "tenmer": "ACCCCCCCCT",
+      "score": 2.4612714285714286
+    },
+    {
+      "id": 4,
+      "tenmer": "ACCCCCCCGG",
+      "score": 1.7285
+    },
+    {
+      "id": 5,
+      "tenmer": "ACCCCCCCTA",
+      "score": 2.3253999999999997
+    },
+    {
+      "id": 6,
+      "tenmer": "ACCCCCCGGG",
+      "score": 1.4873428571428569
+    },
+    {
+      "id": 7,
+      "tenmer": "ACCCCCGGGC",
+      "score": 1.4682
+    },
+    {
+      "id": 8,
+      "tenmer": "ACCCCCGGGG",
+      "score": 1.4873428571428569
+    },
+    {
+      "id": 9,
+      "tenmer": "ACCCCCGGGT",
+      "score": 1.2461857142857142
+    },
+    {
+      "id": 10,
+      "tenmer": "ACCCCGGGCC",
+      "score": 1.1250857142857142
+    },
+    {
+      "id": 11,
+      "tenmer": "ACCCCGGGGC",
+      "score": 1.4682
+    },
+    {
+      "id": 12,
+      "tenmer": "ACCCCGGGGG",
+      "score": 1.4873428571428569
+    },
+    {
+      "id": 13,
+      "tenmer": "ACCCCGGGGT",
+      "score": 1.2461857142857142
+    },
+    {
+      "id": 14,
+      "tenmer": "ACCCGGGCCC",
+      "score": 1.1059428571428571
+    },
+    {
+      "id": 15,
+      "tenmer": "ACCCGGGGCC",
+      "score": 1.1250857142857142
+    },
+    {
+      "id": 16,
+      "tenmer": "ACCCGGGGGC",
+      "score": 1.4682
+    },
+    {
+      "id": 17,
+      "tenmer": "ACCCGGGGGG",
+      "score": 1.4873428571428569
+    },
+    {
+      "id": 18,
+      "tenmer": "ACCCGGGGGT",
+      "score": 1.2461857142857142
+    },
+    {
+      "id": 19,
+      "tenmer": "AGGGCCCCCA",
+      "score": 2.2544999999999997
+    },
+    {
+      "id": 20,
+      "tenmer": "AGGGCCCCCC",
+      "score": 2.321028571428571
+    },
+    {
+      "id": 21,
+      "tenmer": "AGGGCCCCCG",
+      "score": 2.0798714285714284
+    },
+    {
+      "id": 22,
+      "tenmer": "AGGGCCCCCT",
+      "score": 2.487357142857143
+    },
+    {
+      "id": 23,
+      "tenmer": "AGGGCCCCGG",
+      "score": 1.7545857142857142
+    },
+    {
+      "id": 24,
+      "tenmer": "AGGGCCCCTA",
+      "score": 2.3514857142857144
+    },
+    {
+      "id": 25,
+      "tenmer": "AGGGCCCGGG",
+      "score": 1.5134285714285713
+    },
+    {
+      "id": 26,
+      "tenmer": "AGGGGCCCCA",
+      "score": 2.2544999999999997
+    },
+    {
+      "id": 27,
+      "tenmer": "AGGGGCCCCC",
+      "score": 2.321028571428571
+    },
+    {
+      "id": 28,
+      "tenmer": "AGGGGCCCCG",
+      "score": 2.0798714285714284
+    },
+    {
+      "id": 29,
+      "tenmer": "AGGGGCCCCT",
+      "score": 2.487357142857143
+    },
+    {
+      "id": 30,
+      "tenmer": "AGGGGCCCGG",
+      "score": 1.7545857142857142
+    },
+    {
+      "id": 31,
+      "tenmer": "AGGGGCCCTA",
+      "score": 2.3514857142857144
+    },
+    {
+      "id": 32,
+      "tenmer": "AGGGGGCCCA",
+      "score": 2.2544999999999997
+    },
+    {
+      "id": 33,
+      "tenmer": "AGGGGGCCCC",
+      "score": 2.321028571428571
+    },
+    {
+      "id": 34,
+      "tenmer": "AGGGGGCCCG",
+      "score": 2.0798714285714284
+    },
+    {
+      "id": 35,
+      "tenmer": "AGGGGGCCCT",
+      "score": 2.487357142857143
+    },
+    {
+      "id": 36,
+      "tenmer": "AGGGGGGCCC",
+      "score": 2.321028571428571
+    },
+    {
+      "id": 37,
+      "tenmer": "AGGGGGGGCC",
+      "score": 2.3401714285714283
+    },
+    {
+      "id": 38,
+      "tenmer": "AGGGGGGGGC",
+      "score": 2.683285714285714
+    },
+    {
+      "id": 39,
+      "tenmer": "AGGGGGGGGG",
+      "score": 2.702428571428571
+    },
+    {
+      "id": 40,
+      "tenmer": "AGGGGGGGGT",
+      "score": 2.4612714285714286
+    },
+    {
+      "id": 41,
+      "tenmer": "CCCCCCCCCA",
+      "score": 2.4695714285714283
+    },
+    {
+      "id": 42,
+      "tenmer": "CCCCCCCCCC",
+      "score": 2.5361
+    },
+    {
+      "id": 43,
+      "tenmer": "CCCCCCCCCG",
+      "score": 2.294942857142857
+    },
+    {
+      "id": 44,
+      "tenmer": "CCCCCCCCCT",
+      "score": 2.702428571428571
+    },
+    {
+      "id": 45,
+      "tenmer": "CCCCCCCCGG",
+      "score": 1.9696571428571428
+    },
+    {
+      "id": 46,
+      "tenmer": "CCCCCCCCTA",
+      "score": 2.5665571428571425
+    },
+    {
+      "id": 47,
+      "tenmer": "CCCCCCCGGG",
+      "score": 1.7285
+    },
+    {
+      "id": 48,
+      "tenmer": "CCCCCCGGGC",
+      "score": 1.7093571428571426
+    },
+    {
+      "id": 49,
+      "tenmer": "CCCCCCGGGG",
+      "score": 1.7285
+    },
+    {
+      "id": 50,
+      "tenmer": "CCCCCCGGGT",
+      "score": 1.4873428571428569
+    },
+    {
+      "id": 51,
+      "tenmer": "CCCCCGGGCC",
+      "score": 1.366242857142857
+    },
+    {
+      "id": 52,
+      "tenmer": "CCCCCGGGGC",
+      "score": 1.7093571428571426
+    },
+    {
+      "id": 53,
+      "tenmer": "CCCCCGGGGG",
+      "score": 1.7285
+    },
+    {
+      "id": 54,
+      "tenmer": "CCCCCGGGGT",
+      "score": 1.4873428571428569
+    },
+    {
+      "id": 55,
+      "tenmer": "CCCCGGGCCC",
+      "score": 1.3471
+    },
+    {
+      "id": 56,
+      "tenmer": "CCCCGGGGCC",
+      "score": 1.366242857142857
+    },
+    {
+      "id": 57,
+      "tenmer": "CCCCGGGGGC",
+      "score": 1.7093571428571426
+    },
+    {
+      "id": 58,
+      "tenmer": "CCCCGGGGGG",
+      "score": 1.7285
+    },
+    {
+      "id": 59,
+      "tenmer": "CCCCGGGGGT",
+      "score": 1.4873428571428569
+    },
+    {
+      "id": 60,
+      "tenmer": "CCCGGGCCCA",
+      "score": 1.2805714285714287
+    },
+    {
+      "id": 61,
+      "tenmer": "CCCGGGCCCC",
+      "score": 1.3471
+    },
+    {
+      "id": 62,
+      "tenmer": "CCCGGGCCCG",
+      "score": 1.1059428571428571
+    },
+    {
+      "id": 63,
+      "tenmer": "CCCGGGCCCT",
+      "score": 1.5134285714285713
+    },
+    {
+      "id": 64,
+      "tenmer": "CCCGGGGCCC",
+      "score": 1.3471
+    },
+    {
+      "id": 65,
+      "tenmer": "CCCGGGGGCC",
+      "score": 1.366242857142857
+    },
+    {
+      "id": 66,
+      "tenmer": "CCCGGGGGGC",
+      "score": 1.7093571428571426
+    },
+    {
+      "id": 67,
+      "tenmer": "CCCGGGGGGG",
+      "score": 1.7285
+    },
+    {
+      "id": 68,
+      "tenmer": "CCCGGGGGGT",
+      "score": 1.4873428571428569
+    },
+    {
+      "id": 69,
+      "tenmer": "CCGGGCCCCA",
+      "score": 1.5217285714285713
+    },
+    {
+      "id": 70,
+      "tenmer": "CCGGGCCCCC",
+      "score": 1.5882571428571428
+    },
+    {
+      "id": 71,
+      "tenmer": "CCGGGCCCCG",
+      "score": 1.3471
+    },
+    {
+      "id": 72,
+      "tenmer": "CCGGGCCCCT",
+      "score": 1.7545857142857142
+    },
+    {
+      "id": 73,
+      "tenmer": "CCGGGCCCGG",
+      "score": 1.0218142857142856
+    },
+    {
+      "id": 74,
+      "tenmer": "CCGGGCCCTA",
+      "score": 1.6187142857142856
+    },
+    {
+      "id": 75,
+      "tenmer": "CCGGGGCCCA",
+      "score": 1.5217285714285713
+    },
+    {
+      "id": 76,
+      "tenmer": "CCGGGGCCCC",
+      "score": 1.5882571428571428
+    },
+    {
+      "id": 77,
+      "tenmer": "CCGGGGCCCG",
+      "score": 1.3471
+    },
+    {
+      "id": 78,
+      "tenmer": "CCGGGGCCCT",
+      "score": 1.7545857142857142
+    },
+    {
+      "id": 79,
+      "tenmer": "CCGGGGGCCC",
+      "score": 1.5882571428571428
+    },
+    {
+      "id": 80,
+      "tenmer": "CCGGGGGGCC",
+      "score": 1.6074
+    },
+    {
+      "id": 81,
+      "tenmer": "CCGGGGGGGC",
+      "score": 1.9505142857142856
+    },
+    {
+      "id": 82,
+      "tenmer": "CCGGGGGGGG",
+      "score": 1.9696571428571428
+    },
+    {
+      "id": 83,
+      "tenmer": "CCGGGGGGGT",
+      "score": 1.7285
+    },
+    {
+      "id": 84,
+      "tenmer": "CGGGCCCCCA",
+      "score": 1.8470142857142857
+    },
+    {
+      "id": 85,
+      "tenmer": "CGGGCCCCCC",
+      "score": 1.9135428571428572
+    },
+    {
+      "id": 86,
+      "tenmer": "CGGGCCCCCG",
+      "score": 1.6723857142857141
+    },
+    {
+      "id": 87,
+      "tenmer": "CGGGCCCCCT",
+      "score": 2.0798714285714284
+    },
+    {
+      "id": 88,
+      "tenmer": "CGGGCCCCGG",
+      "score": 1.3471
+    },
+    {
+      "id": 89,
+      "tenmer": "CGGGCCCCTA",
+      "score": 1.9440000000000002
+    },
+    {
+      "id": 90,
+      "tenmer": "CGGGCCCGGG",
+      "score": 1.1059428571428571
+    },
+    {
+      "id": 91,
+      "tenmer": "CGGGGCCCCA",
+      "score": 1.8470142857142857
+    },
+    {
+      "id": 92,
+      "tenmer": "CGGGGCCCCC",
+      "score": 1.9135428571428572
+    },
+    {
+      "id": 93,
+      "tenmer": "CGGGGCCCCG",
+      "score": 1.6723857142857141
+    },
+    {
+      "id": 94,
+      "tenmer": "CGGGGCCCCT",
+      "score": 2.0798714285714284
+    },
+    {
+      "id": 95,
+      "tenmer": "CGGGGCCCGG",
+      "score": 1.3471
+    },
+    {
+      "id": 96,
+      "tenmer": "CGGGGCCCTA",
+      "score": 1.9440000000000002
+    },
+    {
+      "id": 97,
+      "tenmer": "CGGGGGCCCA",
+      "score": 1.8470142857142857
+    },
+    {
+      "id": 98,
+      "tenmer": "CGGGGGCCCC",
+      "score": 1.9135428571428572
+    },
+    {
+      "id": 99,
+      "tenmer": "CGGGGGCCCG",
+      "score": 1.6723857142857141
+    },
+    {
+      "id": 100,
+      "tenmer": "CGGGGGCCCT",
+      "score": 2.0798714285714284
+    },
+    {
+      "id": 101,
+      "tenmer": "CGGGGGGCCC",
+      "score": 1.9135428571428572
+    },
+    {
+      "id": 102,
+      "tenmer": "CGGGGGGGCC",
+      "score": 1.9326857142857141
+    },
+    {
+      "id": 103,
+      "tenmer": "CGGGGGGGGC",
+      "score": 2.2758
+    },
+    {
+      "id": 104,
+      "tenmer": "CGGGGGGGGG",
+      "score": 2.294942857142857
+    },
+    {
+      "id": 105,
+      "tenmer": "CGGGGGGGGT",
+      "score": 2.053785714285714
+    },
+    {
+      "id": 106,
+      "tenmer": "GCCCCCCCCA",
+      "score": 2.450428571428571
+    },
+    {
+      "id": 107,
+      "tenmer": "GCCCCCCCCC",
+      "score": 2.5169571428571422
+    },
+    {
+      "id": 108,
+      "tenmer": "GCCCCCCCCG",
+      "score": 2.2758
+    },
+    {
+      "id": 109,
+      "tenmer": "GCCCCCCCCT",
+      "score": 2.683285714285714
+    },
+    {
+      "id": 110,
+      "tenmer": "GCCCCCCCGG",
+      "score": 1.9505142857142856
+    },
+    {
+      "id": 111,
+      "tenmer": "GCCCCCCCTA",
+      "score": 2.5474142857142854
+    },
+    {
+      "id": 112,
+      "tenmer": "GCCCCCCGGG",
+      "score": 1.7093571428571426
+    },
+    {
+      "id": 113,
+      "tenmer": "GCCCCCGGGC",
+      "score": 1.6902142857142857
+    },
+    {
+      "id": 114,
+      "tenmer": "GCCCCCGGGG",
+      "score": 1.7093571428571426
+    },
+    {
+      "id": 115,
+      "tenmer": "GCCCCCGGGT",
+      "score": 1.4682
+    },
+    {
+      "id": 116,
+      "tenmer": "GCCCCGGGCC",
+      "score": 1.3471
+    },
+    {
+      "id": 117,
+      "tenmer": "GCCCCGGGGC",
+      "score": 1.6902142857142857
+    },
+    {
+      "id": 118,
+      "tenmer": "GCCCCGGGGG",
+      "score": 1.7093571428571426
+    },
+    {
+      "id": 119,
+      "tenmer": "GCCCCGGGGT",
+      "score": 1.4682
+    },
+    {
+      "id": 120,
+      "tenmer": "GCCCGGGCCC",
+      "score": 1.3279571428571428
+    },
+    {
+      "id": 121,
+      "tenmer": "GCCCGGGGCC",
+      "score": 1.3471
+    },
+    {
+      "id": 122,
+      "tenmer": "GCCCGGGGGC",
+      "score": 1.6902142857142857
+    },
+    {
+      "id": 123,
+      "tenmer": "GCCCGGGGGG",
+      "score": 1.7093571428571426
+    },
+    {
+      "id": 124,
+      "tenmer": "GCCCGGGGGT",
+      "score": 1.4682
+    },
+    {
+      "id": 125,
+      "tenmer": "GGCCCCCCCA",
+      "score": 2.1073142857142857
+    },
+    {
+      "id": 126,
+      "tenmer": "GGCCCCCCCC",
+      "score": 2.173842857142857
+    },
+    {
+      "id": 127,
+      "tenmer": "GGCCCCCCCG",
+      "score": 1.9326857142857141
+    },
+    {
+      "id": 128,
+      "tenmer": "GGCCCCCCCT",
+      "score": 2.3401714285714283
+    },
+    {
+      "id": 129,
+      "tenmer": "GGCCCCCCGG",
+      "score": 1.6074
+    },
+    {
+      "id": 130,
+      "tenmer": "GGCCCCCCTA",
+      "score": 2.2043
+    },
+    {
+      "id": 131,
+      "tenmer": "GGCCCCCGGG",
+      "score": 1.366242857142857
+    },
+    {
+      "id": 132,
+      "tenmer": "GGCCCCGGGC",
+      "score": 1.3471
+    },
+    {
+      "id": 133,
+      "tenmer": "GGCCCCGGGG",
+      "score": 1.366242857142857
+    },
+    {
+      "id": 134,
+      "tenmer": "GGCCCCGGGT",
+      "score": 1.1250857142857142
+    },
+    {
+      "id": 135,
+      "tenmer": "GGCCCGGGCC",
+      "score": 1.0039857142857143
+    },
+    {
+      "id": 136,
+      "tenmer": "GGCCCGGGGC",
+      "score": 1.3471
+    },
+    {
+      "id": 137,
+      "tenmer": "GGCCCGGGGG",
+      "score": 1.366242857142857
+    },
+    {
+      "id": 138,
+      "tenmer": "GGCCCGGGGT",
+      "score": 1.1250857142857142
+    },
+    {
+      "id": 139,
+      "tenmer": "GGGCCCCCCA",
+      "score": 2.0881714285714286
+    },
+    {
+      "id": 140,
+      "tenmer": "GGGCCCCCCC",
+      "score": 2.1546999999999996
+    },
+    {
+      "id": 141,
+      "tenmer": "GGGCCCCCCG",
+      "score": 1.9135428571428572
+    },
+    {
+      "id": 142,
+      "tenmer": "GGGCCCCCCT",
+      "score": 2.321028571428571
+    },
+    {
+      "id": 143,
+      "tenmer": "GGGCCCCCGG",
+      "score": 1.5882571428571428
+    },
+    {
+      "id": 144,
+      "tenmer": "GGGCCCCCTA",
+      "score": 2.185157142857143
+    },
+    {
+      "id": 145,
+      "tenmer": "GGGCCCCGGG",
+      "score": 1.3471
+    },
+    {
+      "id": 146,
+      "tenmer": "GGGCCCGGGC",
+      "score": 1.3279571428571428
+    },
+    {
+      "id": 147,
+      "tenmer": "GGGCCCGGGG",
+      "score": 1.3471
+    },
+    {
+      "id": 148,
+      "tenmer": "GGGCCCGGGT",
+      "score": 1.1059428571428571
+    },
+    {
+      "id": 149,
+      "tenmer": "GGGGCCCCCA",
+      "score": 2.0881714285714286
+    },
+    {
+      "id": 150,
+      "tenmer": "GGGGCCCCCC",
+      "score": 2.1546999999999996
+    },
+    {
+      "id": 151,
+      "tenmer": "GGGGCCCCCG",
+      "score": 1.9135428571428572
+    },
+    {
+      "id": 152,
+      "tenmer": "GGGGCCCCCT",
+      "score": 2.321028571428571
+    },
+    {
+      "id": 153,
+      "tenmer": "GGGGCCCCGG",
+      "score": 1.5882571428571428
+    },
+    {
+      "id": 154,
+      "tenmer": "GGGGCCCCTA",
+      "score": 2.185157142857143
+    },
+    {
+      "id": 155,
+      "tenmer": "GGGGCCCGGG",
+      "score": 1.3471
+    },
+    {
+      "id": 156,
+      "tenmer": "GGGGGCCCCA",
+      "score": 2.0881714285714286
+    },
+    {
+      "id": 157,
+      "tenmer": "GGGGGCCCCC",
+      "score": 2.1546999999999996
+    },
+    {
+      "id": 158,
+      "tenmer": "GGGGGCCCCG",
+      "score": 1.9135428571428572
+    },
+    {
+      "id": 159,
+      "tenmer": "GGGGGCCCCT",
+      "score": 2.321028571428571
+    },
+    {
+      "id": 160,
+      "tenmer": "GGGGGCCCGG",
+      "score": 1.5882571428571428
+    },
+    {
+      "id": 161,
+      "tenmer": "GGGGGCCCTA",
+      "score": 2.185157142857143
+    },
+    {
+      "id": 162,
+      "tenmer": "GGGGGGCCCA",
+      "score": 2.0881714285714286
+    },
+    {
+      "id": 163,
+      "tenmer": "GGGGGGCCCC",
+      "score": 2.1546999999999996
+    },
+    {
+      "id": 164,
+      "tenmer": "GGGGGGCCCG",
+      "score": 1.9135428571428572
+    },
+    {
+      "id": 165,
+      "tenmer": "GGGGGGCCCT",
+      "score": 2.321028571428571
+    },
+    {
+      "id": 166,
+      "tenmer": "GGGGGGGCCC",
+      "score": 2.1546999999999996
+    },
+    {
+      "id": 167,
+      "tenmer": "GGGGGGGGCC",
+      "score": 2.173842857142857
+    },
+    {
+      "id": 168,
+      "tenmer": "GGGGGGGGGC",
+      "score": 2.5169571428571422
+    },
+    {
+      "id": 169,
+      "tenmer": "GGGGGGGGGG",
+      "score": 2.5361
+    },
+    {
+      "id": 170,
+      "tenmer": "GGGGGGGGGT",
+      "score": 2.294942857142857
+    },
+    {
+      "id": 171,
+      "tenmer": "TAGGGCCCCA",
+      "score": 2.1186285714285713
+    },
+    {
+      "id": 172,
+      "tenmer": "TAGGGCCCCC",
+      "score": 2.185157142857143
+    },
+    {
+      "id": 173,
+      "tenmer": "TAGGGCCCCG",
+      "score": 1.9440000000000002
+    },
+    {
+      "id": 174,
+      "tenmer": "TAGGGCCCCT",
+      "score": 2.3514857142857144
+    },
+    {
+      "id": 175,
+      "tenmer": "TAGGGCCCGG",
+      "score": 1.6187142857142856
+    },
+    {
+      "id": 176,
+      "tenmer": "TAGGGCCCTA",
+      "score": 2.2156142857142855
+    },
+    {
+      "id": 177,
+      "tenmer": "TAGGGGCCCA",
+      "score": 2.1186285714285713
+    },
+    {
+      "id": 178,
+      "tenmer": "TAGGGGCCCC",
+      "score": 2.185157142857143
+    },
+    {
+      "id": 179,
+      "tenmer": "TAGGGGCCCG",
+      "score": 1.9440000000000002
+    },
+    {
+      "id": 180,
+      "tenmer": "TAGGGGCCCT",
+      "score": 2.3514857142857144
+    },
+    {
+      "id": 181,
+      "tenmer": "TAGGGGGCCC",
+      "score": 2.185157142857143
+    },
+    {
+      "id": 182,
+      "tenmer": "TAGGGGGGCC",
+      "score": 2.2043
+    },
+    {
+      "id": 183,
+      "tenmer": "TAGGGGGGGC",
+      "score": 2.5474142857142854
+    },
+    {
+      "id": 184,
+      "tenmer": "TAGGGGGGGG",
+      "score": 2.5665571428571425
+    },
+    {
+      "id": 185,
+      "tenmer": "TAGGGGGGGT",
+      "score": 2.3253999999999997
+    },
+    {
+      "id": 186,
+      "tenmer": "TGGGCCCCCA",
+      "score": 2.021642857142857
+    },
+    {
+      "id": 187,
+      "tenmer": "TGGGCCCCCC",
+      "score": 2.0881714285714286
+    },
+    {
+      "id": 188,
+      "tenmer": "TGGGCCCCCG",
+      "score": 1.8470142857142857
+    },
+    {
+      "id": 189,
+      "tenmer": "TGGGCCCCCT",
+      "score": 2.2544999999999997
+    },
+    {
+      "id": 190,
+      "tenmer": "TGGGCCCCGG",
+      "score": 1.5217285714285713
+    },
+    {
+      "id": 191,
+      "tenmer": "TGGGCCCCTA",
+      "score": 2.1186285714285713
+    },
+    {
+      "id": 192,
+      "tenmer": "TGGGCCCGGG",
+      "score": 1.2805714285714287
+    },
+    {
+      "id": 193,
+      "tenmer": "TGGGGCCCCA",
+      "score": 2.021642857142857
+    },
+    {
+      "id": 194,
+      "tenmer": "TGGGGCCCCC",
+      "score": 2.0881714285714286
+    },
+    {
+      "id": 195,
+      "tenmer": "TGGGGCCCCG",
+      "score": 1.8470142857142857
+    },
+    {
+      "id": 196,
+      "tenmer": "TGGGGCCCCT",
+      "score": 2.2544999999999997
+    },
+    {
+      "id": 197,
+      "tenmer": "TGGGGCCCGG",
+      "score": 1.5217285714285713
+    },
+    {
+      "id": 198,
+      "tenmer": "TGGGGCCCTA",
+      "score": 2.1186285714285713
+    },
+    {
+      "id": 199,
+      "tenmer": "TGGGGGCCCA",
+      "score": 2.021642857142857
+    },
+    {
+      "id": 200,
+      "tenmer": "TGGGGGCCCC",
+      "score": 2.0881714285714286
+    },
+    {
+      "id": 201,
+      "tenmer": "TGGGGGCCCG",
+      "score": 1.8470142857142857
+    },
+    {
+      "id": 202,
+      "tenmer": "TGGGGGCCCT",
+      "score": 2.2544999999999997
+    },
+    {
+      "id": 203,
+      "tenmer": "TGGGGGGCCC",
+      "score": 2.0881714285714286
+    },
+    {
+      "id": 204,
+      "tenmer": "TGGGGGGGCC",
+      "score": 2.1073142857142857
+    },
+    {
+      "id": 205,
+      "tenmer": "TGGGGGGGGC",
+      "score": 2.450428571428571
+    },
+    {
+      "id": 206,
+      "tenmer": "TGGGGGGGGG",
+      "score": 2.4695714285714283
+    },
+    {
+      "id": 207,
+      "tenmer": "TGGGGGGGGT",
+      "score": 2.2284142857142855
+    }
+  ],
+  "meta": {
+    "source": "APhilicDetector.TENMER_LOG2",
+    "note": "values are log2 odds"
+  }
+}
