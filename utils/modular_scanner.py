@@ -78,11 +78,19 @@ except ImportError:
 
 # Import motif_patterns for registry loading
 try:
-    from utils import motif_patterns
+    from . import motif_patterns
     _MOTIF_PATTERNS_AVAILABLE = True
 except ImportError:
-    motif_patterns = None
-    _MOTIF_PATTERNS_AVAILABLE = False
+    try:
+        # Fallback: direct import
+        import sys
+        import os
+        sys.path.insert(0, os.path.dirname(__file__))
+        import motif_patterns
+        _MOTIF_PATTERNS_AVAILABLE = True
+    except ImportError:
+        motif_patterns = None
+        _MOTIF_PATTERNS_AVAILABLE = False
 
 DEFAULT_REGISTRY_DIR = os.environ.get("NBD_REGISTRY_DIR", "registry")
 

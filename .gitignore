@@ -97,4 +97,4 @@ motif_classification.py
 test_regex_registry.py
 
 # Registry binaries (generated at runtime if Hyperscan available)
-*.hsdb
+*.hsdb*.hsdb

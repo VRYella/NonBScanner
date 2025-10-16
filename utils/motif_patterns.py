@@ -707,8 +707,16 @@ try:
     from .load_hsdb import load_db_for_class
     _LOAD_HSDB_AVAILABLE = True
 except ImportError:
-    _LOAD_HSDB_AVAILABLE = False
-    load_db_for_class = None
+    try:
+        # Fallback: direct import
+        import sys
+        import os as _os
+        sys.path.insert(0, _os.path.dirname(__file__))
+        from load_hsdb import load_db_for_class
+        _LOAD_HSDB_AVAILABLE = True
+    except ImportError:
+        _LOAD_HSDB_AVAILABLE = False
+        load_db_for_class = None
 
 # In-memory cache to avoid repeated compiles/deserializes
 _HS_DB_CACHE = {}
