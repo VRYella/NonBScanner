@@ -105,6 +105,52 @@ def test_cruciform_overlap_removal():
     print("  ✓ Cruciform detector outputs non-overlapping regions")
     print()
 
+def test_cross_class_overlap_resolution():
+    """Test cross-detector overlap resolution"""
+    print("Testing cross-class overlap resolution...")
+    
+    from utils.utils import resolve_cross_class_overlaps, merge_detector_results
+    
+    # Create mock overlapping motifs from different classes
+    motifs = [
+        {'Class': 'G-Quadruplex', 'Start': 10, 'End': 30, 'Score': 0.9, 'Length': 20},
+        {'Class': 'A-philic_DNA', 'Start': 25, 'End': 45, 'Score': 0.7, 'Length': 20},
+        {'Class': 'Z-DNA', 'Start': 40, 'End': 60, 'Score': 0.8, 'Length': 20},
+        {'Class': 'Cruciform', 'Start': 100, 'End': 120, 'Score': 0.6, 'Length': 20}
+    ]
+    
+    # Test strict mode (non-overlapping selection)
+    resolved_strict = resolve_cross_class_overlaps(motifs, mode='strict')
+    print(f"  Input motifs: {len(motifs)}")
+    print(f"  Resolved motifs (strict): {len(resolved_strict)}")
+    
+    # Verify no overlaps in strict mode
+    for i, m1 in enumerate(resolved_strict):
+        for m2 in resolved_strict[i+1:]:
+            assert (m1['End'] <= m2['Start'] or m2['End'] <= m1['Start']), \
+                   "Strict mode should produce no overlaps"
+    print("  ✓ Strict mode produces non-overlapping regions")
+    
+    # Verify highest score is selected for overlapping region
+    # G4 (0.9) overlaps with A-philic (0.7), so G4 should be selected
+    g4_selected = any(m['Class'] == 'G-Quadruplex' for m in resolved_strict)
+    assert g4_selected, "Highest scoring motif should be selected"
+    print("  ✓ Highest scoring motif selected for overlapping regions")
+    
+    # Test merge_detector_results
+    detector_results = {
+        'g_quadruplex': [motifs[0]],
+        'a_philic': [motifs[1]],
+        'z_dna': [motifs[2]],
+        'cruciform': [motifs[3]]
+    }
+    
+    merged = merge_detector_results(detector_results, overlap_mode='strict')
+    print(f"  Merged detector results: {len(merged)} motifs")
+    assert len(merged) <= len(motifs), "Merged should have <= original motifs"
+    print("  ✓ Detector results merged successfully")
+    print()
+
 def test_scoring_separation():
     """Test that scoring is separate from scanning"""
     print("Testing scoring separation from scanning...")
@@ -138,6 +184,7 @@ def main():
         test_aphilic_detector_merging()
         test_zdna_detector_merging()
         test_cruciform_overlap_removal()
+        test_cross_class_overlap_resolution()
         
         print("=" * 70)
         print("ALL TESTS PASSED ✓")
@@ -149,6 +196,7 @@ def main():
         print("  • A-philic detector merges overlapping 10-mer matches")
         print("  • Z-DNA detector merges overlapping 10-mer matches")
         print("  • Cruciform detector removes overlaps deterministically")
+        print("  • Cross-class overlap resolution works correctly")
         print("  • All detectors output non-overlapping regions")
         return 0
         

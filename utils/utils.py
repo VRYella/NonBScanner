@@ -744,6 +744,112 @@ def filter_motifs_by_class(motifs: List[Dict[str, Any]],
     return [m for m in motifs if m.get('Class') in allowed_classes]
 
 # =============================================================================
+# CROSS-DETECTOR OVERLAP RESOLUTION (Hyperscan Integration Pattern)
+# =============================================================================
+
+def resolve_cross_class_overlaps(motifs: List[Dict[str, Any]], 
+                                 mode: str = 'strict') -> List[Dict[str, Any]]:
+    """
+    Resolve overlaps across different motif classes using deterministic selection.
+    
+    Implements the overlap resolution strategy from the Hyperscan integration plan:
+    - Option A (strict): Select highest normalized score among overlapping regions
+    - Option B (hybrid): Keep both but mark as Hybrid (handled by detector pipeline)
+    
+    Algorithm:
+    1. Sort candidates by score (descending), then by length (descending)
+    2. Greedily select highest-scoring non-overlapping motifs
+    3. This ensures deterministic, reproducible output
+    
+    Args:
+        motifs: List of motif dictionaries from multiple detectors
+        mode: 'strict' for non-overlapping selection, 'hybrid' for hybrid marking
+        
+    Returns:
+        List of resolved motifs (non-overlapping if mode='strict')
+        
+    References:
+        - Hyperscan integration pattern for Non-B DNA detection
+        - Score-aware greedy selection (similar to Cruciform._remove_overlaps)
+    """
+    if not motifs:
+        return []
+    
+    if mode == 'hybrid':
+        # Return all motifs - hybrid detection happens in the scanner pipeline
+        return motifs
+    
+    # Mode 'strict': Select highest-scoring non-overlapping set
+    # Sort by score (descending), then by length (descending) for tie-breaking
+    sorted_motifs = sorted(motifs, 
+                          key=lambda x: (-x.get('Score', 0), 
+                                       -(x.get('End', 0) - x.get('Start', 0))))
+    
+    selected = []
+    
+    for candidate in sorted_motifs:
+        # Check if this candidate overlaps with any already selected motif
+        overlaps = False
+        cand_start = candidate.get('Start', 0)
+        cand_end = candidate.get('End', 0)
+        
+        for selected_motif in selected:
+            sel_start = selected_motif.get('Start', 0)
+            sel_end = selected_motif.get('End', 0)
+            
+            # Check for overlap: two regions overlap if neither is completely before the other
+            if not (cand_end <= sel_start or cand_start >= sel_end):
+                overlaps = True
+                break
+        
+        if not overlaps:
+            selected.append(candidate)
+    
+    # Sort by start position for final output
+    selected.sort(key=lambda x: x.get('Start', 0))
+    
+    return selected
+
+def merge_detector_results(detector_results: Dict[str, List[Dict[str, Any]]],
+                          overlap_mode: str = 'strict') -> List[Dict[str, Any]]:
+    """
+    Merge results from multiple detectors with overlap resolution.
+    
+    This function implements the complete Hyperscan integration pattern:
+    1. Collect results from all detectors (already scored and filtered)
+    2. Resolve cross-class overlaps according to specified mode
+    3. Return unified, non-redundant motif list
+    
+    Args:
+        detector_results: Dictionary mapping detector_name -> list of motifs
+        overlap_mode: 'strict' for non-overlapping, 'hybrid' for overlap annotation
+        
+    Returns:
+        Merged list of motifs with overlaps resolved
+        
+    Example:
+        >>> results = {
+        ...     'a_philic': [motif1, motif2],
+        ...     'z_dna': [motif3, motif4],
+        ...     'g_quadruplex': [motif5]
+        ... }
+        >>> merged = merge_detector_results(results, overlap_mode='strict')
+    """
+    # Flatten all detector results into single list
+    all_motifs = []
+    for detector_name, motifs in detector_results.items():
+        # Add detector source to each motif for tracking
+        for motif in motifs:
+            if 'Detector' not in motif:
+                motif['Detector'] = detector_name
+            all_motifs.append(motif)
+    
+    # Resolve overlaps according to mode
+    resolved = resolve_cross_class_overlaps(all_motifs, mode=overlap_mode)
+    
+    return resolved
+
+# =============================================================================
 # TESTING & EXAMPLES
 # =============================================================================
 
