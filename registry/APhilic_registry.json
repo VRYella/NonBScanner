@@ -1,6 +1,6 @@
 {
   "class": "APhilic",
-  "generated_at": "2025-10-16T10:48:58.586387Z",
+  "generated_at": "2025-10-16T11:54:51.267105Z",
   "n_patterns": 208,
   "patterns": [
     {
@@ -1045,7 +1045,10 @@
     }
   ],
   "meta": {
+    "source_module": "motif_detection.a_philic_detector",
+    "source_attribute": "TENMER_LOG2",
     "source": "APhilicDetector.TENMER_LOG2",
-    "note": "values are log2 odds"
+    "detector_class": "APhilicDetector",
+    "note": "Values are log2 odds ratios"
   }
 }

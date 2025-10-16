@@ -2,38 +2,77 @@
 
 This directory contains precompiled pattern registries for high-performance motif detection using Hyperscan (when available).
 
+## Overview
+
+The registry system provides:
+- **Automatic discovery** of all detector classes with pattern tables
+- **Multiple output formats**: plain text, pickle, JSON, and optional Hyperscan binary DBs
+- **Deterministic pattern ordering** for stable IDs across regenerations
+- **Pattern validation** ensuring only valid DNA characters (A/C/G/T/N)
+- **Sharding support** for large pattern sets (>50k patterns)
+- **Graceful fallbacks** when Hyperscan is not available
+
 ## Directory Structure
 
 ```
 registry/
-├── ZDNA_patterns.txt      # Plain text list of Z-DNA 10-mer patterns
-├── ZDNA_registry.pkl      # Pickle serialization of Z-DNA registry
-├── ZDNA_registry.json     # JSON serialization of Z-DNA registry
-├── APhilic_patterns.txt   # Plain text list of A-philic 10-mer patterns
-├── APhilic_registry.pkl   # Pickle serialization of A-philic registry
-└── APhilic_registry.json  # JSON serialization of A-philic registry
+├── <CLASS>_patterns.txt      # Plain text list of patterns (one per line)
+├── <CLASS>_registry.pkl       # Pickle serialization of registry (fast loading)
+├── <CLASS>_registry.json      # JSON serialization (human-readable)
+└── <CLASS>.hsdb               # Optional: compiled Hyperscan database
 ```
+
+For large pattern sets (>50k), the system creates sharded DBs:
+```
+registry/
+├── <CLASS>_shard_0.hsdb
+├── <CLASS>_shard_1.hsdb
+└── ...
+```
+
+## Supported Detector Classes
+
+The system automatically discovers all detector classes with pattern tables.
+Currently supported:
+
+- **ZDNA**: 126 Z-DNA 10-mer motifs (from `ZDNADetector.TENMER_SCORE`)
+- **APhilic**: 208 A-philic 10-mer motifs (from `APhilicDetector.TENMER_LOG2`)
+
+Additional detectors can be added by implementing pattern tables with any of these attributes:
+- `TENMER_SCORE`, `TENMER_LOG2`, `TENMER_TABLE`
+- `PATTERN_TABLE`, `PATTERNS`, `PATTERN_DICT`
 
 ## Registry Contents
 
 Each registry contains:
-- **id**: Sequential integer ID for each pattern (for Hyperscan)
-- **tenmer**: The 10-mer sequence pattern
-- **score**: The scoring value for the pattern
-- **metadata**: Source and generation information
+- **id**: Sequential integer ID for each pattern (deterministic, based on sorted pattern order)
+- **tenmer**: The pattern sequence (uppercased)
+- **score**: The scoring value for the pattern (float)
+- **metadata**: Source module, attribute name, generation timestamp, and notes
 
-### Z-DNA Registry
-- **Patterns**: 126 Z-DNA 10-mer motifs
-- **Source**: `ZDNADetector.TENMER_SCORE`
-- **Score Range**: 50.0 - 63.0
+### Registry Format (JSON example)
 
-### A-philic Registry
-- **Patterns**: 208 A-philic 10-mer motifs
-- **Source**: `APhilicDetector.TENMER_LOG2`
-- **Score Type**: log2 odds ratios
-- **Score Range**: varies (log2 values)
-
-## Usage
+```json
+{
+  "class": "ZDNA",
+  "generated_at": "2024-10-16T12:00:00Z",
+  "n_patterns": 126,
+  "patterns": [
+    {
+      "id": 0,
+      "tenmer": "AACGCGCGCG",
+      "score": 50.25
+    },
+    ...
+  ],
+  "meta": {
+    "source_module": "motif_detection.z_dna_detector",
+    "source_attribute": "TENMER_SCORE",
+    "source": "ZDNADetector.TENMER_SCORE",
+    "detector_class": "ZDNADetector"
+  }
+}
+```
 
 ### Automatic Loading (Recommended)
 
@@ -73,24 +112,45 @@ export NBD_REGISTRY_DIR=/path/to/custom/registry
 python app.py
 ```
 
+## Usage
+
 ## Regenerating Registries
 
 To regenerate the registries (e.g., after updating detector pattern tables):
 
 ```bash
 # Regenerate all registries
-python tools/generate_class_hsdb.py --out registry
+python tools/generate_all_registries.py --out registry
 
-# Regenerate only Z-DNA
-python tools/generate_class_hsdb.py --out registry --skip-aphilic
+# Force regeneration even if files exist
+python tools/generate_all_registries.py --out registry --force
 
-# Regenerate only A-philic
-python tools/generate_class_hsdb.py --out registry --skip-zdna
+# Use verbose logging
+python tools/generate_all_registries.py --out registry --verbose
+
+# Use smaller shard size for memory-constrained systems
+python tools/generate_all_registries.py --out registry --shard-size 30000
+
+# Discover from different package
+python tools/generate_all_registries.py --out registry --pkg custom_detectors
 ```
+
+The generator automatically discovers all detector classes with pattern tables in the specified package.
 
 ## Hyperscan Binary DBs (.hsdb)
 
 If Hyperscan is installed with serialization support, the generator will also create `.hsdb` files containing precompiled Hyperscan databases. These are excluded from version control (via `.gitignore`) and will be generated at runtime if needed.
+
+For pattern sets exceeding the shard size (default: 50,000), multiple sharded DBs are created:
+- `<CLASS>_shard_0.hsdb`
+- `<CLASS>_shard_1.hsdb`
+- etc.
+
+This prevents memory issues during compilation and allows parallel scanning.
+
+## Pattern Validation
+
+The generator validates all patterns to ensure they contain only valid DNA characters (A, C, G, T, N). Patterns with invalid characters are logged with warnings but still included in the registry for debugging purposes.
 
 ## Fallback Behavior
 
@@ -101,18 +161,25 @@ The system gracefully handles missing Hyperscan:
 
 ## Testing
 
-Run the integration test suite to verify the registry system:
+Run the test suites to verify the registry system:
 
 ```bash
-python test_registry_integration.py
+# Test registry generation
+python tests/test_registry_generation.py
+
+# Test scanner integration
+python tests/test_modular_scanner_registry_integration.py
 ```
 
-This will test:
-- Registry generation
-- Registry loading
-- Integration with motif_patterns module
-- Integration with modular_scanner
-- Detector class attributes
+These tests verify:
+- Detector discovery and pattern table extraction
+- Pattern validation and normalization  
+- Deterministic ID assignment
+- Registry file generation (txt, pkl, json)
+- Loader compatibility
+- Scanner integration and automatic registry discovery
+- Fallback behavior when registries are missing
+- Environment variable override (NBD_REGISTRY_DIR)
 
 ## Performance
 
@@ -120,8 +187,40 @@ When Hyperscan is available:
 - **Pattern matching**: 10-100x faster than pure Python regex
 - **Memory usage**: Minimal (patterns compiled to optimized state machine)
 - **Startup time**: ~10ms per class for DB compilation (cached in memory)
+- **Sharding**: Prevents memory issues for large pattern sets
 
 Without Hyperscan:
 - Falls back to pure Python exact string matching
-- Still faster than regex for exact 10-mer matching
+- Still functional, just slower
 - No additional dependencies required
+
+## Adding New Detectors
+
+To add support for a new detector class:
+
+1. **Define pattern table in your detector**:
+   ```python
+   class MyDetector(BaseMotifDetector):
+       TENMER_SCORE = {
+           "AAAAAAAAAA": 10.0,
+           "CCCCCCCCCC": 20.0,
+           # ... more patterns
+       }
+   ```
+
+2. **Run the generator** (auto-discovers new detectors):
+   ```bash
+   python tools/generate_all_registries.py --out registry --force
+   ```
+
+3. **Update scanner detector map** (if needed for HS_DB_INFO):
+   ```python
+   # In utils/modular_scanner.py, add to detector_map:
+   detector_map = {
+       "ZDNA": ("z_dna", ZDNADetector),
+       "APhilic": ("a_philic", APhilicDetector),
+       "MyClass": ("my_class", MyDetector)  # Add this
+   }
+   ```
+
+The system will automatically discover and process your detector's patterns.

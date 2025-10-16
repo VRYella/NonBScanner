@@ -1,6 +1,6 @@
 {
   "class": "ZDNA",
-  "generated_at": "2025-10-16T10:48:58.585340Z",
+  "generated_at": "2025-10-16T11:54:51.268859Z",
   "n_patterns": 126,
   "patterns": [
     {
@@ -635,6 +635,9 @@
     }
   ],
   "meta": {
-    "source": "ZDNADetector.TENMER_SCORE"
+    "source_module": "motif_detection.z_dna_detector",
+    "source_attribute": "TENMER_SCORE",
+    "source": "ZDNADetector.TENMER_SCORE",
+    "detector_class": "ZDNADetector"
   }
 }
