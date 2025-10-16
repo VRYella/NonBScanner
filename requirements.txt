@@ -20,8 +20,6 @@ biopython>=1.79
 
 # Performance (optional but recommended)
 hyperscan>=0.7.0
-numba>=0.56.0
-pyahocorasick>=2.0.0
 
 # Data Export
 openpyxl>=3.0.0
