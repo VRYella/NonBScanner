@@ -1,6 +1,6 @@
-# NBDScanner Visual Flowcharts and Diagrams
+# NonBScanner Visual Flowcharts and Diagrams
 
-This document contains interactive flowcharts and diagrams for the NBDScanner tool using Mermaid syntax. These diagrams can be rendered in GitHub, GitLab, and most modern markdown viewers.
+This document contains interactive flowcharts and diagrams for the NonBScanner tool using Mermaid syntax. These diagrams can be rendered in GitHub, GitLab, and most modern markdown viewers.
 
 ---
 
@@ -20,7 +20,7 @@ graph TB
     F --> G
     
     G --> H[Sequence Validation]
-    H --> I[NBDScanner Engine]
+    H --> I[NonBScanner Engine]
     
     I --> J[Modular Scanner]
     I --> K[Legacy Scanner]
@@ -495,7 +495,7 @@ stateDiagram-v2
 
 ```mermaid
 journey
-    title User Journey Through NBDScanner
+    title User Journey Through NonBScanner
     section Landing
       Visit homepage: 5: User
       Read overview: 4: User
@@ -711,7 +711,7 @@ graph TB
     end
     
     subgraph "Processing Layer"
-        E[NBDScanner Engine]
+        E[NonBScanner Engine]
         F[Worker Nodes]
         G[Cache Layer]
     end
@@ -741,7 +741,7 @@ graph TB
 ---
 
 **Document Information:**
-- **Purpose:** Visual representation of NBDScanner workflows
+- **Purpose:** Visual representation of NonBScanner workflows
 - **Format:** Mermaid diagrams (GitHub/GitLab compatible)
 - **Rendering:** View in GitHub README or compatible markdown viewers
 - **Last Updated:** October 2024

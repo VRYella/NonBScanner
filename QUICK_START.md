@@ -441,7 +441,7 @@ Invalid DNA characters found
 
 1. **Documentation:** Check `README.md` and `TOOL_DOCUMENTATION.md`
 2. **GitHub Issues:** Report bugs or request features
-3. **Email:** raazbiochem@gmail.com
+3. **Email:** yvrajesh_bt@kluniversity.in
 4. **Discussion Forum:** GitHub Discussions (coming soon)
 
 ### Before Asking for Help:

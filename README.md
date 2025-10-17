@@ -1,10 +1,10 @@
-# 🧬 NBDFinder - Non-B DNA Motif Detection Suite
+# 🧬 NonBScanner - Non-B DNA Motif Detection Suite
 
 **Comprehensive detection and analysis of Non-B DNA structures with 10 major classes and 22+ specialized subclasses**
 
 ## 🎯 Overview
 
-NBDFinder is a state-of-the-art bioinformatics tool for detecting and analyzing Non-B DNA motifs in genomic sequences. It combines high-performance optimized algorithms with scientific scoring methods to provide comprehensive analysis of structural DNA elements.
+NonBScanner is a state-of-the-art bioinformatics tool for detecting and analyzing Non-B DNA motifs in genomic sequences. It combines high-performance optimized algorithms with scientific scoring methods to provide comprehensive analysis of structural DNA elements.
 
 ### 📊 Detection Coverage
 - **10 Major Non-B DNA Classes** with comprehensive subclass analysis
@@ -43,7 +43,6 @@ Comprehensive documentation is available:
 - **[QUICK_START.md](QUICK_START.md)** - Fast installation and first analysis guide
 - **[TOOL_DOCUMENTATION.md](TOOL_DOCUMENTATION.md)** - Complete technical documentation (nature paper-level writeup)
 - **[VISUAL_FLOWCHARTS.md](VISUAL_FLOWCHARTS.md)** - 20+ interactive flowcharts and diagrams
-- **[ISSUE_RESOLUTION.md](ISSUE_RESOLUTION.md)** - Troubleshooting and common issues
 - **[CODE_ORGANIZATION_SUMMARY.md](CODE_ORGANIZATION_SUMMARY.md)** - Code structure and organization
 - **[OPTIMIZATION_SUMMARY.md](OPTIMIZATION_SUMMARY.md)** - Performance optimization details
 - **[PERFORMANCE_OPTIMIZATION.md](PERFORMANCE_OPTIMIZATION.md)** - Detailed performance guide
@@ -53,15 +52,15 @@ Comprehensive documentation is available:
 ### Web Interface
 ```bash
 # Clone and setup
-git clone https://github.com/VRYella/NBDFinder.git
-cd NBDFinder
+git clone https://github.com/VRYella/NonBScanner.git
+cd NonBScanner
 pip install -r requirements.txt
 
 # Launch web interface
 streamlit run app.py                    # Web interface on :8501
 ```
 
-**New to NBDScanner?** Start with [QUICK_START.md](QUICK_START.md) for a step-by-step guide!
+**New to NonBScanner?** Start with [QUICK_START.md](QUICK_START.md) for a step-by-step guide!
 
 ## 📱 User Interfaces
 
@@ -137,8 +136,6 @@ streamlit run app.py                    # Web interface on :8501
 - ✅ Annotated peaks and top features
 - ✅ Publication-ready layouts
 
-See [ADVANCED_FEATURES.md](ADVANCED_FEATURES.md) for detailed documentation.
-
 ### Interactive Visualizations
 - Motif browser with zoom/pan
 - Class hierarchy sunburst charts
@@ -182,16 +179,14 @@ NBDScanner now separates hybrid and cluster motifs from regular Non-B DNA motifs
 - ✅ **Advanced Access**: Hybrid/cluster data still available in dedicated tab
 - ✅ **Better Downloads**: Export files contain clean datasets
 
-See [HYBRID_CLUSTER_SEPARATION.md](HYBRID_CLUSTER_SEPARATION.md) for detailed documentation.
-
 ## 📄 Citation
 
-If you use NBDFinder in your research, please cite:
+If you use NonBScanner in your research, please cite:
 
 ```
-NBDFinder: Comprehensive Detection and Analysis of Non-B DNA Motifs
+NonBScanner: Comprehensive Detection and Analysis of Non-B DNA Motifs
 Dr. Venkata Rajesh Yella
-GitHub: https://github.com/VRYella/NBDFinder
+GitHub: https://github.com/VRYella/NonBScanner
 ```
 
 ## 🤝 Contributing
