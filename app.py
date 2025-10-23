@@ -1018,7 +1018,15 @@ with tab_pages["Upload & Analyze"]:
                         if limits:
                             validation_messages.append(f"✓ {class_id}: Length limits {limits}")
                 
-                st.info("⏳ Running analysis...")
+                # Enhanced progress tracking with timer
+                import time
+                
+                # Create placeholder for timer and progress
+                timer_placeholder = st.empty()
+                progress_placeholder = st.empty()
+                status_placeholder = st.empty()
+                
+                start_time = time.time()
                 
                 try:
                     # Filter which classes to analyze based on selection
@@ -1028,22 +1036,53 @@ with tab_pages["Upload & Analyze"]:
                     all_results = []
                     all_hotspots = []
                     
-                    pbar = st.progress(0)
-                    st.text("Analyzing sequences...")
+                    total_bp_processed = 0
+                    
+                    with progress_placeholder.container():
+                        pbar = st.progress(0)
+                        
                     for i, (seq, name) in enumerate(zip(st.session_state.seqs, st.session_state.names)):
                         progress = (i + 1) / len(st.session_state.seqs)
                         
+                        # Calculate elapsed time
+                        elapsed = time.time() - start_time
+                        
+                        # Update timer display
+                        timer_placeholder.markdown(f"""
+                        <div style='background: linear-gradient(135deg, #1976d2 0%, #42a5f5 100%); 
+                                    border-radius: 12px; padding: 1rem; color: white; text-align: center;
+                                    box-shadow: 0 4px 12px rgba(25, 118, 210, 0.3); margin-bottom: 1rem;'>
+                            <h3 style='margin: 0; color: white;'>⏱️ Analysis Progress</h3>
+                            <h2 style='margin: 0.5rem 0; color: #FFD700; font-size: 2rem;'>{elapsed:.1f}s</h2>
+                            <p style='margin: 0; opacity: 0.9;'>Sequence {i+1}/{len(st.session_state.seqs)} | {total_bp_processed:,} bp processed</p>
+                        </div>
+                        """, unsafe_allow_html=True)
+                        
                         # Run the consolidated NBDScanner analysis
+                        seq_start = time.time()
                         results = analyze_sequence(seq, name)
+                        seq_time = time.time() - seq_start
                         
                         # Ensure all motifs have required fields
                         results = [ensure_subclass(motif) for motif in results]
                         all_results.append(results)
                         
-                        pbar.progress(progress, text=f"Analyzed {i+1}/{len(st.session_state.seqs)} sequences")
+                        total_bp_processed += len(seq)
+                        
+                        # Calculate processing speed
+                        speed = total_bp_processed / elapsed if elapsed > 0 else 0
+                        
+                        with progress_placeholder.container():
+                            pbar.progress(progress, text=f"Analyzed {i+1}/{len(st.session_state.seqs)} sequences")
+                        
+                        status_placeholder.info(f"✓ {name}: {len(seq):,} bp in {seq_time:.2f}s ({len(seq)/seq_time:.0f} bp/s) - {len(results)} motifs found")
                     
                     # Store results
                     st.session_state.results = all_results
+                    
+                    # Final timing statistics
+                    total_time = time.time() - start_time
+                    overall_speed = total_bp_processed / total_time if total_time > 0 else 0
                     
                     # Generate summary
                     summary = []
@@ -1060,10 +1099,54 @@ with tab_pages["Upload & Analyze"]:
                         })
                     
                     st.session_state.summary_df = pd.DataFrame(summary)
-                    st.success("✅ Analysis complete! Results are available below and in the 'Analysis Results and Visualization' tab.")
+                    
+                    # Store performance metrics
+                    st.session_state.performance_metrics = {
+                        'total_time': total_time,
+                        'total_bp': total_bp_processed,
+                        'speed': overall_speed,
+                        'sequences': len(st.session_state.seqs),
+                        'total_motifs': sum(len(r) for r in all_results)
+                    }
+                    
+                    # Clear progress displays
+                    progress_placeholder.empty()
+                    status_placeholder.empty()
+                    
+                    # Show final success message with performance metrics
+                    timer_placeholder.markdown(f"""
+                    <div style='background: linear-gradient(135deg, #2e7d32 0%, #4caf50 100%); 
+                                border-radius: 12px; padding: 1.5rem; color: white;
+                                box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3); margin-bottom: 1rem;'>
+                        <h3 style='margin: 0 0 1rem 0; color: white;'>✅ Analysis Complete!</h3>
+                        <div style='display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem;'>
+                            <div style='text-align: center;'>
+                                <h2 style='margin: 0; color: #FFD700; font-size: 1.8rem;'>{total_time:.2f}s</h2>
+                                <p style='margin: 0.3rem 0 0 0; opacity: 0.9; font-size: 0.9rem;'>Total Time</p>
+                            </div>
+                            <div style='text-align: center;'>
+                                <h2 style='margin: 0; color: #FFD700; font-size: 1.8rem;'>{total_bp_processed:,}</h2>
+                                <p style='margin: 0.3rem 0 0 0; opacity: 0.9; font-size: 0.9rem;'>Base Pairs</p>
+                            </div>
+                            <div style='text-align: center;'>
+                                <h2 style='margin: 0; color: #FFD700; font-size: 1.8rem;'>{overall_speed:,.0f}</h2>
+                                <p style='margin: 0.3rem 0 0 0; opacity: 0.9; font-size: 0.9rem;'>bp/second</p>
+                            </div>
+                            <div style='text-align: center;'>
+                                <h2 style='margin: 0; color: #FFD700; font-size: 1.8rem;'>{sum(len(r) for r in all_results)}</h2>
+                                <p style='margin: 0.3rem 0 0 0; opacity: 0.9; font-size: 0.9rem;'>Motifs Found</p>
+                            </div>
+                        </div>
+                    </div>
+                    """, unsafe_allow_html=True)
+                    
+                    st.success("Results are available below and in the 'Analysis Results and Visualization' tab.")
                     st.session_state.analysis_status = "Complete"
                     
                 except Exception as e:
+                    timer_placeholder.empty()
+                    progress_placeholder.empty()
+                    status_placeholder.empty()
                     st.error(f"❌ Analysis failed: {str(e)}")
                     st.session_state.analysis_status = "Error"
 
@@ -1079,6 +1162,39 @@ with tab_pages["Results"]:
     if not st.session_state.results:
         st.info("No analysis results. Please run motif analysis first.")
     else:
+        # Performance metrics display if available
+        if st.session_state.get('performance_metrics'):
+            metrics = st.session_state.performance_metrics
+            st.markdown(f"""
+            <div style='background: linear-gradient(135deg, #0d47a1 0%, #1976d2 100%); 
+                        border-radius: 12px; padding: 1.5rem; color: white; margin-bottom: 2rem;
+                        box-shadow: 0 4px 16px rgba(13, 71, 161, 0.25);'>
+                <h3 style='margin: 0 0 1rem 0; color: white; text-align: center;'>⚡ Performance Metrics</h3>
+                <div style='display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 1rem;'>
+                    <div style='text-align: center; background: rgba(255,255,255,0.15); padding: 1rem; border-radius: 8px;'>
+                        <h2 style='margin: 0; color: #FFD700; font-size: 1.8rem;'>{metrics['total_time']:.2f}s</h2>
+                        <p style='margin: 0.3rem 0 0 0; opacity: 0.9; font-size: 0.85rem;'>Processing Time</p>
+                    </div>
+                    <div style='text-align: center; background: rgba(255,255,255,0.15); padding: 1rem; border-radius: 8px;'>
+                        <h2 style='margin: 0; color: #FFD700; font-size: 1.8rem;'>{metrics['total_bp']:,}</h2>
+                        <p style='margin: 0.3rem 0 0 0; opacity: 0.9; font-size: 0.85rem;'>Base Pairs</p>
+                    </div>
+                    <div style='text-align: center; background: rgba(255,255,255,0.15); padding: 1rem; border-radius: 8px;'>
+                        <h2 style='margin: 0; color: #FFD700; font-size: 1.8rem;'>{metrics['speed']:,.0f}</h2>
+                        <p style='margin: 0.3rem 0 0 0; opacity: 0.9; font-size: 0.85rem;'>bp/second</p>
+                    </div>
+                    <div style='text-align: center; background: rgba(255,255,255,0.15); padding: 1rem; border-radius: 8px;'>
+                        <h2 style='margin: 0; color: #FFD700; font-size: 1.8rem;'>{metrics['sequences']}</h2>
+                        <p style='margin: 0.3rem 0 0 0; opacity: 0.9; font-size: 0.85rem;'>Sequences</p>
+                    </div>
+                    <div style='text-align: center; background: rgba(255,255,255,0.15); padding: 1rem; border-radius: 8px;'>
+                        <h2 style='margin: 0; color: #FFD700; font-size: 1.8rem;'>{metrics['total_motifs']}</h2>
+                        <p style='margin: 0.3rem 0 0 0; opacity: 0.9; font-size: 0.85rem;'>Total Motifs</p>
+                    </div>
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
+        
         # Enhanced summary display
         st.markdown("### 📊 Analysis Summary")
         st.dataframe(st.session_state.summary_df, use_container_width=True)
