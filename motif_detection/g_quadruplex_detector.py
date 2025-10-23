@@ -22,10 +22,10 @@ MIN_REGION_LEN = 8
 CLASS_PRIORITY = [
     "canonical_g4",
     "relaxed_g4",
+    "long_loop_g4",
     "multimeric_g4",
     "bulged_g4",
     "imperfect_g4",
-    "bipartite_g4",
     "g_triplex",
 ]
 
@@ -39,55 +39,45 @@ class GQuadruplexDetector(BaseMotifDetector):
     def get_patterns(self) -> Dict[str, List[Tuple]]:
         """
         Returns regexes and metadata for major G4 motif families.
-        Patterns and definitions are from experimental and computational consensus:
-          - canonical_g4: Burge 2006[web:67][web:68], Todd 2005, others
-          - relaxed_g4: Huppert 2005, Phan 2006[web:75]
-          - bulged/imperfect: Lim 2009[web:22], Adrian 2014, Kuryavyi 2010, Webba da Silva 2007, Papp 2023[web:25]
-          - multimeric/bipartite: Guédin 2010, Kolesnikova 2019, Frasson 2022[web:42][web:73]
-          - g_triplex: Sen 1988, Williamson 1989[web:70]
+        Patterns from problem statement (G4_HS_PATTERNS) and experimental literature:
+          - canonical_g4: Burge 2006, Todd 2005
+          - relaxed_g4: Huppert 2005, Phan 2006
+          - long_loop_g4: Extended loop variants
+          - bulged_g4: Lim 2009, Adrian 2014, Papp 2023
+          - multimeric_g4: Guédin 2010, Kolesnikova 2019, Frasson 2022
+          - imperfect_g4: Kuryavyi 2010, Webba da Silva 2007
+          - g_triplex: Sen 1988, Williamson 1989
         
         Optimized with non-capturing groups for performance.
         """
         return {
             'canonical_g4': [
-                (r'G{3,}[ATGC]{1,7}G{3,}[ATGC]{1,7}G{3,}[ATGC]{1,7}G{3,}', 'G4_6_1', 'Canonical G4', 'Canonical G4', 15, 'g4hunter_score', 
-                 0.95, 'Stable G4 structures', 'Burge 2006[web:67]'),
-                (r'G{4,}[ATGC]{1,5}G{4,}[ATGC]{1,5}G{4,}[ATGC]{1,5}G{4,}', 'G4_6_2', 'High-density G4', 'Canonical G4', 16, 'g4hunter_score', 
-                 0.98, 'Very stable G4', 'Todd 2005'),
+                (r'G{3,}[ACGT]{1,7}G{3,}[ACGT]{1,7}G{3,}[ACGT]{1,7}G{3,}', 'G4_0', 'Canonical G4', 'Canonical G4', 15, 'g4hunter_score', 
+                 0.95, 'Stable G4 structures', 'Burge 2006'),
             ],
             'relaxed_g4': [
-                (r'G{2,}[ATGC]{1,12}G{2,}[ATGC]{1,12}G{2,}[ATGC]{1,12}G{2,}', 'G4_6_3', 'Relaxed G4', 'Relaxed G4', 12, 'g4hunter_score', 
-                 0.80, 'Potential G4 structures', 'Huppert 2005[web:75]'),
-                (r'G{3,}[ATGC]{8,15}G{3,}[ATGC]{1,7}G{3,}[ATGC]{1,7}G{3,}', 'G4_6_4', 'Long-loop G4', 'Relaxed G4', 18, 'g4hunter_score', 
+                (r'G{2,}[ACGT]{1,12}G{2,}[ACGT]{1,12}G{2,}[ACGT]{1,12}G{2,}', 'G4_1', 'Relaxed G4', 'Relaxed G4', 12, 'g4hunter_score', 
+                 0.80, 'Potential G4 structures', 'Huppert 2005'),
+            ],
+            'long_loop_g4': [
+                (r'G{3,}[ACGT]{8,15}G{3,}[ACGT]{1,7}G{3,}[ACGT]{1,7}G{3,}', 'G4_2', 'Long-loop G4', 'Long-loop G4', 18, 'g4hunter_score', 
                  0.75, 'Alternative G4 topology', 'Phan 2006'),
             ],
             'bulged_g4': [
-                (r'G{3,}[ATGC]{8,25}G{3,}[ATGC]{1,7}G{3,}[ATGC]{1,7}G{3,}', 'G4_6_5', 'Bulged G4', 'Bulged G4', 20, 'g4hunter_score', 
-                 0.85, 'G4 with bulge loops', 'Lim 2009[web:22]'),
-                (r'G{2,}[ATGC]{15,40}G{2,}[ATGC]{1,7}G{2,}[ATGC]{1,7}G{2,}', 'G4_6_6', 'Large bulge G4', 'Bulged G4', 25, 'g4hunter_score', 
-                 0.70, 'Extended bulge G4', 'Adrian 2014'),
-            ],
-            'bipartite_g4': [
-                (r'G{2,}[ATGC]{15,70}G{2,}[ATGC]{1,7}G{2,}[ATGC]{1,7}G{2,}', 'G4_6_7', 'Bipartite G4', 'Bipartite G4', 30, 'g4hunter_score', 
-                 0.75, 'Two-block G4 structures', 'Guédin 2010[web:42]'),
+                (r'(?:G{2,3}[ACGT]{0,3}G{1,3})[ACGT]{1,7}G{2,3}[ACGT]{1,7}G{2,3}[ACGT]{1,7}G{2,3}', 'G4_3', 'Bulged G4', 'Bulged G4', 20, 'g4hunter_score', 
+                 0.85, 'G4 with bulge loops', 'Lim 2009'),
             ],
             'multimeric_g4': [
-                (r'(?:G{3,}[ATGC]{1,7}){4,}G{3,}', 'G4_6_8', 'Multimeric G4', 'Multimeric G4', 25, 'g4hunter_score', 
-                 0.90, 'Multiple G4 units', 'Phan 2007[web:42][web:73]'),
-                (r'(?:G{2,}[ATGC]{1,10}){5,}G{2,}', 'G4_6_9', 'Extended multimeric G4', 'Multimeric G4', 30, 'g4hunter_score', 
-                 0.85, 'Long G4 arrays', 'Maizels 2006'),
+                (r'(?:G{3,}[ACGT]{1,7}){4,}G{3,}', 'G4_4', 'Multimeric G4', 'Multimeric G4', 25, 'g4hunter_score', 
+                 0.90, 'Multiple G4 units', 'Phan 2007'),
             ],
             'imperfect_g4': [
-                (r'G{2,}[ATGC]{1,10}[AG]G{1,3}[ATGC]{1,10}G{2,}[ATGC]{1,10}G{2,}', 'G4_6_10', 'Imperfect G4', 'Imperfect G4', 15, 'g4hunter_score', 
-                 0.65, 'G4-like with interruptions', 'Kuryavyi 2010[web:25]'),
-                (r'G{3,}[ATGC]{1,7}[AG]{1,2}G{2,}[ATGC]{1,7}G{3,}[ATGC]{1,7}G{3,}', 'G4_6_11', 'G-rich imperfect', 'Imperfect G4', 18, 'g4hunter_score', 
-                 0.70, 'Interrupted G-tracts', 'Webba da Silva 2007[web:25]'),
+                (r'G{2,}[ACGT]{1,10}[AG]G{1,3}[ACGT]{1,10}G{2,}[ACGT]{1,10}G{2,}', 'G4_5', 'Imperfect G4', 'Imperfect G4', 15, 'g4hunter_score', 
+                 0.65, 'G4-like with interruptions', 'Kuryavyi 2010'),
             ],
             'g_triplex': [
-                (r'G{3,}[ATGC]{1,7}G{3,}[ATGC]{1,7}G{3,}', 'G4_6_12', 'G-Triplex', 'G-Triplex intermediate', 12, 'g_triplex_score', 
-                 0.80, 'Three G-tract structures', 'Sen 1988[web:70]'),
-                (r'G{4,}[ATGC]{1,5}G{4,}[ATGC]{1,5}G{4,}', 'G4_6_13', 'High-density G-triplex', 'G-Triplex intermediate', 14, 'g_triplex_score', 
-                 0.85, 'Stable three-tract G-structure', 'Williamson 1989[web:70]'),
+                (r'G{3,}[ACGT]{1,7}G{3,}[ACGT]{1,7}G{3,}', 'G4_6', 'G-Triplex', 'G-Triplex intermediate', 12, 'g_triplex_score', 
+                 0.80, 'Three G-tract structures', 'Sen 1988'),
             ]
         }
 

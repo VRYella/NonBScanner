@@ -35,16 +35,83 @@ class CurvedDNADetector(BaseMotifDetector):
     # --------------------------------------------
 
     def get_patterns(self) -> Dict[str, List[Tuple]]:
-        """Metadata only — actual logic in find_* methods. Optimized patterns."""
+        """
+        Comprehensive curved DNA patterns including:
+        - Local curvature: long A/T tracts (>=7)
+        - Global curvature: A-phased and T-phased repeats (APRs)
+        Based on problem statement specifications.
+        """
         return {
-            'a_tracts': [
-                (r'A{3,}', 'CRV_1_1', 'A-tract (global)', 'Global Curvature', 3, 'phasing_score', 0.95, 'A-phased repeats (APRs)', 'Koo/Crothers'),
+            # Local curvature patterns
+            'local_curved': [
+                (r'A{7,}', 'CRV_002', 'Long A-tract', 'Local Curvature', 7, 'curvature_score', 0.95, 'A-tract curvature', 'Olson 1998'),
+                (r'T{7,}', 'CRV_003', 'Long T-tract', 'Local Curvature', 7, 'curvature_score', 0.95, 'T-tract curvature', 'Olson 1998'),
             ],
-            'phased_a_tracts': [
-                (r'(?:A{3,}[^A]{9,11}){3,}', 'CRV_1_4', 'Phased A-tracts (heuristic)', 'Global Curvature', 20, 'phasing_score', 0.90, 'Phased A-tracts', 'Koo 1986'),
+            
+            # Global curvature: 3-tract A-phased repeats (APRs)
+            'global_curved_a_3tract': [
+                (r'(?:A{3}[ACGT]{6,8}A{3}[ACGT]{6,8}A{3})', 'CRV_008', 'A3-APR', 'Global Curvature', 20, 'phasing_score', 0.90, '3-tract APR', 'Koo 1986'),
+                (r'(?:A{4}[ACGT]{5,7}A{4}[ACGT]{5,7}A{4})', 'CRV_009', 'A4-APR', 'Global Curvature', 20, 'phasing_score', 0.90, '3-tract APR', 'Koo 1986'),
+                (r'(?:A{5}[ACGT]{4,6}A{5}[ACGT]{4,6}A{5})', 'CRV_010', 'A5-APR', 'Global Curvature', 20, 'phasing_score', 0.90, '3-tract APR', 'Koo 1986'),
+                (r'(?:A{6}[ACGT]{3,5}A{6}[ACGT]{3,5}A{6})', 'CRV_011', 'A6-APR', 'Global Curvature', 20, 'phasing_score', 0.90, '3-tract APR', 'Koo 1986'),
+                (r'(?:A{7}[ACGT]{2,4}A{7}[ACGT]{2,4}A{7})', 'CRV_012', 'A7-APR', 'Global Curvature', 20, 'phasing_score', 0.90, '3-tract APR', 'Koo 1986'),
+                (r'(?:A{8}[ACGT]{1,3}A{8}[ACGT]{1,3}A{8})', 'CRV_013', 'A8-APR', 'Global Curvature', 20, 'phasing_score', 0.90, '3-tract APR', 'Koo 1986'),
+                (r'(?:A{9}[ACGT]{0,2}A{9}[ACGT]{0,2}A{9})', 'CRV_014', 'A9-APR', 'Global Curvature', 20, 'phasing_score', 0.90, '3-tract APR', 'Koo 1986'),
             ],
-            'local_long_tracts': [
-                (r'A{7,}|T{7,}', 'CRV_1_2', 'Long A/T tract', 'Local Curvature', 7, 'curvature_score', 0.90, 'Long A or T tracts (local curvature)', 'Crothers 1992'),
+            
+            # Global curvature: 4-tract A-phased repeats
+            'global_curved_a_4tract': [
+                (r'(?:A{3}[ACGT]{6,8}A{3}[ACGT]{6,8}A{3}[ACGT]{6,8}A{3})', 'CRV_015', 'A3-APR-4', 'Global Curvature', 25, 'phasing_score', 0.92, '4-tract APR', 'Koo 1986'),
+                (r'(?:A{4}[ACGT]{5,7}A{4}[ACGT]{5,7}A{4}[ACGT]{5,7}A{4})', 'CRV_016', 'A4-APR-4', 'Global Curvature', 25, 'phasing_score', 0.92, '4-tract APR', 'Koo 1986'),
+                (r'(?:A{5}[ACGT]{4,6}A{5}[ACGT]{4,6}A{5}[ACGT]{4,6}A{5})', 'CRV_017', 'A5-APR-4', 'Global Curvature', 25, 'phasing_score', 0.92, '4-tract APR', 'Koo 1986'),
+                (r'(?:A{6}[ACGT]{3,5}A{6}[ACGT]{3,5}A{6}[ACGT]{3,5}A{6})', 'CRV_018', 'A6-APR-4', 'Global Curvature', 25, 'phasing_score', 0.92, '4-tract APR', 'Koo 1986'),
+                (r'(?:A{7}[ACGT]{2,4}A{7}[ACGT]{2,4}A{7}[ACGT]{2,4}A{7})', 'CRV_019', 'A7-APR-4', 'Global Curvature', 25, 'phasing_score', 0.92, '4-tract APR', 'Koo 1986'),
+                (r'(?:A{8}[ACGT]{1,3}A{8}[ACGT]{1,3}A{8}[ACGT]{1,3}A{8})', 'CRV_020', 'A8-APR-4', 'Global Curvature', 25, 'phasing_score', 0.92, '4-tract APR', 'Koo 1986'),
+                (r'(?:A{9}[ACGT]{0,2}A{9}[ACGT]{0,2}A{9}[ACGT]{0,2}A{9})', 'CRV_021', 'A9-APR-4', 'Global Curvature', 25, 'phasing_score', 0.92, '4-tract APR', 'Koo 1986'),
+            ],
+            
+            # Global curvature: 5-tract A-phased repeats
+            'global_curved_a_5tract': [
+                (r'(?:A{3}[ACGT]{6,8}A{3}[ACGT]{6,8}A{3}[ACGT]{6,8}A{3}[ACGT]{6,8}A{3})', 'CRV_022', 'A3-APR-5', 'Global Curvature', 30, 'phasing_score', 0.95, '5-tract APR', 'Koo 1986'),
+                (r'(?:A{4}[ACGT]{5,7}A{4}[ACGT]{5,7}A{4}[ACGT]{5,7}A{4}[ACGT]{5,7}A{4})', 'CRV_023', 'A4-APR-5', 'Global Curvature', 30, 'phasing_score', 0.95, '5-tract APR', 'Koo 1986'),
+                (r'(?:A{5}[ACGT]{4,6}A{5}[ACGT]{4,6}A{5}[ACGT]{4,6}A{5}[ACGT]{4,6}A{5})', 'CRV_024', 'A5-APR-5', 'Global Curvature', 30, 'phasing_score', 0.95, '5-tract APR', 'Koo 1986'),
+                (r'(?:A{6}[ACGT]{3,5}A{6}[ACGT]{3,5}A{6}[ACGT]{3,5}A{6}[ACGT]{3,5}A{6})', 'CRV_025', 'A6-APR-5', 'Global Curvature', 30, 'phasing_score', 0.95, '5-tract APR', 'Koo 1986'),
+                (r'(?:A{7}[ACGT]{2,4}A{7}[ACGT]{2,4}A{7}[ACGT]{2,4}A{7}[ACGT]{2,4}A{7})', 'CRV_026', 'A7-APR-5', 'Global Curvature', 30, 'phasing_score', 0.95, '5-tract APR', 'Koo 1986'),
+                (r'(?:A{8}[ACGT]{1,3}A{8}[ACGT]{1,3}A{8}[ACGT]{1,3}A{8}[ACGT]{1,3}A{8})', 'CRV_027', 'A8-APR-5', 'Global Curvature', 30, 'phasing_score', 0.95, '5-tract APR', 'Koo 1986'),
+                (r'(?:A{9}[ACGT]{0,2}A{9}[ACGT]{0,2}A{9}[ACGT]{0,2}A{9}[ACGT]{0,2}A{9})', 'CRV_028', 'A9-APR-5', 'Global Curvature', 30, 'phasing_score', 0.95, '5-tract APR', 'Koo 1986'),
+            ],
+            
+            # Global curvature: 3-tract T-phased repeats
+            'global_curved_t_3tract': [
+                (r'(?:T{3}[ACGT]{6,8}T{3}[ACGT]{6,8}T{3})', 'CRV_029', 'T3-TPR', 'Global Curvature', 20, 'phasing_score', 0.90, '3-tract TPR', 'Koo 1986'),
+                (r'(?:T{4}[ACGT]{5,7}T{4}[ACGT]{5,7}T{4})', 'CRV_030', 'T4-TPR', 'Global Curvature', 20, 'phasing_score', 0.90, '3-tract TPR', 'Koo 1986'),
+                (r'(?:T{5}[ACGT]{4,6}T{5}[ACGT]{4,6}T{5})', 'CRV_031', 'T5-TPR', 'Global Curvature', 20, 'phasing_score', 0.90, '3-tract TPR', 'Koo 1986'),
+                (r'(?:T{6}[ACGT]{3,5}T{6}[ACGT]{3,5}T{6})', 'CRV_032', 'T6-TPR', 'Global Curvature', 20, 'phasing_score', 0.90, '3-tract TPR', 'Koo 1986'),
+                (r'(?:T{7}[ACGT]{2,4}T{7}[ACGT]{2,4}T{7})', 'CRV_033', 'T7-TPR', 'Global Curvature', 20, 'phasing_score', 0.90, '3-tract TPR', 'Koo 1986'),
+                (r'(?:T{8}[ACGT]{1,3}T{8}[ACGT]{1,3}T{8})', 'CRV_034', 'T8-TPR', 'Global Curvature', 20, 'phasing_score', 0.90, '3-tract TPR', 'Koo 1986'),
+                (r'(?:T{9}[ACGT]{0,2}T{9}[ACGT]{0,2}T{9})', 'CRV_035', 'T9-TPR', 'Global Curvature', 20, 'phasing_score', 0.90, '3-tract TPR', 'Koo 1986'),
+            ],
+            
+            # Global curvature: 4-tract T-phased repeats
+            'global_curved_t_4tract': [
+                (r'(?:T{3}[ACGT]{6,8}T{3}[ACGT]{6,8}T{3}[ACGT]{6,8}T{3})', 'CRV_036', 'T3-TPR-4', 'Global Curvature', 25, 'phasing_score', 0.92, '4-tract TPR', 'Koo 1986'),
+                (r'(?:T{4}[ACGT]{5,7}T{4}[ACGT]{5,7}T{4}[ACGT]{5,7}T{4})', 'CRV_037', 'T4-TPR-4', 'Global Curvature', 25, 'phasing_score', 0.92, '4-tract TPR', 'Koo 1986'),
+                (r'(?:T{5}[ACGT]{4,6}T{5}[ACGT]{4,6}T{5}[ACGT]{4,6}T{5})', 'CRV_038', 'T5-TPR-4', 'Global Curvature', 25, 'phasing_score', 0.92, '4-tract TPR', 'Koo 1986'),
+                (r'(?:T{6}[ACGT]{3,5}T{6}[ACGT]{3,5}T{6}[ACGT]{3,5}T{6})', 'CRV_039', 'T6-TPR-4', 'Global Curvature', 25, 'phasing_score', 0.92, '4-tract TPR', 'Koo 1986'),
+                (r'(?:T{7}[ACGT]{2,4}T{7}[ACGT]{2,4}T{7}[ACGT]{2,4}T{7})', 'CRV_040', 'T7-TPR-4', 'Global Curvature', 25, 'phasing_score', 0.92, '4-tract TPR', 'Koo 1986'),
+                (r'(?:T{8}[ACGT]{1,3}T{8}[ACGT]{1,3}T{8}[ACGT]{1,3}T{8})', 'CRV_041', 'T8-TPR-4', 'Global Curvature', 25, 'phasing_score', 0.92, '4-tract TPR', 'Koo 1986'),
+                (r'(?:T{9}[ACGT]{0,2}T{9}[ACGT]{0,2}T{9}[ACGT]{0,2}T{9})', 'CRV_042', 'T9-TPR-4', 'Global Curvature', 25, 'phasing_score', 0.92, '4-tract TPR', 'Koo 1986'),
+            ],
+            
+            # Global curvature: 5-tract T-phased repeats
+            'global_curved_t_5tract': [
+                (r'(?:T{3}[ACGT]{6,8}T{3}[ACGT]{6,8}T{3}[ACGT]{6,8}T{3}[ACGT]{6,8}T{3})', 'CRV_043', 'T3-TPR-5', 'Global Curvature', 30, 'phasing_score', 0.95, '5-tract TPR', 'Koo 1986'),
+                (r'(?:T{4}[ACGT]{5,7}T{4}[ACGT]{5,7}T{4}[ACGT]{5,7}T{4}[ACGT]{5,7}T{4})', 'CRV_044', 'T4-TPR-5', 'Global Curvature', 30, 'phasing_score', 0.95, '5-tract TPR', 'Koo 1986'),
+                (r'(?:T{5}[ACGT]{4,6}T{5}[ACGT]{4,6}T{5}[ACGT]{4,6}T{5}[ACGT]{4,6}T{5})', 'CRV_045', 'T5-TPR-5', 'Global Curvature', 30, 'phasing_score', 0.95, '5-tract TPR', 'Koo 1986'),
+                (r'(?:T{6}[ACGT]{3,5}T{6}[ACGT]{3,5}T{6}[ACGT]{3,5}T{6}[ACGT]{3,5}T{6})', 'CRV_046', 'T6-TPR-5', 'Global Curvature', 30, 'phasing_score', 0.95, '5-tract TPR', 'Koo 1986'),
+                (r'(?:T{7}[ACGT]{2,4}T{7}[ACGT]{2,4}T{7}[ACGT]{2,4}T{7}[ACGT]{2,4}T{7})', 'CRV_047', 'T7-TPR-5', 'Global Curvature', 30, 'phasing_score', 0.95, '5-tract TPR', 'Koo 1986'),
+                (r'(?:T{8}[ACGT]{1,3}T{8}[ACGT]{1,3}T{8}[ACGT]{1,3}T{8}[ACGT]{1,3}T{8})', 'CRV_048', 'T8-TPR-5', 'Global Curvature', 30, 'phasing_score', 0.95, '5-tract TPR', 'Koo 1986'),
+                (r'(?:T{9}[ACGT]{0,2}T{9}[ACGT]{0,2}T{9}[ACGT]{0,2}T{9}[ACGT]{0,2}T{9})', 'CRV_049', 'T9-TPR-5', 'Global Curvature', 30, 'phasing_score', 0.95, '5-tract TPR', 'Koo 1986'),
             ]
         }
 

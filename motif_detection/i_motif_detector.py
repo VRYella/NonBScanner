@@ -17,7 +17,7 @@ VALIDATED_SEQS = [
 ]
 
 MIN_REGION_LEN = 10
-CLASS_PRIORITIES = {'canonical_imotif': 1, 'relaxed_imotif': 2, 'ac_motif_hur': 3}
+CLASS_PRIORITIES = {'canonical_imotif': 1, 'hur_ac_motif': 2}
 
 def _class_prio_idx(class_name: str) -> int:
     return CLASS_PRIORITIES.get(class_name, 999)
@@ -29,13 +29,24 @@ class IMotifDetector(BaseMotifDetector):
         return "i-Motif"
 
     def get_patterns(self) -> Dict[str, List[Tuple]]:
+        """
+        Returns i-motif patterns including:
+        - Canonical i-motif (4 C-tracts)
+        - HUR AC-motifs (A-C alternating patterns from problem statement)
+        Based on problem statement specifications and Hur et al. 2021, Benabou 2014.
+        """
         return {
             'canonical_imotif': [
-                (r'C{3,}[ATGC]{1,7}C{3,}[ATGC]{1,7}C{3,}[ATGC]{1,7}C{3,}', 'IM_7_1', 'Canonical i-motif', 'canonical_imotif', 15, 'imotif_score', 0.95, 'pH-dependent C-rich structure', 'Gehring 1993'),
-                (r'C{4,}[ATGC]{1,8}C{4,}[ATGC]{1,8}C{4,}[ATGC]{1,8}C{4,}', 'IM_7_2', 'High-density i-motif', 'canonical_imotif', 16, 'imotif_score', 0.98, 'Stable i-motif', 'Leroy 1995'),
+                (r'C{3,}[ATGC]{1,7}C{3,}[ATGC]{1,7}C{3,}[ATGC]{1,7}C{3,}', 'IM_0', 'Canonical i-motif', 'canonical_imotif', 15, 'imotif_score', 0.95, 'pH-dependent C-rich structure', 'Gehring 1993'),
             ],
-            'relaxed_imotif': [
-                (r'C{2,}[ATGC]{1,15}C{2,}[ATGC]{1,15}C{2,}[ATGC]{1,15}C{2,}', 'IM_7_3', 'Relaxed i-motif', 'relaxed_imotif', 12, 'imotif_score', 0.80, 'Potential i-motif structures', 'Mergny 1995'),
+            'hur_ac_motif': [
+                # HUR A-C motifs from problem statement (HUR_AC_PATTERNS)
+                (r'A{3}[ACGT]{4}C{3}[ACGT]{4}C{3}[ACGT]{4}C{3}', 'HUR_AC_1', 'HUR AC-motif (4bp)', 'AC-motif (HUR)', 18, 'ac_motif_score', 0.85, 'HUR AC alternating motif', 'Hur 2021'),
+                (r'C{3}[ACGT]{4}C{3}[ACGT]{4}C{3}[ACGT]{4}A{3}', 'HUR_AC_2', 'HUR CA-motif (4bp)', 'AC-motif (HUR)', 18, 'ac_motif_score', 0.85, 'HUR CA alternating motif', 'Hur 2021'),
+                (r'A{3}[ACGT]{5}C{3}[ACGT]{5}C{3}[ACGT]{5}C{3}', 'HUR_AC_3', 'HUR AC-motif (5bp)', 'AC-motif (HUR)', 21, 'ac_motif_score', 0.85, 'HUR AC alternating motif', 'Hur 2021'),
+                (r'C{3}[ACGT]{5}C{3}[ACGT]{5}C{3}[ACGT]{5}A{3}', 'HUR_AC_4', 'HUR CA-motif (5bp)', 'AC-motif (HUR)', 21, 'ac_motif_score', 0.85, 'HUR CA alternating motif', 'Hur 2021'),
+                (r'A{3}[ACGT]{6}C{3}[ACGT]{6}C{3}[ACGT]{6}C{3}', 'HUR_AC_5', 'HUR AC-motif (6bp)', 'AC-motif (HUR)', 24, 'ac_motif_score', 0.85, 'HUR AC alternating motif', 'Hur 2021'),
+                (r'C{3}[ACGT]{6}C{3}[ACGT]{6}C{3}[ACGT]{6}A{3}', 'HUR_AC_6', 'HUR CA-motif (6bp)', 'AC-motif (HUR)', 24, 'ac_motif_score', 0.85, 'HUR CA alternating motif', 'Hur 2021'),
             ]
         }
 
