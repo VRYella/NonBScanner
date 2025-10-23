@@ -55,128 +55,210 @@ def ensure_subclass(motif):
 # ---------- ENHANCED PROFESSIONAL CSS FOR RESEARCH-QUALITY UI ----------
 st.markdown("""
     <style>
-    /* Import Google Fonts for professional typography */
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+    /* Import Google Fonts for professional scientific typography */
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=IBM+Plex+Sans:wght@300;400;500;600;700&family=Source+Sans+Pro:wght@400;600;700&display=swap');
     
-    /* Main app background with subtle gradient */
+    /* Main app background with elegant scientific gradient */
     body, [data-testid="stAppViewContainer"], .main {
-        background: linear-gradient(135deg, #f8fbff 0%, #f0f7ff 100%) !important;
-        font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif !important;
+        background: linear-gradient(135deg, #f5f9ff 0%, #e8f4fd 50%, #f0f7ff 100%) !important;
+        font-family: 'Inter', 'IBM Plex Sans', 'Segoe UI', system-ui, -apple-system, sans-serif !important;
     }
     
-    /* Tabs: Enhanced research-quality design */
+    /* Tabs: Premium scientific design with advanced styling */
     .stTabs [data-baseweb="tab-list"] {
         width: 98vw !important;
         justify-content: stretch !important;
-        border-bottom: 3px solid #1976d2;
-        background: linear-gradient(90deg, #ffffff 0%, #f8fbff 100%) !important;
-        box-shadow: 0 4px 12px rgba(25, 118, 210, 0.08);
+        border-bottom: 3px solid #0d47a1;
+        background: linear-gradient(90deg, #ffffff 0%, #e3f2fd 50%, #f8fbff 100%) !important;
+        box-shadow: 0 6px 16px rgba(13, 71, 161, 0.12);
         margin-bottom: 1.5em;
-        border-radius: 8px 8px 0 0;
+        border-radius: 12px 12px 0 0;
     }
     .stTabs [data-baseweb="tab"] {
         font-size: 1.1rem !important;
         font-weight: 600 !important;
         flex: 1 1 0%;
         min-width: 0 !important;
-        padding: 14px 8px !important;
+        padding: 16px 12px !important;
         text-align: center;
-        color: #546e7a !important;
+        color: #455a64 !important;
         background: transparent !important;
-        border-right: 1px solid rgba(0,0,0,0.06) !important;
-        letter-spacing: 0.03em;
-        transition: all 0.3s ease;
+        border-right: 1px solid rgba(0,0,0,0.05) !important;
+        letter-spacing: 0.04em;
+        transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+        position: relative;
+    }
+    .stTabs [data-baseweb="tab"]::after {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        left: 50%;
+        width: 0%;
+        height: 4px;
+        background: linear-gradient(90deg, #0d47a1 0%, #1976d2 100%);
+        transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+        transform: translateX(-50%);
+        border-radius: 4px 4px 0 0;
     }
     .stTabs [data-baseweb="tab"]:hover {
-        background: rgba(25, 118, 210, 0.04) !important;
-        color: #1976d2 !important;
+        background: linear-gradient(180deg, rgba(13, 71, 161, 0.05) 0%, rgba(25, 118, 210, 0.08) 100%) !important;
+        color: #0d47a1 !important;
+        transform: translateY(-2px);
+    }
+    .stTabs [data-baseweb="tab"]:hover::after {
+        width: 60%;
     }
     .stTabs [aria-selected="true"] {
-        color: #1976d2 !important;
-        border-bottom: 4px solid #1976d2 !important;
-        background: #f8fbff !important;
-        box-shadow: 0 -2px 8px rgba(25, 118, 210, 0.12);
+        color: #0d47a1 !important;
+        background: linear-gradient(180deg, #ffffff 0%, #e3f2fd 100%) !important;
+        box-shadow: 0 -4px 12px rgba(13, 71, 161, 0.15), inset 0 -3px 0 0 #0d47a1;
         font-weight: 700 !important;
+        transform: translateY(-2px);
+    }
+    .stTabs [aria-selected="true"]::after {
+        width: 100%;
+        height: 5px;
     }
     .stTabs [data-baseweb="tab"]:last-child {
         border-right: none !important;
     }
     
-    /* Headings: Professional research hierarchy */
+    /* Headings: Enhanced scientific typography hierarchy */
     h1, h2, h3, h4 {
-        font-family: 'Inter', 'Segoe UI', system-ui, sans-serif !important;
+        font-family: 'IBM Plex Sans', 'Inter', 'Segoe UI', system-ui, sans-serif !important;
         color: #0d47a1 !important;
         font-weight: 700 !important;
-        letter-spacing: -0.02em;
-        margin-top: 1.2em;
-        margin-bottom: 0.7em;
+        letter-spacing: -0.025em;
+        margin-top: 1.3em;
+        margin-bottom: 0.8em;
+        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
     }
     h1 { 
-        font-size: 2.2rem !important; 
-        background: linear-gradient(135deg, #1976d2 0%, #0d47a1 100%);
+        font-size: 2.4rem !important; 
+        font-weight: 800 !important;
+        background: linear-gradient(135deg, #0d47a1 0%, #1976d2 50%, #42a5f5 100%);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
         background-clip: text;
+        letter-spacing: -0.03em;
     }
-    h2 { font-size: 1.6rem !important; color: #1565c0 !important; }
-    h3 { font-size: 1.25rem !important; color: #1976d2 !important; }
-    h4 { font-size: 1.1rem !important; color: #1976d2 !important; }
+    h2 { 
+        font-size: 1.7rem !important; 
+        color: #0d47a1 !important; 
+        font-weight: 700 !important;
+        border-bottom: 3px solid #e3f2fd;
+        padding-bottom: 0.5rem;
+    }
+    h3 { 
+        font-size: 1.3rem !important; 
+        color: #1565c0 !important; 
+        font-weight: 700 !important;
+    }
+    h4 { 
+        font-size: 1.15rem !important; 
+        color: #1976d2 !important; 
+        font-weight: 600 !important;
+    }
     
-    /* Body text: Enhanced readability */
+    /* Body text: Scientific readability with optimal contrast */
     .stMarkdown, .markdown-text-container, .stText, p, span, label {
-        font-size: 1.0rem !important;
-        font-family: 'Inter', 'Segoe UI', system-ui, sans-serif !important;
-        line-height: 1.7 !important;
-        color: #263238 !important;
-        margin-bottom: 0.7em !important;
+        font-size: 1.02rem !important;
+        font-family: 'Source Sans Pro', 'Inter', 'Segoe UI', system-ui, sans-serif !important;
+        line-height: 1.75 !important;
+        color: #1e293b !important;
+        margin-bottom: 0.75em !important;
+        font-weight: 400;
     }
     
-    /* Input fields: Modern, clean design */
+    /* Input fields: Premium scientific design with elegant borders */
     input, .stTextInput>div>div>input, .stSelectbox>div>div>div, 
     .stMultiSelect>div>div>div, .stRadio>div>div>label>div {
         font-size: 1.0rem !important;
-        font-family: 'Inter', 'Segoe UI', system-ui, sans-serif !important;
-        border-radius: 6px !important;
-        border: 1px solid #e0e7ff !important;
-        transition: all 0.2s ease;
+        font-family: 'Inter', 'IBM Plex Sans', 'Segoe UI', system-ui, sans-serif !important;
+        border-radius: 10px !important;
+        border: 2px solid #e1e8ed !important;
+        background: #ffffff !important;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
     }
     input:focus, .stTextInput>div>div>input:focus {
         border-color: #1976d2 !important;
-        box-shadow: 0 0 0 3px rgba(25, 118, 210, 0.1) !important;
+        box-shadow: 0 0 0 4px rgba(25, 118, 210, 0.12), 0 4px 8px rgba(25, 118, 210, 0.08) !important;
+        background: #fefeff !important;
+        transform: translateY(-1px);
     }
     
-    /* Buttons: Premium gradient design */
+    /* Buttons: Advanced gradient design with scientific elegance */
     .stButton>button {
         font-size: 1.05rem !important;
-        font-family: 'Inter', 'Segoe UI', system-ui, sans-serif !important;
-        padding: 0.65em 1.5em !important;
-        background: linear-gradient(135deg, #1976d2 0%, #1565c0 100%) !important;
+        font-family: 'Inter', 'IBM Plex Sans', 'Segoe UI', system-ui, sans-serif !important;
+        padding: 0.75em 1.8em !important;
+        background: linear-gradient(135deg, #0d47a1 0%, #1976d2 50%, #42a5f5 100%) !important;
         color: #fff !important;
-        border-radius: 10px !important;
+        border-radius: 12px !important;
         border: none !important;
         font-weight: 600 !important;
-        box-shadow: 0 4px 14px rgba(25, 118, 210, 0.3);
-        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        letter-spacing: 0.02em;
+        box-shadow: 0 6px 18px rgba(13, 71, 161, 0.35), 0 2px 6px rgba(25, 118, 210, 0.2);
+        transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+        letter-spacing: 0.03em;
+        position: relative;
+        overflow: hidden;
+    }
+    .stButton>button::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+        transition: left 0.5s;
+    }
+    .stButton>button:hover::before {
+        left: 100%;
     }
     .stButton>button:hover {
-        background: linear-gradient(135deg, #1565c0 0%, #0d47a1 100%) !important;
-        box-shadow: 0 6px 20px rgba(25, 118, 210, 0.4);
-        transform: translateY(-2px);
+        background: linear-gradient(135deg, #0a3d91 0%, #1565c0 50%, #1976d2 100%) !important;
+        box-shadow: 0 8px 24px rgba(13, 71, 161, 0.45), 0 4px 12px rgba(25, 118, 210, 0.3);
+        transform: translateY(-3px) scale(1.02);
     }
     .stButton>button:active {
-        transform: translateY(0px);
-        box-shadow: 0 3px 10px rgba(25, 118, 210, 0.3);
+        transform: translateY(-1px) scale(0.98);
+        box-shadow: 0 4px 12px rgba(13, 71, 161, 0.35), 0 2px 6px rgba(25, 118, 210, 0.2);
     }
     
-    /* DataFrames: Enhanced table styling */
+    /* DataFrames: Scientific table design with elegant borders */
     .stDataFrame, .stTable {
-        font-size: 0.95rem !important;
-        font-family: 'Inter', 'Segoe UI', system-ui, sans-serif !important;
-        line-height: 1.6 !important;
-        border-radius: 8px !important;
+        font-size: 0.96rem !important;
+        font-family: 'IBM Plex Sans', 'Inter', 'Segoe UI', system-ui, sans-serif !important;
+        line-height: 1.65 !important;
+        border-radius: 12px !important;
         overflow: hidden;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.05) !important;
+        box-shadow: 0 4px 12px rgba(13, 71, 161, 0.08), 0 2px 4px rgba(0, 0, 0, 0.03) !important;
+        border: 1px solid #e3f2fd !important;
+    }
+    .stDataFrame thead tr th {
+        background: linear-gradient(135deg, #0d47a1 0%, #1976d2 100%) !important;
+        color: white !important;
+        font-weight: 700 !important;
+        padding: 1rem !important;
+        font-size: 0.98rem !important;
+        letter-spacing: 0.02em;
+        text-transform: uppercase;
+        border-bottom: 3px solid #0a3d91 !important;
+    }
+    .stDataFrame tbody tr {
+        transition: all 0.25s ease;
+        border-bottom: 1px solid #e3f2fd !important;
+    }
+    .stDataFrame tbody tr:hover {
+        background: linear-gradient(90deg, #f0f7ff 0%, #e3f2fd 100%) !important;
+        transform: scale(1.005);
+        box-shadow: 0 2px 8px rgba(25, 118, 210, 0.1);
+    }
+    .stDataFrame tbody tr td {
+        padding: 0.85rem !important;
+        color: #1e293b !important;
     }
     
     /* Tab content spacing */
@@ -197,31 +279,82 @@ st.markdown("""
         border: 1px solid rgba(25, 118, 210, 0.08) !important;
     }
     
-    /* Select boxes and multiselect */
+    /* Select boxes and multiselect: Premium dropdown design */
     .stSelectbox > div > div > div, .stMultiSelect > div > div > div {
-        min-height: 3.2rem !important;
-        padding: 0.9rem !important;
-        line-height: 1.6 !important;
-        border-radius: 8px !important;
+        min-height: 3.5rem !important;
+        padding: 1rem 1.2rem !important;
+        line-height: 1.65 !important;
+        border-radius: 12px !important;
+        background: linear-gradient(135deg, #ffffff 0%, #f8fbff 100%) !important;
+        border: 2px solid #e1e8ed !important;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
+        transition: all 0.3s ease;
+    }
+    .stSelectbox > div > div > div:hover, .stMultiSelect > div > div > div:hover {
+        border-color: #64b5f6 !important;
+        box-shadow: 0 4px 12px rgba(100, 181, 246, 0.12);
+        transform: translateY(-1px);
     }
     
-    /* Enhanced input field spacing */
+    /* Enhanced input field spacing with elegant styling */
     .stTextInput > div > div > input, .stTextArea textarea {
-        padding: 0.85rem 1.1rem !important;
-        min-height: 3rem !important;
-        line-height: 1.5 !important;
-        border-radius: 8px !important;
+        padding: 1rem 1.3rem !important;
+        min-height: 3.5rem !important;
+        line-height: 1.6 !important;
+        border-radius: 12px !important;
+        font-size: 1.02rem !important;
+        background: linear-gradient(135deg, #ffffff 0%, #f8fbff 100%) !important;
+    }
+    .stTextArea textarea {
+        min-height: 120px !important;
     }
     
-    /* Radio buttons with better spacing */
+    /* Number input styling with scientific precision */
+    .stNumberInput > div > div > input {
+        padding: 1rem 1.3rem !important;
+        min-height: 3.5rem !important;
+        border-radius: 12px !important;
+        font-size: 1.02rem !important;
+        font-weight: 600;
+        background: linear-gradient(135deg, #ffffff 0%, #f8fbff 100%) !important;
+    }
+    
+    /* Radio buttons: Enhanced with elegant hover states and borders */
+    .stRadio > div {
+        gap: 0.4rem !important;
+    }
     .stRadio > div > div > label {
-        margin-bottom: 0.6rem !important;
-        padding: 0.4rem 0.6rem !important;
-        border-radius: 6px !important;
-        transition: background 0.2s ease;
+        margin-bottom: 0.7rem !important;
+        padding: 0.65rem 1rem !important;
+        border-radius: 10px !important;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        border: 2px solid transparent;
+        background: linear-gradient(135deg, #ffffff 0%, #f8fbff 100%);
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.03);
+        cursor: pointer;
     }
     .stRadio > div > div > label:hover {
-        background: rgba(25, 118, 210, 0.04) !important;
+        background: linear-gradient(135deg, #e3f2fd 0%, #f0f7ff 100%) !important;
+        border-color: #bbdefb !important;
+        transform: translateX(4px);
+        box-shadow: 0 4px 8px rgba(25, 118, 210, 0.08);
+    }
+    .stRadio > div > div > label[data-checked="true"] {
+        background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%) !important;
+        border-color: #1976d2 !important;
+        font-weight: 600 !important;
+        box-shadow: 0 4px 12px rgba(25, 118, 210, 0.15);
+    }
+    /* Radio button circles */
+    .stRadio > div > div > label > div:first-child {
+        border-width: 2px !important;
+        border-color: #90caf9 !important;
+        width: 22px !important;
+        height: 22px !important;
+    }
+    .stRadio > div > div > label[data-checked="true"] > div:first-child {
+        border-color: #0d47a1 !important;
+        background-color: #0d47a1 !important;
     }
     
     /* Number input styling */
@@ -231,49 +364,163 @@ st.markdown("""
         border-radius: 8px !important;
     }
     
-    /* Info boxes and alerts */
+    /* Info boxes and alerts: Scientific notification design */
     .stAlert {
-        border-radius: 10px !important;
-        border-left: 4px solid #1976d2 !important;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.05) !important;
-    }
-    
-    /* Progress bars */
-    .stProgress > div > div {
-        background: linear-gradient(90deg, #1976d2 0%, #42a5f5 100%) !important;
-        border-radius: 10px !important;
-    }
-    
-    /* File uploader */
-    [data-testid="stFileUploader"] {
-        border: 2px dashed #1976d2 !important;
         border-radius: 12px !important;
-        background: rgba(25, 118, 210, 0.02) !important;
-        padding: 2rem !important;
-        transition: all 0.3s ease;
+        border-left: 5px solid #1976d2 !important;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.08) !important;
+        background: linear-gradient(90deg, #e3f2fd 0%, #f0f7ff 100%) !important;
+        padding: 1.2rem !important;
+        font-weight: 500;
+    }
+    .stAlert[data-baseweb="notification"] {
+        border-left-color: #0d47a1 !important;
+    }
+    .stSuccess {
+        border-left-color: #2e7d32 !important;
+        background: linear-gradient(90deg, #e8f5e9 0%, #f1f8f4 100%) !important;
+    }
+    .stWarning {
+        border-left-color: #f57c00 !important;
+        background: linear-gradient(90deg, #fff3e0 0%, #fff8f1 100%) !important;
+    }
+    .stError {
+        border-left-color: #c62828 !important;
+        background: linear-gradient(90deg, #ffebee 0%, #fff5f5 100%) !important;
+    }
+    
+    /* Progress bars: Elegant animated design */
+    .stProgress > div > div {
+        background: linear-gradient(90deg, #0d47a1 0%, #1976d2 50%, #42a5f5 100%) !important;
+        border-radius: 12px !important;
+        box-shadow: 0 2px 8px rgba(25, 118, 210, 0.3);
+        animation: shimmer 2s infinite;
+    }
+    @keyframes shimmer {
+        0% { background-position: -1000px 0; }
+        100% { background-position: 1000px 0; }
+    }
+    .stProgress > div {
+        border-radius: 12px !important;
+        background: #e3f2fd !important;
+        box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.05);
+    }
+    
+    /* File uploader: Premium drag-and-drop design */
+    [data-testid="stFileUploader"] {
+        border: 3px dashed #64b5f6 !important;
+        border-radius: 16px !important;
+        background: linear-gradient(135deg, rgba(227, 242, 253, 0.3) 0%, rgba(187, 222, 251, 0.2) 100%) !important;
+        padding: 2.5rem !important;
+        transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+        box-shadow: 0 4px 12px rgba(100, 181, 246, 0.1);
     }
     [data-testid="stFileUploader"]:hover {
-        border-color: #1565c0 !important;
-        background: rgba(25, 118, 210, 0.04) !important;
+        border-color: #0d47a1 !important;
+        background: linear-gradient(135deg, rgba(227, 242, 253, 0.5) 0%, rgba(187, 222, 251, 0.4) 100%) !important;
+        transform: scale(1.01);
+        box-shadow: 0 6px 20px rgba(13, 71, 161, 0.15);
     }
-    
-    /* Checkboxes */
-    .stCheckbox {
-        padding: 0.3rem 0 !important;
+    [data-testid="stFileUploader"] section {
+        border: none !important;
     }
-    
-    /* Expander styling */
-    .streamlit-expanderHeader {
-        border-radius: 8px !important;
-        background: rgba(25, 118, 210, 0.03) !important;
+    [data-testid="stFileUploader"] button {
+        background: linear-gradient(135deg, #1976d2 0%, #42a5f5 100%) !important;
+        color: white !important;
+        border: none !important;
+        border-radius: 10px !important;
+        padding: 0.6rem 1.5rem !important;
         font-weight: 600 !important;
+        transition: all 0.3s ease;
+    }
+    [data-testid="stFileUploader"] button:hover {
+        background: linear-gradient(135deg, #0d47a1 0%, #1976d2 100%) !important;
+        transform: translateY(-2px);
+        box-shadow: 0 6px 16px rgba(25, 118, 210, 0.3);
     }
     
-    /* Metric cards */
-    [data-testid="stMetricValue"] {
-        font-size: 2rem !important;
+    /* Checkboxes: Modern toggle-style design */
+    .stCheckbox {
+        padding: 0.5rem 0 !important;
+    }
+    .stCheckbox > label {
+        padding: 0.6rem 0.8rem !important;
+        border-radius: 10px !important;
+        transition: all 0.3s ease;
+        cursor: pointer;
+        background: linear-gradient(135deg, #ffffff 0%, #f8fbff 100%);
+        border: 2px solid transparent;
+    }
+    .stCheckbox > label:hover {
+        background: linear-gradient(135deg, #e3f2fd 0%, #f0f7ff 100%) !important;
+        border-color: #bbdefb !important;
+        transform: translateX(3px);
+    }
+    .stCheckbox > label > div:first-child {
+        border-width: 2px !important;
+        border-color: #64b5f6 !important;
+        border-radius: 6px !important;
+        width: 22px !important;
+        height: 22px !important;
+        transition: all 0.3s ease;
+    }
+    .stCheckbox > label > div:first-child[data-checked="true"] {
+        background-color: #0d47a1 !important;
+        border-color: #0d47a1 !important;
+    }
+    
+    /* Expander styling: Scientific accordion design */
+    .streamlit-expanderHeader {
+        border-radius: 12px !important;
+        background: linear-gradient(135deg, #e3f2fd 0%, #f0f7ff 100%) !important;
         font-weight: 700 !important;
-        color: #1976d2 !important;
+        padding: 1rem 1.5rem !important;
+        border: 2px solid #bbdefb !important;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        box-shadow: 0 2px 6px rgba(25, 118, 210, 0.08);
+    }
+    .streamlit-expanderHeader:hover {
+        background: linear-gradient(135deg, #bbdefb 0%, #e3f2fd 100%) !important;
+        border-color: #1976d2 !important;
+        transform: translateX(4px);
+        box-shadow: 0 4px 12px rgba(25, 118, 210, 0.15);
+    }
+    .streamlit-expanderContent {
+        border-radius: 0 0 12px 12px !important;
+        background: #fefeff !important;
+        border: 2px solid #e3f2fd !important;
+        border-top: none !important;
+        padding: 1.5rem !important;
+    }
+    
+    /* Metric cards: Advanced scientific metrics */
+    [data-testid="stMetric"] {
+        background: linear-gradient(135deg, #ffffff 0%, #f0f7ff 100%) !important;
+        padding: 1.5rem !important;
+        border-radius: 14px !important;
+        border: 2px solid #e3f2fd !important;
+        box-shadow: 0 4px 12px rgba(13, 71, 161, 0.08) !important;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    [data-testid="stMetric"]:hover {
+        transform: translateY(-4px) scale(1.02);
+        box-shadow: 0 8px 24px rgba(13, 71, 161, 0.15) !important;
+        border-color: #64b5f6 !important;
+    }
+    [data-testid="stMetricValue"] {
+        font-size: 2.2rem !important;
+        font-weight: 800 !important;
+        background: linear-gradient(135deg, #0d47a1 0%, #1976d2 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+    [data-testid="stMetricLabel"] {
+        font-size: 0.95rem !important;
+        font-weight: 600 !important;
+        color: #455a64 !important;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
     }
     
     /* Spinner */
@@ -281,11 +528,30 @@ st.markdown("""
         border-top-color: #1976d2 !important;
     }
     
-    /* Code blocks */
+    /* Code blocks: Scientific monospace design */
     .stCodeBlock {
-        border-radius: 8px !important;
-        border: 1px solid #e0e7ff !important;
-        background: #f8fbff !important;
+        border-radius: 12px !important;
+        border: 2px solid #e3f2fd !important;
+        background: linear-gradient(135deg, #f8fbff 0%, #f0f7ff 100%) !important;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+        padding: 1rem !important;
+    }
+    code {
+        font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace !important;
+        font-size: 0.92rem !important;
+        color: #0d47a1 !important;
+        background: rgba(227, 242, 253, 0.4) !important;
+        padding: 0.2rem 0.5rem !important;
+        border-radius: 6px !important;
+    }
+    
+    /* Sidebar styling for navigation */
+    [data-testid="stSidebar"] {
+        background: linear-gradient(180deg, #e3f2fd 0%, #f0f7ff 100%) !important;
+        border-right: 2px solid #bbdefb !important;
+    }
+    [data-testid="stSidebar"] .stMarkdown {
+        color: #0d47a1 !important;
     }
     
     /* Scrollbar styling */
