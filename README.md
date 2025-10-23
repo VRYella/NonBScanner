@@ -43,9 +43,9 @@ Comprehensive documentation is available:
 - **[QUICK_START.md](QUICK_START.md)** - Fast installation and first analysis guide
 - **[TOOL_DOCUMENTATION.md](TOOL_DOCUMENTATION.md)** - Complete technical documentation (nature paper-level writeup)
 - **[VISUAL_FLOWCHARTS.md](VISUAL_FLOWCHARTS.md)** - 20+ interactive flowcharts and diagrams
-- **[CODE_ORGANIZATION_SUMMARY.md](CODE_ORGANIZATION_SUMMARY.md)** - Code structure and organization
 - **[OPTIMIZATION_SUMMARY.md](OPTIMIZATION_SUMMARY.md)** - Performance optimization details
 - **[PERFORMANCE_OPTIMIZATION.md](PERFORMANCE_OPTIMIZATION.md)** - Detailed performance guide
+- **[TESTING_README.md](TESTING_README.md)** - Testing documentation
 
 ## 🚀 Quick Start
 
