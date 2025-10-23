@@ -105,7 +105,12 @@ def analyze_ecoli_genome(genome_file, chunk_size=CHUNK_SIZE):
     
     # Load genome
     print("Loading genome sequence...")
-    genome_data = parse_fasta(str(genome_file))
+    
+    # Read file content
+    with open(genome_file, 'r') as f:
+        fasta_content = f.read()
+    
+    genome_data = parse_fasta(fasta_content)
     
     if not genome_data:
         raise ValueError("No sequences found in genome file")
@@ -367,9 +372,23 @@ def main():
     """)
     
     try:
-        # Step 1: Download genome
+        # Step 1: Download genome or use local file
         print("\nStep 1: Downloading E. coli genome from NCBI...")
-        genome_file = download_ecoli_genome()
+        
+        # Check if sample file exists
+        sample_file = Path("ecoli_sample.fasta")
+        if sample_file.exists():
+            print(f"✓ Using local sample file: {sample_file}")
+            genome_file = sample_file
+        else:
+            try:
+                genome_file = download_ecoli_genome()
+            except Exception as e:
+                print(f"✗ Could not download from NCBI: {e}")
+                print("ℹ️  Using sample E. coli sequence instead...")
+                genome_file = sample_file
+                if not genome_file.exists():
+                    raise ValueError("No genome file available")
         
         # Step 2: Analyze genome
         print("\nStep 2: Analyzing genome for Non-B DNA motifs...")

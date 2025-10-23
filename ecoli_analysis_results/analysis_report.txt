@@ -1,0 +1,44 @@
+======================================================================
+E. coli K-12 MG1655 Non-B DNA Motif Analysis Report
+======================================================================
+
+METADATA
+----------------------------------------------------------------------
+sequence_name            : NC_000913.3:1-10000 Escherichia coli str. K-12 substr. MG1655, complete genome (sample: first 10kb)
+sequence_length          : 3506
+gc_content               : 50.8
+at_content               : 49.2
+analysis_time            : 13.381205558776855
+processing_speed         : 262.00927746008523
+timestamp                : 2025-10-23 08:29:34
+
+======================================================================
+STATISTICS
+----------------------------------------------------------------------
+total_motifs             : 101
+regular_motifs           : 47
+hybrid_cluster_motifs    : 54
+
+class_counts:
+  G-Quadruplex                  : 17
+  Cruciform                     : 12
+  R-Loop                        : 9
+  i-Motif                       : 6
+  Curved_DNA                    : 2
+  Z-DNA                         : 1
+
+subclass_counts:
+  Inverted_Repeat               : 12
+  R-loop formation sites        : 9
+  Bipartite G4                  : 8
+  relaxed_imotif                : 6
+  Bulged G4                     : 5
+  Multimeric G4                 : 3
+  Local Curvature               : 2
+  Z-DNA                         : 1
+  Relaxed G4                    : 1
+coverage_bp              : 1751
+coverage_percent         : 49.94295493439817
+density_per_kb           : 13.405590416428979
+
+======================================================================
