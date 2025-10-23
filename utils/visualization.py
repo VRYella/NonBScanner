@@ -78,33 +78,48 @@ except ImportError:
 
 # Scientific color palette for motif classes
 MOTIF_CLASS_COLORS = {
-    'Curved_DNA': '#FF6B9D',          # Coral pink
-    'Slipped_DNA': '#FFCC70',         # Golden yellow
-    'Cruciform': '#70D0E4',           # Sky blue
-    'R-Loop': '#6BCF7F',              # Mint green
-    'Triplex': '#D467F0',             # Purple
-    'G-Quadruplex': '#FFD93D',        # Bright gold
-    'i-Motif': '#FF8C42',             # Orange
-    'Z-DNA': '#8B5FBF',              # Blue violet
-    'A-philic_DNA': '#E6E6FA',        # Lavender
-    'Hybrid': '#C0C0C0',             # Silver
-    'Non-B_DNA_Clusters': '#808080'   # Gray
+    'Curved_DNA': '#E91E63',          # Material Pink - vibrant and scientific
+    'Slipped_DNA': '#FF9800',         # Material Orange - warm and visible
+    'Cruciform': '#2196F3',           # Material Blue - professional
+    'R-Loop': '#4CAF50',              # Material Green - natural
+    'Triplex': '#9C27B0',             # Material Purple - elegant
+    'G-Quadruplex': '#FFC107',        # Material Amber - distinctive
+    'i-Motif': '#FF5722',             # Material Deep Orange - bold
+    'Z-DNA': '#673AB7',               # Material Deep Purple - sophisticated
+    'A-philic_DNA': '#00BCD4',        # Material Cyan - fresh and modern
+    'Hybrid': '#9E9E9E',              # Material Gray - neutral
+    'Non-B_DNA_Clusters': '#607D8B'   # Material Blue Gray - professional
 }
 
-# Scientific styling configuration
+# Enhanced scientific styling configuration for publication-quality plots
 plt.rcParams.update({
-    'font.family': 'DejaVu Sans',
-    'font.size': 10,
-    'axes.titlesize': 12,
-    'axes.labelsize': 11,
-    'xtick.labelsize': 9,
-    'ytick.labelsize': 9,
-    'legend.fontsize': 9,
-    'figure.titlesize': 14,
+    'font.family': 'sans-serif',
+    'font.sans-serif': ['DejaVu Sans', 'Arial', 'Helvetica'],
+    'font.size': 11,
+    'axes.titlesize': 14,
+    'axes.titleweight': 'bold',
+    'axes.labelsize': 12,
+    'axes.labelweight': 'semibold',
+    'xtick.labelsize': 10,
+    'ytick.labelsize': 10,
+    'legend.fontsize': 10,
+    'legend.frameon': True,
+    'legend.framealpha': 0.95,
+    'legend.edgecolor': '#E3F2FD',
+    'figure.titlesize': 16,
+    'figure.titleweight': 'bold',
     'axes.grid': True,
-    'grid.alpha': 0.3,
+    'grid.alpha': 0.25,
+    'grid.linestyle': '--',
+    'grid.linewidth': 0.6,
     'axes.spines.top': False,
-    'axes.spines.right': False
+    'axes.spines.right': False,
+    'axes.spines.left': True,
+    'axes.spines.bottom': True,
+    'axes.linewidth': 1.2,
+    'axes.edgecolor': '#0D47A1',
+    'figure.facecolor': 'white',
+    'axes.facecolor': '#FAFBFC',
 })
 
 def set_scientific_style():
