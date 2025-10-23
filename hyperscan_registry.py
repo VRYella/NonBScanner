@@ -87,26 +87,37 @@ class HyperscanRegistry:
     # =========================================================================
     SLIPPED_DNA = {
         'patterns': [
-            # Short Tandem Repeats (STR) - Fully compatible
-            (r'([ATGC])\1{9,}', 10, 'Mononucleotide repeat', 'STR', 'instability_score'),
-            (r'([ATGC]{2})\1{4,}', 11, 'Dinucleotide repeat', 'STR', 'instability_score'),
-            (r'([ATGC]{3})\1{3,}', 12, 'Trinucleotide repeat', 'STR', 'instability_score'),
-            (r'([ATGC]{4})\1{2,}', 13, 'Tetranucleotide repeat', 'STR', 'instability_score'),
-            (r'([ATGC]{5})\1{2,}', 14, 'Pentanucleotide repeat', 'STR', 'instability_score'),
-            (r'([ATGC]{6})\1{1,}', 15, 'Hexanucleotide repeat', 'STR', 'instability_score'),
+            # Short Tandem Repeats (STR) - Without backreferences
+            # Mononucleotide repeats
+            (r'A{10,}', 10, 'Poly-A repeat', 'STR', 'instability_score'),
+            (r'T{10,}', 11, 'Poly-T repeat', 'STR', 'instability_score'),
+            (r'G{10,}', 12, 'Poly-G repeat', 'STR', 'instability_score'),
+            (r'C{10,}', 13, 'Poly-C repeat', 'STR', 'instability_score'),
             
-            # Specific common repeats
-            (r'(CA){5,}', 16, 'CA repeat', 'STR', 'instability_score'),
-            (r'(AC){5,}', 17, 'AC repeat', 'STR', 'instability_score'),
-            (r'(CGG){4,}', 18, 'CGG repeat', 'STR', 'instability_score'),
-            (r'(CCG){4,}', 19, 'CCG repeat', 'STR', 'instability_score'),
-            (r'(CAG){4,}', 20, 'CAG repeat', 'STR', 'instability_score'),
-            (r'(CTG){4,}', 21, 'CTG repeat', 'STR', 'instability_score'),
-            (r'(GAA){4,}', 22, 'GAA repeat', 'STR', 'instability_score'),
-            (r'(TTC){4,}', 23, 'TTC repeat', 'STR', 'instability_score'),
+            # Specific common dinucleotide repeats
+            (r'(?:CA){5,}', 16, 'CA repeat', 'STR', 'instability_score'),
+            (r'(?:AC){5,}', 17, 'AC repeat', 'STR', 'instability_score'),
+            (r'(?:AT){5,}', 18, 'AT repeat', 'STR', 'instability_score'),
+            (r'(?:TA){5,}', 19, 'TA repeat', 'STR', 'instability_score'),
+            (r'(?:CG){5,}', 20, 'CG repeat', 'STR', 'instability_score'),
+            (r'(?:GC){5,}', 21, 'GC repeat', 'STR', 'instability_score'),
+            (r'(?:AG){5,}', 22, 'AG repeat', 'STR', 'instability_score'),
+            (r'(?:GA){5,}', 23, 'GA repeat', 'STR', 'instability_score'),
+            (r'(?:CT){5,}', 24, 'CT repeat', 'STR', 'instability_score'),
+            (r'(?:TC){5,}', 25, 'TC repeat', 'STR', 'instability_score'),
+            
+            # Specific common trinucleotide repeats
+            (r'(?:CGG){4,}', 30, 'CGG repeat', 'STR', 'instability_score'),
+            (r'(?:CCG){4,}', 31, 'CCG repeat', 'STR', 'instability_score'),
+            (r'(?:CAG){4,}', 32, 'CAG repeat', 'STR', 'instability_score'),
+            (r'(?:CTG){4,}', 33, 'CTG repeat', 'STR', 'instability_score'),
+            (r'(?:GAA){4,}', 34, 'GAA repeat', 'STR', 'instability_score'),
+            (r'(?:TTC){4,}', 35, 'TTC repeat', 'STR', 'instability_score'),
+            (r'(?:AAG){4,}', 36, 'AAG repeat', 'STR', 'instability_score'),
+            (r'(?:CTT){4,}', 37, 'CTT repeat', 'STR', 'instability_score'),
             
             # Note: Direct repeats with variable spacers are NOT Hyperscan compatible
-            # These are handled in non_hyperscan_detection.py
+            # General repeats with backreferences are handled in non_hyperscan_detection.py
         ],
         'class_id': 2,
         'class_name': 'Slipped DNA',
@@ -307,9 +318,7 @@ class HyperscanRegistry:
         database.compile(
             expressions=expressions,
             ids=ids,
-            elements=len(expressions),
-            flags=flags,
-            mode=hyperscan.HS_MODE_BLOCK
+            flags=flags
         )
         
         return database, pattern_info
