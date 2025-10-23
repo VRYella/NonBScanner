@@ -1,30 +1,3 @@
-"""
-╔══════════════════════════════════════════════════════════════════════════════╗
-║                         NBDSCANNER WEB APPLICATION                            ║
-║                    Non-B DNA Motif Detection System                          ║
-╚══════════════════════════════════════════════════════════════════════════════╝
-
-MODULE: app.py
-AUTHOR: Dr. Venkata Rajesh Yella
-VERSION: 2024.1
-LICENSE: MIT
-
-DESCRIPTION:
-    Streamlit web application for comprehensive Non-B DNA motif detection.
-    Provides interactive interface for sequence analysis and visualization.
-
-FEATURES:
-┌─────────────────────────────────────────────────────────────────────────────┐
-│  - Multi-FASTA support             - Real-time analysis progress            │
-│  - 11 motif classes detection      - Interactive visualizations             │
-│  - 22+ subclass analysis           - Export to CSV/BED/JSON                 │
-│  - NCBI sequence fetch             - Publication-quality plots              │
-└─────────────────────────────────────────────────────────────────────────────┘
-
-ARCHITECTURE:
-    Input → Detection → Scoring → Overlap Resolution → Visualization → Export
-"""
-
 import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
