@@ -554,21 +554,94 @@ st.markdown("""
         color: #0d47a1 !important;
     }
     
-    /* Scrollbar styling */
+    /* Scrollbar styling: Elegant scientific design */
     ::-webkit-scrollbar {
-        width: 10px;
-        height: 10px;
+        width: 12px;
+        height: 12px;
     }
     ::-webkit-scrollbar-track {
-        background: #f1f5f9;
-        border-radius: 10px;
+        background: linear-gradient(135deg, #f1f5f9 0%, #e3f2fd 100%);
+        border-radius: 12px;
+        border: 1px solid #e3f2fd;
     }
     ::-webkit-scrollbar-thumb {
-        background: linear-gradient(135deg, #1976d2 0%, #42a5f5 100%);
-        border-radius: 10px;
+        background: linear-gradient(135deg, #0d47a1 0%, #1976d2 50%, #42a5f5 100%);
+        border-radius: 12px;
+        border: 2px solid #f8fbff;
+        box-shadow: 0 2px 6px rgba(13, 71, 161, 0.2);
     }
     ::-webkit-scrollbar-thumb:hover {
-        background: linear-gradient(135deg, #1565c0 0%, #1976d2 100%);
+        background: linear-gradient(135deg, #0a3d91 0%, #1565c0 50%, #1976d2 100%);
+        box-shadow: 0 3px 10px rgba(13, 71, 161, 0.3);
+    }
+    
+    /* Loading spinner */
+    .stSpinner > div {
+        border-top-color: #0d47a1 !important;
+        border-right-color: #1976d2 !important;
+        border-bottom-color: #42a5f5 !important;
+    }
+    
+    /* Download buttons enhanced */
+    [data-testid="stDownloadButton"] button {
+        background: linear-gradient(135deg, #0d47a1 0%, #1976d2 100%) !important;
+        color: white !important;
+        border-radius: 12px !important;
+        padding: 0.7rem 1.6rem !important;
+        font-weight: 600 !important;
+        box-shadow: 0 4px 12px rgba(13, 71, 161, 0.25);
+        transition: all 0.3s ease;
+    }
+    [data-testid="stDownloadButton"] button:hover {
+        background: linear-gradient(135deg, #0a3d91 0%, #1565c0 100%) !important;
+        transform: translateY(-2px);
+        box-shadow: 0 6px 18px rgba(13, 71, 161, 0.35);
+    }
+    
+    /* Caption text styling */
+    .caption, [data-testid="stCaptionContainer"] {
+        color: #607d8b !important;
+        font-size: 0.9rem !important;
+        font-style: italic;
+    }
+    
+    /* Success/Error message boxes */
+    .element-container .stMarkdown .stSuccess {
+        background: linear-gradient(135deg, #e8f5e9 0%, #f1f8f4 100%) !important;
+        border-left: 4px solid #2e7d32 !important;
+        border-radius: 10px !important;
+        padding: 1rem !important;
+    }
+    .element-container .stMarkdown .stError {
+        background: linear-gradient(135deg, #ffebee 0%, #fff5f5 100%) !important;
+        border-left: 4px solid #c62828 !important;
+        border-radius: 10px !important;
+        padding: 1rem !important;
+    }
+    
+    /* Links styling */
+    a {
+        color: #1976d2 !important;
+        text-decoration: none !important;
+        font-weight: 600 !important;
+        transition: all 0.2s ease;
+    }
+    a:hover {
+        color: #0d47a1 !important;
+        text-decoration: underline !important;
+    }
+    
+    /* Tooltip improvements */
+    [data-testid="stTooltipIcon"] {
+        color: #64b5f6 !important;
+    }
+    
+    /* Enhanced hr separator */
+    hr {
+        border: none !important;
+        height: 2px !important;
+        background: linear-gradient(90deg, transparent 0%, #bbdefb 50%, transparent 100%) !important;
+        margin: 2rem 0 !important;
     }
     </style>
 """, unsafe_allow_html=True)
