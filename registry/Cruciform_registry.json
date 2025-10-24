@@ -1,0 +1,23 @@
+{
+  "class": "Cruciform",
+  "generated_at": "2025-10-24T07:01:59.944123Z",
+  "n_patterns": 1,
+  "patterns": [
+    {
+      "id": 0,
+      "pattern": "([ACGT]{6,100})([ACGT]{0,100})",
+      "subclass": "Inverted_Repeats",
+      "score": 0.95,
+      "description": "Palindromic inverted repeat (arm >= 6bp, loop <= 100bp)",
+      "min_arm": 6,
+      "max_arm": 100,
+      "max_loop": 100
+    }
+  ],
+  "meta": {
+    "source": "Cruciform detector - inverted repeats",
+    "detector_class": "CruciformDetector",
+    "pattern_type": "algorithmic",
+    "note": "Uses algorithmic search for palindromic inverted repeats"
+  }
+}

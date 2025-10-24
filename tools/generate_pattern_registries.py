@@ -332,6 +332,170 @@ def generate_imotif_registry(output_dir: str):
     logger.info(f"Generated i-Motif registry with {len(patterns)} patterns")
 
 
+def generate_cruciform_registry(output_dir: str):
+    """Generate registry for Cruciform patterns."""
+    logger.info("Generating Cruciform registry...")
+    
+    # Cruciform detection uses algorithmic approach, but we provide metadata patterns
+    patterns = [
+        {
+            'id': 0,
+            'pattern': r'([ACGT]{6,100})([ACGT]{0,100})',  # Arm + Loop pattern
+            'subclass': 'Inverted_Repeats',
+            'score': 0.95,
+            'description': 'Palindromic inverted repeat (arm >= 6bp, loop <= 100bp)',
+            'min_arm': 6,
+            'max_arm': 100,
+            'max_loop': 100
+        }
+    ]
+    
+    # Create registry data
+    registry_data = {
+        'class': 'Cruciform',
+        'generated_at': datetime.utcnow().isoformat() + 'Z',
+        'n_patterns': len(patterns),
+        'patterns': patterns,
+        'meta': {
+            'source': 'Cruciform detector - inverted repeats',
+            'detector_class': 'CruciformDetector',
+            'pattern_type': 'algorithmic',
+            'note': 'Uses algorithmic search for palindromic inverted repeats'
+        }
+    }
+    
+    # Save files
+    save_registry_files('Cruciform', output_dir, registry_data)
+    logger.info(f"Generated Cruciform registry with {len(patterns)} patterns")
+
+
+def generate_rloop_registry(output_dir: str):
+    """Generate registry for R-loop patterns."""
+    logger.info("Generating R-loop registry...")
+    
+    # Patterns from RLoopDetector
+    RLOOP_PATTERNS = [
+        # R-loop formation sites
+        (0, 'R-loop_formation_sites', r'[GC]{10,}[AT]{2,10}[GC]{10,}', 0.85),
+        (1, 'R-loop_formation_sites', r'G{5,}[ATGC]{10,100}C{5,}', 0.80),
+        (2, 'R-loop_formation_sites', r'[GC]{6,}[AT]{1,5}[GC]{6,}', 0.75),
+        # QmRLFS Model 1
+        (3, 'QmRLFS-m1', r'G{3,}[ATCGU]{1,10}?G{3,}(?:[ATCGU]{1,10}?G{3,}){1,}?', 0.90),
+        # QmRLFS Model 2
+        (4, 'QmRLFS-m2', r'G{4,}(?:[ATCGU]{1,10}?G{4,}){1,}?', 0.95),
+    ]
+    
+    patterns = []
+    for pattern_id, subclass, pattern, score in RLOOP_PATTERNS:
+        patterns.append({
+            'id': pattern_id,
+            'pattern': pattern,
+            'subclass': subclass,
+            'score': score
+        })
+    
+    # Create registry data
+    registry_data = {
+        'class': 'RLoop',
+        'generated_at': datetime.utcnow().isoformat() + 'Z',
+        'n_patterns': len(patterns),
+        'patterns': patterns,
+        'meta': {
+            'source': 'RLoopDetector patterns (Aguilera 2012, Jenjaroenpun 2016)',
+            'detector_class': 'RLoopDetector',
+            'pattern_type': 'regex'
+        }
+    }
+    
+    # Save files
+    save_registry_files('RLoop', output_dir, registry_data)
+    compile_hyperscan_db('RLoop', output_dir, patterns)
+    
+    logger.info(f"Generated R-loop registry with {len(patterns)} patterns")
+
+
+def generate_triplex_registry(output_dir: str):
+    """Generate registry for Triplex DNA patterns."""
+    logger.info("Generating Triplex registry...")
+    
+    # Patterns from TriplexDetector
+    TRIPLEX_PATTERNS = [
+        # Homopurine mirror repeat
+        (0, 'Triplex', r'((?:[GA]{1,}){10,})([ATGC]{1,100})((?:[GA]{1,}){10,})', 0.90),
+        # Homopyrimidine mirror repeat
+        (1, 'Triplex', r'((?:[CT]{1,}){10,})([ATGC]{1,100})((?:[CT]{1,}){10,})', 0.90),
+        # GAA sticky DNA
+        (2, 'Sticky_DNA', r'(?:GAA){4,}', 0.95),
+        # TTC sticky DNA
+        (3, 'Sticky_DNA', r'(?:TTC){4,}', 0.95),
+    ]
+    
+    patterns = []
+    for pattern_id, subclass, pattern, score in TRIPLEX_PATTERNS:
+        patterns.append({
+            'id': pattern_id,
+            'pattern': pattern,
+            'subclass': subclass,
+            'score': score
+        })
+    
+    # Create registry data
+    registry_data = {
+        'class': 'Triplex',
+        'generated_at': datetime.utcnow().isoformat() + 'Z',
+        'n_patterns': len(patterns),
+        'patterns': patterns,
+        'meta': {
+            'source': 'TriplexDetector patterns (Frank-Kamenetskii 1995, Sakamoto 1999)',
+            'detector_class': 'TriplexDetector',
+            'pattern_type': 'regex'
+        }
+    }
+    
+    # Save files
+    save_registry_files('Triplex', output_dir, registry_data)
+    compile_hyperscan_db('Triplex', output_dir, patterns)
+    
+    logger.info(f"Generated Triplex registry with {len(patterns)} patterns")
+
+
+def generate_slipped_dna_registry(output_dir: str):
+    """Generate registry for Slipped DNA patterns (STR patterns)."""
+    logger.info("Generating Slipped DNA registry...")
+    
+    # STR patterns for k=1 to 9
+    patterns = []
+    for k in range(1, 10):
+        patterns.append({
+            'id': k - 1,
+            'pattern': rf"((?:[ATGC]{{{k}}}){{3,}})",
+            'subclass': 'STR',
+            'score': 0.90 if k == 1 else 0.85 if k == 2 else 0.80,
+            'unit_size': k,
+            'description': f'{k}-mer Short Tandem Repeat'
+        })
+    
+    # Create registry data
+    registry_data = {
+        'class': 'SlippedDNA',
+        'generated_at': datetime.utcnow().isoformat() + 'Z',
+        'n_patterns': len(patterns),
+        'patterns': patterns,
+        'meta': {
+            'source': 'SlippedDNADetector STR patterns (Wells 2005)',
+            'detector_class': 'SlippedDNADetector',
+            'pattern_type': 'regex',
+            'note': 'Direct repeats handled algorithmically, not via regex'
+        }
+    }
+    
+    # Save files
+    save_registry_files('SlippedDNA', output_dir, registry_data)
+    compile_hyperscan_db('SlippedDNA', output_dir, patterns)
+    
+    logger.info(f"Generated Slipped DNA registry with {len(patterns)} patterns")
+
+
 def main():
     """Main entry point for registry generation."""
     # Default output directory
@@ -342,17 +506,26 @@ def main():
     
     # Generate all registries
     logger.info("="*60)
-    logger.info("GENERATING PATTERN REGISTRIES")
+    logger.info("GENERATING PATTERN REGISTRIES FOR ALL DETECTOR CLASSES")
     logger.info("="*60)
     
+    # Existing registries
     generate_curved_dna_registry(output_dir)
     generate_g4_registry(output_dir)
     generate_imotif_registry(output_dir)
+    
+    # New registries
+    generate_cruciform_registry(output_dir)
+    generate_rloop_registry(output_dir)
+    generate_triplex_registry(output_dir)
+    generate_slipped_dna_registry(output_dir)
     
     logger.info("="*60)
     logger.info("REGISTRY GENERATION COMPLETE")
     logger.info("="*60)
     logger.info(f"All registries saved to: {output_dir}")
+    logger.info("Total classes with registries: 7 (CurvedDNA, G4, IMotif, Cruciform, RLoop, Triplex, SlippedDNA)")
+    logger.info("Note: ZDNA and APhilic use separate 10-mer registry system")
 
 
 if __name__ == '__main__':

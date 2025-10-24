@@ -1,0 +1,85 @@
+{
+  "class": "SlippedDNA",
+  "generated_at": "2025-10-24T07:01:59.945435Z",
+  "n_patterns": 9,
+  "patterns": [
+    {
+      "id": 0,
+      "pattern": "((?:[ATGC]{1}){3,})",
+      "subclass": "STR",
+      "score": 0.9,
+      "unit_size": 1,
+      "description": "1-mer Short Tandem Repeat"
+    },
+    {
+      "id": 1,
+      "pattern": "((?:[ATGC]{2}){3,})",
+      "subclass": "STR",
+      "score": 0.85,
+      "unit_size": 2,
+      "description": "2-mer Short Tandem Repeat"
+    },
+    {
+      "id": 2,
+      "pattern": "((?:[ATGC]{3}){3,})",
+      "subclass": "STR",
+      "score": 0.8,
+      "unit_size": 3,
+      "description": "3-mer Short Tandem Repeat"
+    },
+    {
+      "id": 3,
+      "pattern": "((?:[ATGC]{4}){3,})",
+      "subclass": "STR",
+      "score": 0.8,
+      "unit_size": 4,
+      "description": "4-mer Short Tandem Repeat"
+    },
+    {
+      "id": 4,
+      "pattern": "((?:[ATGC]{5}){3,})",
+      "subclass": "STR",
+      "score": 0.8,
+      "unit_size": 5,
+      "description": "5-mer Short Tandem Repeat"
+    },
+    {
+      "id": 5,
+      "pattern": "((?:[ATGC]{6}){3,})",
+      "subclass": "STR",
+      "score": 0.8,
+      "unit_size": 6,
+      "description": "6-mer Short Tandem Repeat"
+    },
+    {
+      "id": 6,
+      "pattern": "((?:[ATGC]{7}){3,})",
+      "subclass": "STR",
+      "score": 0.8,
+      "unit_size": 7,
+      "description": "7-mer Short Tandem Repeat"
+    },
+    {
+      "id": 7,
+      "pattern": "((?:[ATGC]{8}){3,})",
+      "subclass": "STR",
+      "score": 0.8,
+      "unit_size": 8,
+      "description": "8-mer Short Tandem Repeat"
+    },
+    {
+      "id": 8,
+      "pattern": "((?:[ATGC]{9}){3,})",
+      "subclass": "STR",
+      "score": 0.8,
+      "unit_size": 9,
+      "description": "9-mer Short Tandem Repeat"
+    }
+  ],
+  "meta": {
+    "source": "SlippedDNADetector STR patterns (Wells 2005)",
+    "detector_class": "SlippedDNADetector",
+    "pattern_type": "regex",
+    "note": "Direct repeats handled algorithmically, not via regex"
+  }
+}

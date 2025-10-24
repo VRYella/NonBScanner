@@ -1,0 +1,42 @@
+{
+  "class": "RLoop",
+  "generated_at": "2025-10-24T07:01:59.944523Z",
+  "n_patterns": 5,
+  "patterns": [
+    {
+      "id": 0,
+      "pattern": "[GC]{10,}[AT]{2,10}[GC]{10,}",
+      "subclass": "R-loop_formation_sites",
+      "score": 0.85
+    },
+    {
+      "id": 1,
+      "pattern": "G{5,}[ATGC]{10,100}C{5,}",
+      "subclass": "R-loop_formation_sites",
+      "score": 0.8
+    },
+    {
+      "id": 2,
+      "pattern": "[GC]{6,}[AT]{1,5}[GC]{6,}",
+      "subclass": "R-loop_formation_sites",
+      "score": 0.75
+    },
+    {
+      "id": 3,
+      "pattern": "G{3,}[ATCGU]{1,10}?G{3,}(?:[ATCGU]{1,10}?G{3,}){1,}?",
+      "subclass": "QmRLFS-m1",
+      "score": 0.9
+    },
+    {
+      "id": 4,
+      "pattern": "G{4,}(?:[ATCGU]{1,10}?G{4,}){1,}?",
+      "subclass": "QmRLFS-m2",
+      "score": 0.95
+    }
+  ],
+  "meta": {
+    "source": "RLoopDetector patterns (Aguilera 2012, Jenjaroenpun 2016)",
+    "detector_class": "RLoopDetector",
+    "pattern_type": "regex"
+  }
+}
