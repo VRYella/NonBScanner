@@ -92,16 +92,19 @@ Regenerated with consistent format:
 ### 5. File Cleanup
 
 Removed internal documentation files not needed for running the code:
-- ❌ IMPLEMENTATION_SUMMARY.md
-- ❌ PR_SUMMARY.md
-- ❌ REGISTRY_IMPLEMENTATION.md
-- ❌ TESTING_COMPLETE.md
+- ❌ IMPLEMENTATION_SUMMARY.md (old internal docs)
+- ❌ PR_SUMMARY.md (old PR documentation)
+- ❌ REGISTRY_IMPLEMENTATION.md (old registry docs, replaced by this file)
+- ❌ TESTING_COMPLETE.md (old testing docs)
 
 Kept essential files:
 - ✅ README.md (GitHub documentation)
 - ✅ QUICK_START.md (user guide)
 - ✅ requirements.txt (dependencies)
 - ✅ nbdcircle.JPG (project logo)
+
+Added new documentation:
+- ✅ PKL_REGISTRY_IMPLEMENTATION.md (this file - comprehensive PKL registry guide)
 
 ## Usage
 
@@ -122,16 +125,27 @@ This creates:
 ```python
 from utils.nbdscanner import analyze_sequence
 
-# Analyze a sequence
-sequence = "AAAAAAAAAGGGATTGGGATTGGGATTGGGATT..."
+# Analyze a sequence containing multiple motif types
+sequence = (
+    "AAAAAAAAATTTTTTTTT"       # Curved DNA (A/T tracts)
+    "GGGATTGGGATTGGGATTGGGATT"  # G-Quadruplex
+    "CCCTACCCTACCCTACCCTACCC"   # i-Motif
+    "CGCGCGCGCGCGCGCGCGCG"      # Z-DNA
+)
 motifs = analyze_sequence(sequence, "MySequence")
 
-# Export results
+# Export results in multiple formats
 from utils.utils import export_to_csv, export_to_json, export_to_bed
 
 csv_data = export_to_csv(motifs)
 json_data = export_to_json(motifs)
 bed_data = export_to_bed(motifs, "MySequence")
+
+# Analyze statistics
+from utils.utils import get_basic_stats
+stats = get_basic_stats(sequence, motifs)
+print(f"Coverage: {stats['Coverage%']:.2f}%")
+print(f"Density: {stats['Density']:.2f} motifs/kb")
 ```
 
 ### Running the Web App
