@@ -1,0 +1,36 @@
+{
+  "class": "Triplex",
+  "generated_at": "2025-10-24T07:01:59.944994Z",
+  "n_patterns": 4,
+  "patterns": [
+    {
+      "id": 0,
+      "pattern": "((?:[GA]{1,}){10,})([ATGC]{1,100})((?:[GA]{1,}){10,})",
+      "subclass": "Triplex",
+      "score": 0.9
+    },
+    {
+      "id": 1,
+      "pattern": "((?:[CT]{1,}){10,})([ATGC]{1,100})((?:[CT]{1,}){10,})",
+      "subclass": "Triplex",
+      "score": 0.9
+    },
+    {
+      "id": 2,
+      "pattern": "(?:GAA){4,}",
+      "subclass": "Sticky_DNA",
+      "score": 0.95
+    },
+    {
+      "id": 3,
+      "pattern": "(?:TTC){4,}",
+      "subclass": "Sticky_DNA",
+      "score": 0.95
+    }
+  ],
+  "meta": {
+    "source": "TriplexDetector patterns (Frank-Kamenetskii 1995, Sakamoto 1999)",
+    "detector_class": "TriplexDetector",
+    "pattern_type": "regex"
+  }
+}
