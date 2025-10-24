@@ -35,8 +35,14 @@ registry/
 The system automatically discovers all detector classes with pattern tables.
 Currently supported:
 
+### 10-mer Exact Match Registries (Hyperscan)
 - **ZDNA**: 126 Z-DNA 10-mer motifs (from `ZDNADetector.TENMER_SCORE`)
 - **APhilic**: 208 A-philic 10-mer motifs (from `APhilicDetector.TENMER_LOG2`)
+
+### Regex Pattern Registries (Hyperscan)
+- **CurvedDNA**: 44 curved DNA patterns (2 local + 42 global curvature patterns)
+- **G4**: 7 G-quadruplex pattern classes (canonical, relaxed, long-loop, bulged, multimeric, imperfect, g-triplex)
+- **IMotif**: 7 i-motif patterns (1 canonical i-motif + 6 HUR AC-motif patterns)
 
 Additional detectors can be added by implementing pattern tables with any of these attributes:
 - `TENMER_SCORE`, `TENMER_LOG2`, `TENMER_TABLE`
@@ -92,6 +98,7 @@ scanner = ModularMotifDetector(registry_dir='/path/to/custom/registry')
 
 You can also load registries manually:
 
+**For 10-mer registries (A-philic, Z-DNA):**
 ```python
 from utils.motif_patterns import get_hs_db_for_class, get_pattern_registry
 
@@ -101,6 +108,19 @@ db, id_to_ten, id_to_score = get_hs_db_for_class('ZDNA', 'registry')
 # Load registry metadata
 registry = get_pattern_registry('ZDNA', 'registry')
 print(f"Loaded {registry['n_patterns']} patterns")
+```
+
+**For regex pattern registries (CurvedDNA, G4, IMotif):**
+```python
+from utils.load_regex_registry import scan_with_registry, get_cached_registry
+
+# Scan a sequence using a registry
+matches = scan_with_registry('G4', sequence)
+for start, end, pattern_id, subclass in matches:
+    print(f"Match at {start}-{end}: {subclass}")
+
+# Or load the registry manually
+db, id_to_pattern, id_to_subclass, id_to_score = get_cached_registry('G4', 'registry')
 ```
 
 ### Environment Variable
@@ -118,8 +138,21 @@ python app.py
 
 To regenerate the registries (e.g., after updating detector pattern tables):
 
+**For all registries (10-mer and regex):**
 ```bash
-# Regenerate all registries
+# Regenerate 10-mer registries (A-philic, Z-DNA)
+python tools/generate_all_registries.py --out registry
+
+# Regenerate regex pattern registries (CurvedDNA, G4, IMotif)
+python tools/generate_pattern_registries.py
+
+# Or regenerate both types
+python tools/generate_all_registries.py --out registry && python tools/generate_pattern_registries.py
+```
+
+**For 10-mer registries only:**
+```bash
+# Regenerate all 10-mer registries
 python tools/generate_all_registries.py --out registry
 
 # Force regeneration even if files exist

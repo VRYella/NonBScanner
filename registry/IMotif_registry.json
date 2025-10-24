@@ -1,0 +1,54 @@
+{
+  "class": "IMotif",
+  "generated_at": "2025-10-24T04:20:35.165194Z",
+  "n_patterns": 7,
+  "patterns": [
+    {
+      "id": 0,
+      "pattern": "C{3,}[ACGT]{1,7}C{3,}[ACGT]{1,7}C{3,}[ACGT]{1,7}C{3,}",
+      "subclass": "canonical_imotif",
+      "score": 0.95
+    },
+    {
+      "id": 1,
+      "pattern": "A{3}[ACGT]{4}C{3}[ACGT]{4}C{3}[ACGT]{4}C{3}",
+      "subclass": "hur_ac_motif",
+      "score": 0.85
+    },
+    {
+      "id": 2,
+      "pattern": "C{3}[ACGT]{4}C{3}[ACGT]{4}C{3}[ACGT]{4}A{3}",
+      "subclass": "hur_ac_motif",
+      "score": 0.85
+    },
+    {
+      "id": 3,
+      "pattern": "A{3}[ACGT]{5}C{3}[ACGT]{5}C{3}[ACGT]{5}C{3}",
+      "subclass": "hur_ac_motif",
+      "score": 0.85
+    },
+    {
+      "id": 4,
+      "pattern": "C{3}[ACGT]{5}C{3}[ACGT]{5}C{3}[ACGT]{5}A{3}",
+      "subclass": "hur_ac_motif",
+      "score": 0.85
+    },
+    {
+      "id": 5,
+      "pattern": "A{3}[ACGT]{6}C{3}[ACGT]{6}C{3}[ACGT]{6}C{3}",
+      "subclass": "hur_ac_motif",
+      "score": 0.85
+    },
+    {
+      "id": 6,
+      "pattern": "C{3}[ACGT]{6}C{3}[ACGT]{6}C{3}[ACGT]{6}A{3}",
+      "subclass": "hur_ac_motif",
+      "score": 0.85
+    }
+  ],
+  "meta": {
+    "source": "Problem statement IMOTIF_PATTERNS and HUR_AC_PATTERNS",
+    "detector_class": "IMotifDetector",
+    "pattern_type": "regex"
+  }
+}
