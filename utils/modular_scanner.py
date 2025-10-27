@@ -150,18 +150,18 @@ class ModularMotifDetector:
         
         for cls in candidate_classes:
             try:
-                db, id_to_ten, id_to_score = motif_patterns.get_hs_db_for_class(cls, registry_dir=self.registry_dir)
+                db, id_to_pattern, id_to_score = motif_patterns.get_hs_db_for_class(cls, registry_dir=self.registry_dir)
                 # Pass to detectors: detectors should check for availability when scanning
                 # Store in a class-level map for detectors to access
                 if not hasattr(self, "hsdb_map"):
                     self.hsdb_map = {}
-                self.hsdb_map[cls] = {"db": db, "id_to_ten": id_to_ten, "id_to_score": id_to_score}
+                self.hsdb_map[cls] = {"db": db, "id_to_pattern": id_to_pattern, "id_to_score": id_to_score}
                 
                 # Optionally, set into detector classes for direct use
                 if cls in detector_map:
                     det_key, det_cls = detector_map[cls]
                     # Set class-level attribute for detectors to access
-                    setattr(det_cls, "HS_DB_INFO", {"db": db, "id_to_ten": id_to_ten, "id_to_score": id_to_score})
+                    setattr(det_cls, "HS_DB_INFO", {"db": db, "id_to_pattern": id_to_pattern, "id_to_score": id_to_score})
                     logger.debug(f"Set HS_DB_INFO for {det_cls.__name__}")
             except FileNotFoundError:
                 # registry not built — continue silently
