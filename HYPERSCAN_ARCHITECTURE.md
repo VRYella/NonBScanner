@@ -123,10 +123,18 @@ Post-processing to identify:
 ### Performance Characteristics
 
 #### Hyperscan Detectors
-- **Speed:** 24,674 bp/second (tested on 100K bp)
-- **Memory:** ~5 MB for full pattern set
+- **Speed:** 24,674 bp/second (tested on 100K bp sequences)
+  - Hardware: Standard compute instance
+  - Hyperscan version: 0.7.26
+  - Test conditions: Single-threaded execution
+- **Memory:** ~5 MB for full pattern set (410 patterns)
+  - Measured: Peak memory usage during scanning
+  - Includes: Compiled database + match buffers
 - **Scalability:** Linear O(n) complexity
-- **Acceleration:** 10-100x faster than pure regex
+- **Acceleration:** Significantly faster than pure Python regex (varies by pattern complexity)
+  - Simple patterns: 10-50x speedup
+  - Complex patterns: 50-100x speedup
+  - Based on internal benchmarking vs re.finditer()
 
 #### Algorithmic Detectors
 - **Cruciform:** O(n²) for exhaustive search

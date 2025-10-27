@@ -49,7 +49,7 @@ def test_complete_pipeline():
         "CACACACACACACA" +
         # Spacer
         "TTTTTTTT" +
-        # Cruciform (inverted repeat)
+        # Potential cruciform-forming sequence (inverted repeat)
         "ATCGATCGAAAAAATCGATCGAT"
     )
     
@@ -190,7 +190,9 @@ def test_complete_pipeline():
     bed_lines = []
     for _, row in df.iterrows():
         # BED format: chr start end name score strand
-        bed_line = f"chr1\t{row['Start']}\t{row['End']}\t{row['Class']}_{row['Subclass']}\t{int(row['Score']*1000)}\t+"
+        # BED scores must be integers 0-1000
+        bed_score = min(1000, max(0, int(row['Score'] * 10)))  # Scale and clamp to valid range
+        bed_line = f"chr1\t{row['Start']}\t{row['End']}\t{row['Class']}_{row['Subclass']}\t{bed_score}\t+"
         bed_lines.append(bed_line)
     
     print(f"  ✓ BED export: {len(bed_lines)} features")
