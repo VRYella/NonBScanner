@@ -756,8 +756,9 @@ def get_pattern_registry(class_name: str, registry_dir: str = "registry"):
 
 def get_hs_db_for_class(class_name: str, registry_dir: str = "registry"):
     """
-    Return (db, id_to_ten, id_to_score). Caches DB in process memory.
+    Return (db, id_to_pattern, id_to_score). Caches DB in process memory.
     db is a hyperscan.Database instance (or None if hyperscan not available).
+    id_to_pattern: dict mapping id -> pattern string (tenmer for 10-mer, regex for others)
     """
     if not _LOAD_HSDB_AVAILABLE:
         raise ImportError("load_hsdb module not available")
@@ -766,9 +767,9 @@ def get_hs_db_for_class(class_name: str, registry_dir: str = "registry"):
     if key in _HS_DB_CACHE:
         return _HS_DB_CACHE[key]
     
-    db, id_to_ten, id_to_score = load_db_for_class(class_name, registry_dir)
-    _HS_DB_CACHE[key] = (db, id_to_ten, id_to_score)
-    return db, id_to_ten, id_to_score
+    db, id_to_pattern, id_to_score = load_db_for_class(class_name, registry_dir)
+    _HS_DB_CACHE[key] = (db, id_to_pattern, id_to_score)
+    return db, id_to_pattern, id_to_score
 
 
 # =============================================================================
