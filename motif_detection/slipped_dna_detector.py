@@ -2,18 +2,18 @@
 Slipped DNA Motif Detector (Optimized for Performance)
 ------------------------------------------------------
 PERFORMANCE OPTIMIZATIONS:
-- Removed catastrophic backtracking patterns
-- Uses efficient linear scanning for STRs
-- Direct repeats detection with adaptive sampling (no skipping!)
-- Optimized scoring function: O(N) instead of O(N²)
-- Adaptive parameters based on sequence length
+- Uses optimized seed-and-extend k-mer index approach from repeat_scanner
+- Efficient linear scanning for STRs
+- Direct repeats detection with k-mer seeding (no catastrophic backtracking!)
+- O(N) complexity for most operations
+- Safe-guards to avoid explosion on highly-repetitive seeds
 
 Detects and annotates complete repeat regions, following:
-- STRs: Unit size 1–9 bp, ≥10 bp in span, non-overlapping, match full region[web:79][web:78]
-- Direct repeats: Algorithmic scanning (no catastrophic regex backtracking)
+- STRs: Unit size 1–9 bp, ≥10 bp in span, non-overlapping, match full region
+- Direct repeats: Unit length 10-300 bp, spacer <= 10 bp
 
 References:
-Wells 2005, Schlötterer 2000, Weber 1989, Verkerk 1991[web:79][web:78]
+Wells 2005, Schlötterer 2000, Weber 1989, Verkerk 1991
 """
 
 import re
@@ -24,6 +24,14 @@ try:
 except ImportError:
     class BaseMotifDetector: pass
 
+# Import optimized repeat scanner
+try:
+    from utils.repeat_scanner import find_direct_repeats, find_strs
+except ImportError:
+    # Fallback if import fails
+    find_direct_repeats = None
+    find_strs = None
+
 class SlippedDNADetector(BaseMotifDetector):
     """Detector for slipped DNA motifs: captures full repeat regions[web:79]"""
 
@@ -31,26 +39,11 @@ class SlippedDNADetector(BaseMotifDetector):
         return "Slipped_DNA"
 
     def get_patterns(self) -> Dict[str, List[Tuple]]:
-        patterns = []
-        # STRs: 1-9 nt units, ≥10 bp span
-        for k in range(1, 10):
-            pat = (
-                rf"((?:[ATGC]{{{k}}}){{3,}})",   # At least 3 consecutive unit matches
-                f"SLP_STR_{k}",
-                f"{k}-mer STR",
-                "STR",
-                max(10, 3 * k),
-                "instability_score",
-                0.90 if k == 1 else 0.85 if k == 2 else 0.80,
-                "Tandem repeat region (full span)",
-                "Wells 2005"
-            )
-            patterns.append(pat)
-        # REMOVED: Direct repeats with catastrophic backtracking pattern
-        # Now handled algorithmically in find_direct_repeats_fast()
+        # All detection now done via optimized repeat_scanner
+        # Keep patterns for metadata/compatibility but don't use for regex matching
         return {
-            "short_tandem_repeats": patterns,
-            "direct_repeats": []  # Empty - use algorithmic approach instead
+            "short_tandem_repeats": [],
+            "direct_repeats": []
         }
 
     def find_direct_repeats_fast(self, seq: str, used: List[bool]) -> List[Dict[str, Any]]:
@@ -126,46 +119,80 @@ class SlippedDNADetector(BaseMotifDetector):
     def annotate_sequence(self, sequence: str) -> List[Dict[str, Any]]:
         seq = sequence.upper()
         regions = []
-        pat_groups = self.get_patterns()
-        used = [False] * len(seq)  # Mark used bases for overlap resolution
 
-        # STRs (unit 1–9 bp)
-        for patinfo in pat_groups["short_tandem_repeats"]:
-            regex = patinfo[0]
-            unit_len = int(patinfo[1].split("_")[-1])
-            for m in re.finditer(regex, seq):
-                s, e = m.span()
-                repeat_region = seq[s:e]
-                # Confirm repeat length, only accept ≥10 bp
-                if (e - s) < 10:
-                    continue
-                # Avoid overlapping matches
-                if any(used[s:e]):
-                    continue
-                # Mark as used
-                for i in range(s, e):
-                    used[i] = True
-                # Count unit number (sanity check)
-                n_units = (e - s) // unit_len
+        # Use optimized repeat_scanner if available
+        if find_strs and find_direct_repeats:
+            # STRs (unit 1–9 bp)
+            str_results = find_strs(seq, min_u=1, max_u=9, min_total=10)
+            for str_rec in str_results:
                 regions.append({
-                    'class_name': patinfo[3],
-                    'pattern_id': patinfo[1],
-                    'start': s,
-                    'end': e,
-                    'length': e - s,
-                    'score': self._instability_score(repeat_region),
-                    'matched_seq': repeat_region,
+                    'class_name': 'STR',
+                    'pattern_id': f'SLP_STR_{str_rec["Unit_Length"]}',
+                    'start': str_rec['Start'] - 1,  # Convert to 0-based
+                    'end': str_rec['End'],
+                    'length': str_rec['Length'],
+                    'score': self._instability_score(str_rec['Sequence']),
+                    'matched_seq': str_rec['Sequence'],
                     'details': {
-                        'unit_length': unit_len,
-                        'repeat_units': n_units,
-                        'repeat_type': patinfo[2],
-                        'source': patinfo[8]
+                        'unit_length': str_rec['Unit_Length'],
+                        'repeat_units': str_rec['Copies'],
+                        'repeat_type': f"{str_rec['Unit_Length']}-mer STR",
+                        'source': 'Wells 2005'
                     }
                 })
 
-        # Direct repeats - use fast algorithmic approach
-        direct_regions = self.find_direct_repeats_fast(seq, used)
-        regions.extend(direct_regions)
+            # Direct repeats
+            direct_results = find_direct_repeats(seq, min_unit=10, max_unit=300, max_spacer=10)
+            for dr_rec in direct_results:
+                regions.append({
+                    'class_name': 'Direct_Repeat',
+                    'pattern_id': 'SLP_DIR_1',
+                    'start': dr_rec['Start'] - 1,  # Convert to 0-based
+                    'end': dr_rec['End'],
+                    'length': dr_rec['Length'],
+                    'score': min(dr_rec['Unit_Length'] / 30.0, 0.95),
+                    'matched_seq': dr_rec['Sequence'],
+                    'details': {
+                        'unit_length': dr_rec['Unit_Length'],
+                        'spacer_length': dr_rec['Spacer'],
+                        'repeat_type': f'Direct repeat ({dr_rec["Unit_Length"]} bp unit, {dr_rec["Spacer"]} bp spacer)',
+                        'source': 'Wells 2005'
+                    }
+                })
+        else:
+            # Fallback to old implementation if imports fail
+            used = [False] * len(seq)
+            pat_groups = self.get_patterns()
+
+            # STRs (unit 1–9 bp) - fallback regex
+            for k in range(1, 10):
+                regex = rf"((?:[ATGC]{{{k}}}){{3,}})"
+                for m in re.finditer(regex, seq):
+                    s, e = m.span()
+                    if (e - s) < 10 or any(used[s:e]):
+                        continue
+                    for i in range(s, e):
+                        used[i] = True
+                    n_units = (e - s) // k
+                    regions.append({
+                        'class_name': 'STR',
+                        'pattern_id': f'SLP_STR_{k}',
+                        'start': s,
+                        'end': e,
+                        'length': e - s,
+                        'score': self._instability_score(seq[s:e]),
+                        'matched_seq': seq[s:e],
+                        'details': {
+                            'unit_length': k,
+                            'repeat_units': n_units,
+                            'repeat_type': f'{k}-mer STR',
+                            'source': 'Wells 2005'
+                        }
+                    })
+
+            # Direct repeats - fallback
+            direct_regions = self.find_direct_repeats_fast(seq, used)
+            regions.extend(direct_regions)
         
         # Sort by start
         regions.sort(key=lambda r: r['start'])
