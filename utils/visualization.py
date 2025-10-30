@@ -43,25 +43,8 @@ from collections import Counter, defaultdict
 import warnings
 warnings.filterwarnings("ignore")
 
-# Import advanced visualizations
-try:
-    from advanced_visualizations import (
-        plot_genome_landscape_track,
-        plot_sliding_window_heat_ribbon,
-        plot_ridge_plots_length_by_class,
-        plot_sunburst_treemap,
-        plot_hexbin_start_vs_score,
-        plot_upset_intersection,
-        plot_score_violin_beeswarm,
-        plot_cluster_hotspot_map,
-        export_plot,
-        COLORBLIND_PALETTE,
-        MOTIF_CLASS_COLORS_CB
-    )
-    ADVANCED_VIZ_AVAILABLE = True
-except ImportError:
-    ADVANCED_VIZ_AVAILABLE = False
-    print("Advanced visualizations not available. Install advanced_visualizations.py")
+# Advanced visualizations feature disabled (removed from codebase for simplification)
+ADVANCED_VIZ_AVAILABLE = False
 
 # Try to import plotly for interactive plots
 try:
