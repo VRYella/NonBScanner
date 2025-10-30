@@ -41,13 +41,9 @@ NonBScanner is a state-of-the-art bioinformatics tool for detecting and analyzin
 Comprehensive documentation is available:
 
 - **[QUICK_START.md](QUICK_START.md)** - Fast installation and first analysis guide
-- **[OPTIMIZED_SCANNER_ARCHITECTURE.md](OPTIMIZED_SCANNER_ARCHITECTURE.md)** - NEW! Optimized repeat scanner architecture
 - **[HYPERSCAN_ARCHITECTURE.md](HYPERSCAN_ARCHITECTURE.md)** - Hyperscan integration details
-- **[TOOL_DOCUMENTATION.md](TOOL_DOCUMENTATION.md)** - Complete technical documentation (nature paper-level writeup)
-- **[VISUAL_FLOWCHARTS.md](VISUAL_FLOWCHARTS.md)** - 20+ interactive flowcharts and diagrams
-- **[CODE_ORGANIZATION_SUMMARY.md](CODE_ORGANIZATION_SUMMARY.md)** - Code structure and organization
-- **[OPTIMIZATION_SUMMARY.md](OPTIMIZATION_SUMMARY.md)** - Performance optimization details
-- **[PERFORMANCE_OPTIMIZATION.md](PERFORMANCE_OPTIMIZATION.md)** - Detailed performance guide
+- **[OPTIMIZED_SCANNER_ARCHITECTURE.md](OPTIMIZED_SCANNER_ARCHITECTURE.md)** - Optimized repeat scanner architecture
+- **[ORGANIZATION.md](ORGANIZATION.md)** - Repository organization and structure
 
 ## 🚀 Quick Start
 
