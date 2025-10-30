@@ -1,11 +1,17 @@
 """
 Triplex DNA Motif Detector (Mirror repeat strict, content threshold)
 ===================================================================
-Detects three-stranded DNA structures, key rules from Frank-Kamenetskii 1995, Sakamoto 1999, Bacolla 2006, and recent reviews[web:80][web:83][web:85][web:86][web:89].
+Detects three-stranded DNA structures using optimized k-mer seed-and-extend approach.
 
-Features:
-- Intramolecular triplex: mirror repeats ≥10 bp per arm, loop ≤100 bp, homopurine or homopyrimidine content >90% in arms
+Key features from Frank-Kamenetskii 1995, Sakamoto 1999, Bacolla 2006:
+- Intramolecular triplex: mirror repeats ≥10 bp per arm, loop ≤100 bp, 
+  homopurine or homopyrimidine content >90% in arms
 - Sticky DNA: pure (GAA)n or (TTC)n (≥12 bp)
+
+PERFORMANCE OPTIMIZATIONS:
+- Uses optimized seed-and-extend k-mer index approach from repeat_scanner
+- O(n) complexity with k-mer seeding for mirror repeats
+- Efficient purine/pyrimidine content filtering
 """
 
 import re
@@ -16,40 +22,24 @@ try:
 except ImportError:
     class BaseMotifDetector: pass
 
+# Import optimized repeat scanner
+try:
+    from utils.repeat_scanner import find_mirror_repeats
+except ImportError:
+    # Fallback if import fails
+    find_mirror_repeats = None
+
 class TriplexDetector(BaseMotifDetector):
-    """Detector for mirror repeat and sticky DNA triplex motifs (literature strict)[web:80][web:83][web:85][web:86][web:89]"""
+    """Detector for mirror repeat and sticky DNA triplex motifs using optimized scanner"""
 
     def get_motif_class_name(self) -> str:
         return "Triplex"
 
     def get_patterns(self) -> Dict[str, List[Tuple]]:
+        # Sticky DNA patterns still use regex (simple and efficient)
+        # Mirror repeats now use optimized k-mer index from repeat_scanner
         return {
             'triplex_forming_sequences': [
-                # Homopurine mirror repeat: (arm)-(loop)-(mirror_arm), each arm ≥10bp, loop ≤100bp, >90% purine
-                # Using capturing groups here for arm1, loop, arm2 extraction
-                (r'((?:[GA]{1,}){10,})'
-                 r'([ATGC]{1,100})'
-                 r'((?:[GA]{1,}){10,})',
-                 'TRX_MR_PU',
-                 'Homopurine mirror repeat',
-                 'Triplex',
-                 20,  # total arms+min loop
-                 'triplex_potential',
-                 0.90,
-                 'H-DNA formation (homopurine)',
-                 'Frank-Kamenetskii 1995'),
-                # Homopyrimidine mirror repeat: same logic
-                (r'((?:[CT]{1,}){10,})'
-                 r'([ATGC]{1,100})'
-                 r'((?:[CT]{1,}){10,})',
-                 'TRX_MR_PY',
-                 'Homopyrimidine mirror repeat',
-                 'Triplex',
-                 20,
-                 'triplex_potential',
-                 0.90,
-                 'H-DNA formation (homopyrimidine)',
-                 'Frank-Kamenetskii 1995'),
                 # GAA sticky DNA - optimized with non-capturing group
                 (r'(?:GAA){4,}', 'TRX_5_4', 'GAA repeat', 'Sticky_DNA', 12, 'sticky_dna_score', 0.95, 'Disease-associated repeats', 'Sakamoto 1999'),
                 # TTC sticky DNA - optimized with non-capturing group
@@ -63,26 +53,122 @@ class TriplexDetector(BaseMotifDetector):
         used = [False] * len(seq)
         patterns = self.get_patterns()['triplex_forming_sequences']
 
+        # First, detect mirror repeats using optimized scanner if available
+        if find_mirror_repeats is not None:
+            from utils.repeat_scanner import find_mirror_repeats as optimized_find
+            mirror_results = optimized_find(seq, min_arm=10, max_loop=100, purine_pyrimidine_threshold=0.9)
+            
+            # Only keep those that pass the triplex threshold (>90% purine or pyrimidine)
+            for mr_rec in mirror_results:
+                if mr_rec.get('Is_Triplex', False):
+                    s = mr_rec['Start'] - 1  # Convert to 0-based
+                    e = mr_rec['End']
+                    
+                    if any(used[s:e]):
+                        continue
+                    
+                    for i in range(s, e):
+                        used[i] = True
+                    
+                    # Determine if purine or pyrimidine
+                    pur_frac = mr_rec['Purine_Fraction']
+                    pyr_frac = mr_rec['Pyrimidine_Fraction']
+                    if pur_frac >= 0.9:
+                        subtype = 'Homopurine mirror repeat'
+                        pid = 'TRX_MR_PU'
+                    else:
+                        subtype = 'Homopyrimidine mirror repeat'
+                        pid = 'TRX_MR_PY'
+                    
+                    results.append({
+                        'class_name': 'Triplex',
+                        'pattern_id': pid,
+                        'start': s,
+                        'end': e,
+                        'length': e - s,
+                        'score': self._triplex_potential(seq[s:e]),
+                        'matched_seq': seq[s:e],
+                        'details': {
+                            'type': subtype,
+                            'reference': 'Frank-Kamenetskii 1995',
+                            'description': 'H-DNA formation',
+                            'arm_length': mr_rec['Arm_Length'],
+                            'loop_length': mr_rec['Loop'],
+                            'purine_fraction': pur_frac,
+                            'pyrimidine_fraction': pyr_frac
+                        }
+                    })
+        else:
+            # Fallback to regex-based detection for mirror repeats
+            # Homopurine mirror repeat
+            pat_pu = r'((?:[GA]{1,}){10,})([ATGC]{1,100})((?:[GA]{1,}){10,})'
+            for m in re.finditer(pat_pu, seq):
+                s, e = m.span()
+                if any(used[s:e]):
+                    continue
+                arm1 = m.group(1)
+                arm2 = m.group(3)
+                loop = m.group(2)
+                if len(arm1) < 10 or len(arm2) < 10 or len(loop) > 100:
+                    continue
+                pur_ct = sum(1 for b in arm1+arm2 if b in 'AG') / max(1, len(arm1+arm2))
+                if pur_ct <= 0.9:
+                    continue
+                for i in range(s, e):
+                    used[i] = True
+                results.append({
+                    'class_name': 'Triplex',
+                    'pattern_id': 'TRX_MR_PU',
+                    'start': s,
+                    'end': e,
+                    'length': e-s,
+                    'score': self._triplex_potential(seq[s:e]),
+                    'matched_seq': seq[s:e],
+                    'details': {
+                        'type': 'Homopurine mirror repeat',
+                        'reference': 'Frank-Kamenetskii 1995',
+                        'description': 'H-DNA formation (homopurine)'
+                    }
+                })
+            
+            # Homopyrimidine mirror repeat
+            pat_py = r'((?:[CT]{1,}){10,})([ATGC]{1,100})((?:[CT]{1,}){10,})'
+            for m in re.finditer(pat_py, seq):
+                s, e = m.span()
+                if any(used[s:e]):
+                    continue
+                arm1 = m.group(1)
+                arm2 = m.group(3)
+                loop = m.group(2)
+                if len(arm1) < 10 or len(arm2) < 10 or len(loop) > 100:
+                    continue
+                pyr_ct = sum(1 for b in arm1+arm2 if b in 'CT') / max(1, len(arm1+arm2))
+                if pyr_ct <= 0.9:
+                    continue
+                for i in range(s, e):
+                    used[i] = True
+                results.append({
+                    'class_name': 'Triplex',
+                    'pattern_id': 'TRX_MR_PY',
+                    'start': s,
+                    'end': e,
+                    'length': e-s,
+                    'score': self._triplex_potential(seq[s:e]),
+                    'matched_seq': seq[s:e],
+                    'details': {
+                        'type': 'Homopyrimidine mirror repeat',
+                        'reference': 'Frank-Kamenetskii 1995',
+                        'description': 'H-DNA formation (homopyrimidine)'
+                    }
+                })
+
+        # Sticky DNA patterns (GAA/TTC) - use regex
         for patinfo in patterns:
             pat, pid, name, cname, minlen, scoretype, cutoff, desc, ref = patinfo
             for m in re.finditer(pat, seq):
                 s, e = m.span()
                 if any(used[s:e]):
                     continue
-                # Mirror repeats (arms+loop): test content of both arms
-                if "mirror" in name:
-                    arm1 = m.group(1)
-                    arm2 = m.group(3)
-                    loop = m.group(2)
-                    if len(arm1) < 10 or len(arm2) < 10 or len(loop) > 100:
-                        continue
-                    is_purine = set(arm1+arm2).issubset({'A','G'})
-                    is_pyrimidine = set(arm1+arm2).issubset({'C','T'})
-                    pur_ct = sum(1 for b in arm1+arm2 if b in 'AG') / max(1, len(arm1+arm2))
-                    pyr_ct = sum(1 for b in arm1+arm2 if b in 'CT') / max(1, len(arm1+arm2))
-                    if not (pur_ct > 0.9 or pyr_ct > 0.9):
-                        continue
-                # All sticky DNA: keep full match if not overlap
                 for i in range(s, e):
                     used[i] = True
                 results.append({
@@ -99,6 +185,7 @@ class TriplexDetector(BaseMotifDetector):
                         'description': desc
                     }
                 })
+        
         results.sort(key=lambda r: r['start'])
         return results
 
@@ -112,7 +199,7 @@ class TriplexDetector(BaseMotifDetector):
             return 0.0
 
     def _triplex_potential(self, sequence: str) -> float:
-        """Score: tract length and purine/pyrimidine content (≥90%) [web:80][web:83][web:85]"""
+        """Score: tract length and purine/pyrimidine content (≥90%)"""
         if len(sequence) < 20:
             return 0.0
         pur = sum(1 for b in sequence if b in "AG") / len(sequence)
@@ -122,14 +209,15 @@ class TriplexDetector(BaseMotifDetector):
         return min(score * len(sequence) / 150, 1.0)
         
     def _sticky_dna_score(self, sequence: str) -> float:
-        """Score for sticky DNA: repeat density and length [web:86]"""
+        """Score for sticky DNA: repeat density and length"""
         if len(sequence) < 12:
             return 0.0
         gaa_count = sequence.count("GAA")
         ttc_count = sequence.count("TTC")
         rep_total = gaa_count + ttc_count
         density = (rep_total * 3) / len(sequence)
-        extras = sum(len(m) for m in re.findall(r'(?:GAA){2,}', sequence)) + sum(len(m) for m in re.findall(r'(?:TTC){2,}', sequence))
+        extras = sum(len(m.group(0)) for m in re.finditer(r'(?:GAA){2,}', sequence)) + \
+                 sum(len(m.group(0)) for m in re.finditer(r'(?:TTC){2,}', sequence))
         cons_bonus = extras / len(sequence) if len(sequence) else 0
         return min(0.7 * density + 0.3 * cons_bonus, 1.0)
 
