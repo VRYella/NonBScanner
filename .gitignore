@@ -98,3 +98,10 @@ test_regex_registry.py
 
 # Registry binaries (generated at runtime if Hyperscan available)
 *.hsdb*.hsdb
+
+# Old directories (kept as backup)
+motif_detection.old/
+utils.old/
+__pycache__/
+*.pyc
+*.pyo

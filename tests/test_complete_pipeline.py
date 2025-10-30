@@ -17,7 +17,7 @@ import sys
 # Add parent directory to path
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
-from utils.modular_scanner import ModularMotifDetector
+from scanner import ModularMotifDetector
 import pandas as pd
 
 

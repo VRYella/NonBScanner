@@ -12,7 +12,7 @@ import sys
 # Add parent directory to path
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
-from utils.load_regex_registry import scan_with_registry, get_cached_registry
+from utilities import scan_with_registry, get_cached_registry
 
 
 def test_g4_registry():

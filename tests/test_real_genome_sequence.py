@@ -7,10 +7,10 @@ import sys
 import os
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from motif_detection.slipped_dna_detector import SlippedDNADetector
-from motif_detection.cruciform_detector import CruciformDetector
-from motif_detection.triplex_detector import TriplexDetector
-from motif_detection.r_loop_detector import RLoopDetector
+from detectors import slipped_dna_detector import SlippedDNADetector
+from detectors import cruciform_detector import CruciformDetector
+from detectors import triplex_detector import TriplexDetector
+from detectors import r_loop_detector import RLoopDetector
 import time
 
 
