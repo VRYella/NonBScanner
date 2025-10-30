@@ -8,7 +8,7 @@ import sys
 import os
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from utils.repeat_scanner import (
+from scanner import (
     find_direct_repeats, 
     find_inverted_repeats, 
     find_mirror_repeats, 
@@ -210,7 +210,7 @@ def test_detector_integration():
     
     # Test SlippedDNADetector
     try:
-        from motif_detection.slipped_dna_detector import SlippedDNADetector
+        from detectors import slipped_dna_detector import SlippedDNADetector
         detector = SlippedDNADetector()
         seq = "ATCG" + "CACACACACACACACA" + "TTTT" + "GGGGGGGGGGGG" + "AAAA" + "GGGGGGGGGGGG" + "CGTA"
         results = detector.annotate_sequence(seq)
@@ -223,7 +223,7 @@ def test_detector_integration():
     
     # Test CruciformDetector
     try:
-        from motif_detection.cruciform_detector import CruciformDetector
+        from detectors import cruciform_detector import CruciformDetector
         detector = CruciformDetector()
         seq = "GCGCGC" + "ATCGATCGATCGATCG" + "TTTTTTTT" + "CGATCGATCGATCGAT" + "GCGCGC"
         results = detector.annotate_sequence(seq)
@@ -236,7 +236,7 @@ def test_detector_integration():
     
     # Test TriplexDetector
     try:
-        from motif_detection.triplex_detector import TriplexDetector
+        from detectors import triplex_detector import TriplexDetector
         detector = TriplexDetector()
         seq = "ATCG" + "AGAGAGAGAGAGAG" + "TTTTTTTT" + "GAGAGAGAGAGAGA" + "CGAT" + "GAAGAAGAAGAAGAA" + "GCGC"
         results = detector.annotate_sequence(seq)
