@@ -44,7 +44,7 @@ from utils.utils import (
     validate_sequence, quality_check_motifs
 )
 from utils.visualization import (
-    plot_motif_distribution, plot_coverage_map, plot_score_distribution,
+    plot_motif_distribution, plot_coverage_map,
     plot_length_distribution, plot_nested_pie_chart, save_all_plots,
     MOTIF_CLASS_COLORS
 )
@@ -1308,114 +1308,79 @@ with tab_pages["Results"]:
             if hybrid_cluster_count > 0:
                 st.info(f"ℹ️ {hybrid_cluster_count} Hybrid/Cluster motifs detected. View them in the 'Cluster/Hybrid' tab below.")
             
-            # Score analysis section (using raw scores as requested)
+            # Motif class distribution summary (no score visualization as per requirements)
             if filtered_motifs:
-                st.markdown("### 📈 Score Analysis")
+                st.markdown("### 📊 Motif Class Distribution")
                 
-                score_col1, score_col2 = st.columns(2)
+                # Motif class distribution - show all classes even if 0 (excluding Hybrid and Cluster)
+                motif_classes = [m.get('Class', 'Unknown') for m in filtered_motifs]
                 
-                with score_col1:
-                    # Raw score distribution
-                    raw_scores = []
-                    
-                    for m in filtered_motifs:
-                        # Get actual/raw score from various possible keys
-                        raw_score = m.get('Actual_Score')
-                        if raw_score is None:
-                            raw_score = m.get('Score', 0)
-                        
-                        # Convert to float and add if valid
-                        try:
-                            raw_float = float(raw_score) if raw_score is not None else 0.0
-                            raw_scores.append(raw_float)
-                        except (ValueError, TypeError):
-                            raw_scores.append(0.0)
-                    
-                    # Raw score distribution analysis
-                    if raw_scores and any(s > 0 for s in raw_scores):
-                        fig, ax = plt.subplots(figsize=(10, 4))
-                        
-                        ax.hist(raw_scores, bins=20, alpha=0.7, color='skyblue', label='Raw Scores')
-                        ax.set_xlabel('Raw Score')
-                        ax.set_ylabel('Frequency')
-                        ax.set_title('Raw Score Distribution')
-                        ax.legend()
-                        
-                        plt.tight_layout()
-                        st.pyplot(fig)
-                        plt.close(fig)
+                # Initialize all classes with 0 counts (excluding Hybrid and Cluster)
+                filtered_order = [cls for cls in MOTIF_ORDER if cls not in ['Hybrid', 'Non-B DNA Clusters']]
+                all_class_counts = {cls: 0 for cls in filtered_order}
+                
+                # Update with actual counts
+                actual_counts = Counter(motif_classes)
+                all_class_counts.update(actual_counts)
+                
+                # Remove 'Unknown' if it exists and has 0 count
+                if 'Unknown' in all_class_counts and all_class_counts['Unknown'] == 0:
+                    del all_class_counts['Unknown']
+                
+                fig, ax = plt.subplots(figsize=(10, 6))
+                
+                # Create labels showing count and percentage
+                labels = []
+                values = list(all_class_counts.values())
+                total = sum(values) if sum(values) > 0 else 1  # Avoid division by zero
+                
+                for cls, count in all_class_counts.items():
+                    percentage = (count / total) * 100 if total > 0 else 0
+                    if count > 0:
+                        labels.append(f'{cls}\n({count}, {percentage:.1f}%)')
                     else:
-                        st.warning("⚠️ All scores are zero. This might indicate an issue with motif scoring.")
-                        st.info("This could be due to:\n- Low sequence quality\n- Missing motif features\n- Scoring threshold too high")
+                        labels.append(f'{cls}\n(0, 0.0%)')
                 
-                with score_col2:
-                    # Motif class distribution - show all classes even if 0 (excluding Hybrid and Cluster)
-                    motif_classes = [m.get('Class', 'Unknown') for m in filtered_motifs]
-                    
-                    # Initialize all classes with 0 counts (excluding Hybrid and Cluster)
-                    filtered_order = [cls for cls in MOTIF_ORDER if cls not in ['Hybrid', 'Non-B DNA Clusters']]
-                    all_class_counts = {cls: 0 for cls in filtered_order}
-                    
-                    # Update with actual counts
-                    actual_counts = Counter(motif_classes)
-                    all_class_counts.update(actual_counts)
-                    
-                    # Remove 'Unknown' if it exists and has 0 count
-                    if 'Unknown' in all_class_counts and all_class_counts['Unknown'] == 0:
-                        del all_class_counts['Unknown']
-                    
-                    fig, ax = plt.subplots(figsize=(10, 8))
-                    
-                    # Create labels showing count and percentage
-                    labels = []
-                    values = list(all_class_counts.values())
-                    total = sum(values) if sum(values) > 0 else 1  # Avoid division by zero
-                    
-                    for cls, count in all_class_counts.items():
-                        percentage = (count / total) * 100 if total > 0 else 0
-                        if count > 0:
-                            labels.append(f'{cls}\n({count}, {percentage:.1f}%)')
-                        else:
-                            labels.append(f'{cls}\n(0, 0.0%)')
-                    
-                    # Use colors from MOTIF_COLORS where available
-                    colors = []
-                    for cls in all_class_counts.keys():
-                        if cls in MOTIF_COLORS:
-                            colors.append(MOTIF_COLORS[cls])
-                        else:
-                            # Default colors for any missing classes
-                            default_colors = ['#ff9999', '#66b3ff', '#99ff99', '#ffcc99', 
-                                            '#ff99cc', '#99ccff', '#ffccbb', '#ccffcc']
-                            colors.append(default_colors[len(colors) % len(default_colors)])
-                    
-                    # Create bar chart instead of pie chart for better readability when many classes have 0
-                    bars = ax.bar(range(len(all_class_counts)), values, color=colors)
-                    ax.set_xlabel('Motif Classes')
-                    ax.set_ylabel('Count')
-                    ax.set_title('Motif Class Distribution (All Classes)')
-                    ax.set_xticks(range(len(all_class_counts)))
-                    ax.set_xticklabels(list(all_class_counts.keys()), rotation=45, ha='right')
-                    
-                    # Add count labels on bars
-                    for bar, count in zip(bars, values):
-                        if count > 0:
-                            ax.text(bar.get_x() + bar.get_width()/2, bar.get_height() + 0.1, 
-                                   str(count), ha='center', va='bottom')
-                    
-                    plt.tight_layout()
-                    st.pyplot(fig)
-                    plt.close(fig)
+                # Use colors from MOTIF_COLORS where available
+                colors = []
+                for cls in all_class_counts.keys():
+                    if cls in MOTIF_COLORS:
+                        colors.append(MOTIF_COLORS[cls])
+                    else:
+                        # Default colors for any missing classes
+                        default_colors = ['#ff9999', '#66b3ff', '#99ff99', '#ffcc99', 
+                                        '#ff99cc', '#99ccff', '#ffccbb', '#ccffcc']
+                        colors.append(default_colors[len(colors) % len(default_colors)])
+                
+                # Create bar chart for class distribution
+                bars = ax.bar(range(len(all_class_counts)), values, color=colors)
+                ax.set_xlabel('Motif Classes')
+                ax.set_ylabel('Count')
+                ax.set_title('Motif Class Distribution (All Classes)')
+                ax.set_xticks(range(len(all_class_counts)))
+                ax.set_xticklabels(list(all_class_counts.keys()), rotation=45, ha='right')
+                
+                # Add count labels on bars
+                for bar, count in zip(bars, values):
+                    if count > 0:
+                        ax.text(bar.get_x() + bar.get_width()/2, bar.get_height() + 0.1, 
+                               str(count), ha='center', va='bottom')
+                
+                plt.tight_layout()
+                st.pyplot(fig)
+                plt.close(fig)
             
             # Enhanced motif table with new columns
             st.markdown(f"### 📋 Detailed Motif Table for **{sequence_name}**")
             
-            # Column selection for display
+            # Column selection for display (no normalized scores as per requirements)
             available_columns = df.columns.tolist()
+            # Filter out Normalized_Score column from available columns
+            available_columns = [col for col in available_columns if 'Normalized' not in col]
             display_columns = st.multiselect(
                 "Select columns to display:",
                 available_columns,
-                default=[col for col in ['Class', 'Subclass', 'Start', 'End', 'Length', 'Actual Score', 'Score', 'GC Content'] if col in available_columns]
+                default=[col for col in ['Class', 'Subclass', 'Start', 'End', 'Length', 'Score', 'GC Content'] if col in available_columns]
             )
             
             if display_columns:
@@ -1466,15 +1431,10 @@ with tab_pages["Results"]:
             with viz_tabs[2]:  # Statistics  
                 st.subheader("Statistical Analysis")
                 try:
-                    col1, col2 = st.columns(2)
-                    with col1:
-                        fig5 = plot_score_distribution(filtered_motifs, by_class=True, title="Score Distribution by Class")
-                        st.pyplot(fig5)
-                        plt.close(fig5)
-                    with col2:
-                        fig6 = plot_length_distribution(filtered_motifs, by_class=True, title="Length Distribution by Class") 
-                        st.pyplot(fig6)
-                        plt.close(fig6)
+                    # Only show length distribution, not score distribution as per requirements
+                    fig6 = plot_length_distribution(filtered_motifs, by_class=True, title="Length Distribution by Class") 
+                    st.pyplot(fig6)
+                    plt.close(fig6)
                 except Exception as e:
                     st.error(f"Error generating statistical plots: {e}")
             
@@ -1552,7 +1512,7 @@ with tab_pages["Results"]:
                     
                     # Detailed table
                     st.markdown("### 📋 Detailed Cluster/Hybrid Table")
-                    display_cols = ['Class', 'Subclass', 'Start', 'End', 'Length', 'Score', 'Normalized_Score']
+                    display_cols = ['Class', 'Subclass', 'Start', 'End', 'Length', 'Score']
                     if 'Component_Classes' in hc_df.columns:
                         display_cols.append('Component_Classes')
                     if 'Motif_Count' in hc_df.columns:
@@ -1592,20 +1552,20 @@ with tab_pages["Results"]:
                         plt.close(fig)
                     
                     with viz_col2:
-                        # Score distribution
-                        st.markdown("**Score Distribution**")
+                        # Raw score distribution (no normalized scores as per requirements)
+                        st.markdown("**Raw Score Distribution**")
                         fig, ax = plt.subplots(figsize=(10, 4))
-                        hybrid_scores = [m.get('Normalized_Score', 0) for m in hybrid_cluster_motifs if m.get('Class') == 'Hybrid']
-                        cluster_scores = [m.get('Normalized_Score', 0) for m in hybrid_cluster_motifs if m.get('Class') == 'Non-B_DNA_Clusters']
+                        hybrid_scores = [m.get('Score', 0) for m in hybrid_cluster_motifs if m.get('Class') == 'Hybrid']
+                        cluster_scores = [m.get('Score', 0) for m in hybrid_cluster_motifs if m.get('Class') == 'Non-B_DNA_Clusters']
                         
                         if hybrid_scores:
                             ax.hist(hybrid_scores, bins=10, alpha=0.6, color='#ff6b6b', label='Hybrid')
                         if cluster_scores:
                             ax.hist(cluster_scores, bins=10, alpha=0.6, color='#4ecdc4', label='Cluster')
                         
-                        ax.set_xlabel("Normalized Score")
+                        ax.set_xlabel("Raw Score")
                         ax.set_ylabel("Frequency")
-                        ax.set_title("Normalized Score Distribution")
+                        ax.set_title("Raw Score Distribution")
                         ax.legend()
                         plt.tight_layout()
                         st.pyplot(fig)

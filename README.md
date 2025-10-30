@@ -90,7 +90,8 @@ streamlit run app.py                    # Web interface on :8501
 - **Literature-Based**: Algorithms from peer-reviewed research
 - **QmRLFS Integration**: Advanced R-loop detection with RIZ/REZ analysis
 - **Validated Thresholds**: Biologically relevant cut-offs
-- **Comprehensive Scoring**: Class-specific normalization
+- **Raw Score Reporting**: Direct algorithm outputs without normalization
+- **Overlap Resolution**: Automatic removal of overlapping motifs within subclasses
 - **Quality Control**: Built-in validation and error checking
 
 ### Export & Integration
@@ -113,7 +114,7 @@ streamlit run app.py                    # Web interface on :8501
 ### Static Plots (Classic)
 - Motif distribution analysis
 - Coverage and density maps
-- Score distribution histograms
+- Length distribution analysis
 - Sequence composition analysis
 - Class/subclass comparisons
 
