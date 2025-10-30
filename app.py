@@ -1373,10 +1373,10 @@ with tab_pages["Results"]:
             # Enhanced motif table with new columns
             st.markdown(f"### 📋 Detailed Motif Table for **{sequence_name}**")
             
-            # Column selection for display (no normalized scores as per requirements)
+            # Column selection for display (remove only Normalized_Score column)
             available_columns = df.columns.tolist()
-            # Filter out Normalized_Score column from available columns
-            available_columns = [col for col in available_columns if 'Normalized' not in col]
+            # Filter out specific Normalized_Score column
+            available_columns = [col for col in available_columns if col != 'Normalized_Score']
             display_columns = st.multiselect(
                 "Select columns to display:",
                 available_columns,
