@@ -29,6 +29,7 @@ import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
 import io
+import os  # Added for image path checking
 import numpy as np
 from collections import Counter
 # Import consolidated NBDScanner modules
@@ -789,7 +790,6 @@ with tab_pages["Home"]:
     with left:
         try:
             # Display NBD Circle logo - check multiple possible locations
-            import os
             possible_paths = ["nbdcircle.JPG", "archive/nbdcircle.JPG", "./nbdcircle.JPG"]
             image_found = False
             for img_path in possible_paths:
