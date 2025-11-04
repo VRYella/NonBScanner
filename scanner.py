@@ -1390,46 +1390,8 @@ class MotifDetector:
 # CONVENIENCE FUNCTIONS & API
 # =============================================================================
 
-def analyze_sequence(sequence: str, sequence_name: str = "sequence", 
-                    detailed: bool = True, use_modular: bool = True) -> Union[List[Dict[str, Any]], Dict[str, Any]]:
-    """
-    Analyze DNA sequence for all Non-B DNA motif classes
-    
-    Args:
-        sequence: DNA sequence string
-        sequence_name: Identifier for the sequence
-        detailed: If True, return detailed results; if False, return summary
-        use_modular: If True, uses new modular architecture; if False, uses legacy centralized approach
-        
-    Returns:
-        List of motif dictionaries or summary dictionary
-    """
-    if use_modular:
-        # Use the new modular architecture
-        try:
-            # from .modular_scanner import analyze_sequence as modular_analyze
-            return modular_analyze(sequence, sequence_name, detailed)
-        except ImportError:
-            print("Warning: Modular scanner not available, falling back to legacy approach")
-    
-    # Legacy centralized approach
-    detector = MotifDetector()
-    motifs = detector.analyze_sequence(sequence, sequence_name)
-    
-    if not detailed:
-        # Return summary statistics
-        summary = {
-            'sequence_name': sequence_name,
-            'sequence_length': len(sequence),
-            'total_motifs': len(motifs),
-            'classes_detected': len(set(m['Class'] for m in motifs)),
-            'subclasses_detected': len(set(m['Subclass'] for m in motifs)),
-            'class_counts': dict(Counter(m['Class'] for m in motifs)),
-            'motifs': motifs
-        }
-        return summary
-    
-    return motifs
+# Note: analyze_sequence is already defined at line 740 using ModularMotifDetector
+# This duplicate definition has been removed to avoid conflicts
 
 def get_motif_classification_info() -> Dict[str, Any]:
     """Get comprehensive information about the 11-class, 22+ subclass system"""
