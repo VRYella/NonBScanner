@@ -26,7 +26,7 @@ import time
 # Add parent directory to path
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
-from utils.modular_scanner import ModularMotifDetector
+from scanner import ModularMotifDetector
 
 
 def generate_test_sequence(length=10000, motif_density=0.1):
