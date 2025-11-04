@@ -788,9 +788,9 @@ with tab_pages["Home"]:
     left, right = st.columns([1,1])
     with left:
         try:
-            st.image("nbdcircle.JPG")
+            st.image("archive/nbdcircle.JPG")
         except:
-            # If image doesn't exist, show placeholder
+            # If image doesn't exist, show placeholder (archived)
             st.markdown("""
             <div style='background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
                         border-radius: 15px; padding: 40px; text-align: center; color: white;'>
