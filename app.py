@@ -29,6 +29,7 @@ import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
 import io
+import os  # Added for image path checking
 import numpy as np
 from collections import Counter
 # Import consolidated NBDScanner modules
@@ -788,9 +789,18 @@ with tab_pages["Home"]:
     left, right = st.columns([1,1])
     with left:
         try:
-            st.image("archive/nbdcircle.JPG")
+            # Display NBD Circle logo - check multiple possible locations
+            possible_paths = ["nbdcircle.JPG", "archive/nbdcircle.JPG", "./nbdcircle.JPG"]
+            image_found = False
+            for img_path in possible_paths:
+                if os.path.exists(img_path):
+                    st.image(img_path, use_column_width=True)
+                    image_found = True
+                    break
+            if not image_found:
+                raise FileNotFoundError("Image not found")
         except:
-            # If image doesn't exist, show placeholder (archived)
+            # If image doesn't exist, show placeholder
             st.markdown("""
             <div style='background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
                         border-radius: 15px; padding: 40px; text-align: center; color: white;'>

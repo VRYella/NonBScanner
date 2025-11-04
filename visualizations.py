@@ -1,36 +1,47 @@
 """
-NBDScanner Visualization Suite
-=============================
+╔══════════════════════════════════════════════════════════════════════════════╗
+║                    NBDSCANNER VISUALIZATION SUITE                             ║
+║        Comprehensive Plotting and Visualization Functions                    ║
+╚══════════════════════════════════════════════════════════════════════════════╝
 
-Comprehensive plotting and visualization functions for Non-B DNA motif analysis.
-Includes both static and interactive visualizations with scientific styling.
+MODULE: visualizations.py
+AUTHOR: Dr. Venkata Rajesh Yella
+VERSION: 2024.1
+LICENSE: MIT
+
+DESCRIPTION:
+    Comprehensive plotting and visualization functions for Non-B DNA motif analysis.
+    Includes both static and interactive visualizations with scientific styling.
 
 VISUALIZATION TABLE:
-====================
-Category        | Functions                  | Description
-----------------|----------------------------|----------------------------------
-Distribution    | plot_motif_distribution   | Class/subclass distribution plots
-Coverage        | plot_coverage_map         | Sequence coverage visualization
-Statistics      | plot_score_distribution   | Score and length distributions
-Comparison      | plot_class_comparison     | Multi-class comparison plots
-Interactive     | create_motif_browser      | Interactive motif browser
-Export          | save_all_plots            | Batch plot export
+┌──────────────────────────────────────────────────────────────────────────────┐
+│ Category     │ Functions                 │ Description                       │
+├──────────────┼───────────────────────────┼───────────────────────────────────┤
+│ Distribution │ plot_motif_distribution   │ Class/subclass distribution plots │
+│ Coverage     │ plot_coverage_map         │ Sequence coverage visualization   │
+│ Statistics   │ plot_length_distribution  │ Length distributions              │
+│ Hierarchy    │ plot_nested_pie_chart     │ Class-subclass hierarchy          │
+│ Export       │ save_all_plots            │ Batch plot export                 │
+└──────────────────────────────────────────────────────────────────────────────┘
 
 ADVANCED VISUALIZATIONS (Publication-Quality):
-==============================================
-From advanced_visualizations module:
-- plot_genome_landscape_track      | Horizontal genomic ruler with motif glyphs
-- plot_sliding_window_heat_ribbon  | 1D density heatmap with score overlay
-- plot_ridge_plots_length_by_class | Stacked density ridges (joyplots)
-- plot_sunburst_treemap            | Hierarchical composition visualization
-- plot_hexbin_start_vs_score       | 2D hexbin with marginal histograms
-- plot_upset_intersection          | UpSet plot for motif overlaps
-- plot_score_violin_beeswarm       | Score distributions with individual points
-- plot_cluster_hotspot_map         | Cluster regions with annotations
+┌──────────────────────────────────────────────────────────────────────────────┐
+│ - plot_genome_landscape_track      │ Horizontal genomic ruler with glyphs │
+│ - plot_sliding_window_heat_ribbon  │ 1D density heatmap with score        │
+│ - plot_ridge_plots_length_by_class │ Stacked density ridges (joyplots)    │
+│ - plot_sunburst_treemap            │ Hierarchical composition             │
+│ - plot_hexbin_start_vs_score       │ 2D hexbin with marginals             │
+│ - plot_upset_intersection          │ UpSet plot for motif overlaps        │
+│ - plot_score_violin_beeswarm       │ Score distributions with points      │
+│ - plot_cluster_hotspot_map         │ Cluster regions with annotations     │
+└──────────────────────────────────────────────────────────────────────────────┘
 
-Author: Dr. Venkata Rajesh Yella
-License: MIT
-Version: 2024.1
+FEATURES:
+    - Publication-quality static plots
+    - Interactive visualizations (Plotly)
+    - Colorblind-friendly palettes
+    - SVG/PNG export at 300 DPI
+    - Customizable styling
 """
 
 import matplotlib.pyplot as plt
