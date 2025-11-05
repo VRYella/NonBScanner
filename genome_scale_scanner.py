@@ -300,9 +300,13 @@ class GenomeScaleScanner:
         """
         hybrids = []
         
+        # Limits to prevent O(n²) blowup on large datasets
+        MAX_MOTIFS_TO_CHECK = 1000  # Maximum motifs to process
+        MAX_NEARBY_MOTIFS = 100     # Maximum nearby motifs to compare
+        
         # Limit number of comparisons
-        for i, motif1 in enumerate(motifs[:min(1000, len(motifs))]):
-            for motif2 in motifs[i+1:i+100]:  # Only check nearby motifs
+        for i, motif1 in enumerate(motifs[:min(MAX_MOTIFS_TO_CHECK, len(motifs))]):
+            for motif2 in motifs[i+1:i+MAX_NEARBY_MOTIFS]:  # Only check nearby motifs
                 if motif1['Class'] != motif2['Class']:
                     # Check for overlap
                     overlap_start = max(motif1['Start'], motif2['Start'])
@@ -353,6 +357,7 @@ def analyze_genome_sequence(sequence: str,
 
 if __name__ == "__main__":
     import sys
+    import random
     
     # Test with various sizes
     test_sizes = [1, 5, 10]  # MB
@@ -362,7 +367,6 @@ if __name__ == "__main__":
     
     for size_mb in test_sizes:
         # Generate test sequence
-        import random
         size_bp = int(size_mb * 1_000_000)
         
         print(f"\nGenerating {size_mb} MB test sequence...")

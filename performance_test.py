@@ -101,7 +101,7 @@ def main():
     
     if len(sys.argv) > 1:
         # Custom size provided
-        test_sizes = [float(sys.argv[1])]
+        test_sizes = [float(arg) for arg in sys.argv[1:]]
     
     print("\n" + "="*70)
     print("NonBScanner Performance Test")

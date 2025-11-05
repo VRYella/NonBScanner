@@ -308,15 +308,28 @@ def get_optimized_detector(detector_name: str) -> BaseMotifDetector:
 if __name__ == "__main__":
     # Test optimized detectors on a large sequence
     import time
+    import random
     
     # Generate 1 MB test sequence
-    import random
     bases = ['A', 'C', 'G', 'T']
     test_seq = ''.join(random.choices(bases, k=1_000_000))
     
-    # Add some motifs
-    test_seq = test_seq[:100000] + 'AAAAAAA' * 10 + test_seq[100100:]
-    test_seq = test_seq[:200000] + 'GGGTTAGGGTTAGGGTTAGGG' * 5 + test_seq[200105:]
+    # Add some motifs at specific positions
+    # A-tracts at position 100K
+    ATRACT_MOTIF = 'AAAAAAA'
+    ATRACT_POS = 100000
+    ATRACT_COUNT = 10
+    test_seq = (test_seq[:ATRACT_POS] + 
+                ATRACT_MOTIF * ATRACT_COUNT + 
+                test_seq[ATRACT_POS + len(ATRACT_MOTIF) * ATRACT_COUNT:])
+    
+    # G4 motifs at position 200K
+    G4_MOTIF = 'GGGTTAGGGTTAGGGTTAGGG'
+    G4_POS = 200000
+    G4_COUNT = 5
+    test_seq = (test_seq[:G4_POS] + 
+                G4_MOTIF * G4_COUNT + 
+                test_seq[G4_POS + len(G4_MOTIF) * G4_COUNT:])
     
     print(f"Testing optimized detectors on {len(test_seq):,} bp sequence\n")
     

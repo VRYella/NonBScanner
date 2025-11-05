@@ -230,6 +230,7 @@ class PerformanceOptimizer:
         # If too many motifs, use sampling
         if len(motifs) > max_motifs:
             print(f"  Note: Sampling {max_motifs} motifs for hybrid/cluster detection")
+            # Use sampling to reduce complexity
             import random
             sampled_motifs = random.sample(motifs, max_motifs)
         else:
@@ -336,7 +337,9 @@ def create_large_test_sequence(size_mb: float = 100.0,
             print(f"  Generated {i:,} / {size_bp:,} bp ({i/size_bp*100:.1f}%)")
     
     result = ''.join(sequence[:size_bp])
-    actual_density = motif_count / (size_bp / 20)  # rough estimate
+    # Estimate actual motif density (average motif length ~20bp)
+    AVG_MOTIF_LENGTH = 20
+    actual_density = motif_count / (size_bp / AVG_MOTIF_LENGTH)
     print(f"  Generated {len(result):,} bp with ~{motif_count} embedded motifs")
     
     return result
