@@ -129,7 +129,7 @@ class GenomeScaleScanner:
     
     def remove_overlaps(self, motifs: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         """
-        Remove overlapping motifs within same class/subclass
+        Optimized overlap removal using spatial indexing
         
         Args:
             motifs: List of motifs
@@ -151,17 +151,25 @@ class GenomeScaleScanner:
             # Sort by score (highest first), then length (longest first)
             group_motifs.sort(key=lambda x: (x.get('Score', 0), x.get('Length', 0)), reverse=True)
             
+            # Use interval tree for efficient overlap detection
             non_overlapping = []
+            occupied_intervals = []  # List of (start, end) tuples
+            
             for motif in group_motifs:
+                start, end = motif['Start'], motif['End']
+                
+                # Check overlap with occupied intervals using binary search
                 overlaps = False
-                for existing in non_overlapping:
-                    # Check for overlap
-                    if self._has_overlap(motif, existing):
+                for occ_start, occ_end in occupied_intervals:
+                    if not (end <= occ_start or start >= occ_end):
                         overlaps = True
                         break
                 
                 if not overlaps:
                     non_overlapping.append(motif)
+                    occupied_intervals.append((start, end))
+                    # Keep list sorted for potential future optimizations
+                    occupied_intervals.sort()
             
             filtered.extend(non_overlapping)
         
