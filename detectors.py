@@ -1717,13 +1717,16 @@ from typing import List, Dict, Any, Tuple
 
 # BaseMotifDetector is defined above
 
-# Import optimized repeat scanner
+# Import optimized repeat scanner from scanner module
 try:
-    from utils.repeat_scanner import find_direct_repeats, find_strs
+    from scanner import find_direct_repeats, find_strs
 except ImportError:
-    # Fallback if import fails
-    find_direct_repeats = None
-    find_strs = None
+    try:
+        from utils.repeat_scanner import find_direct_repeats, find_strs
+    except ImportError:
+        # Fallback if import fails
+        find_direct_repeats = None
+        find_strs = None
 
 class SlippedDNADetector(BaseMotifDetector):
     """Detector for slipped DNA motifs: captures full repeat regions[web:79]"""
@@ -1890,6 +1893,29 @@ class SlippedDNADetector(BaseMotifDetector):
         # Sort by start
         regions.sort(key=lambda r: r['start'])
         return regions
+    
+    def detect_motifs(self, sequence: str, sequence_name: str = "sequence") -> List[Dict[str, Any]]:
+        """Main detection method using algorithmic repeat detection"""
+        regions = self.annotate_sequence(sequence)
+        motifs = []
+        
+        for region in regions:
+            motifs.append({
+                'ID': f"{sequence_name}_{region['pattern_id']}_{region['start']+1}",
+                'Sequence_Name': sequence_name,
+                'Class': self.get_motif_class_name(),
+                'Subclass': region['class_name'],
+                'Start': region['start'] + 1,  # Convert to 1-based
+                'End': region['end'],
+                'Length': region['length'],
+                'Sequence': region['matched_seq'],
+                'Score': round(region['score'], 3),
+                'Strand': '+',
+                'Method': f'{self.get_motif_class_name()}_detection',
+                'Pattern_ID': region['pattern_id']
+            })
+        
+        return motifs
 
     def calculate_score(self, sequence: str, pattern_info: Tuple) -> float:
         scoring_method = pattern_info[5] if len(pattern_info) > 5 else 'instability_score'
@@ -1977,12 +2003,15 @@ import re
 from typing import List, Dict, Any, Tuple
 # # from .base_detector import BaseMotifDetector
 
-# Import optimized repeat scanner
+# Import optimized repeat scanner from scanner module
 try:
-    from utils.repeat_scanner import find_inverted_repeats
+    from scanner import find_inverted_repeats
 except ImportError:
-    # Fallback if import fails
-    find_inverted_repeats = None
+    try:
+        from utils.repeat_scanner import find_inverted_repeats
+    except ImportError:
+        # Fallback if import fails
+        find_inverted_repeats = None
 
 
 def revcomp(seq: str) -> str:
@@ -2040,7 +2069,7 @@ class CruciformDetector(BaseMotifDetector):
         # Use optimized repeat_scanner if available
         if find_inverted_repeats is not None and max_mismatches == 0:
             # The optimized scanner only supports perfect matches (max_mismatches=0)
-            from utils.repeat_scanner import find_inverted_repeats as optimized_find
+            optimized_find = find_inverted_repeats
             results = optimized_find(seq, min_arm=min_arm, max_loop=max_loop)
             
             # Convert to our format
@@ -2534,12 +2563,15 @@ from typing import List, Dict, Any, Tuple
 
 # BaseMotifDetector is defined above
 
-# Import optimized repeat scanner
+# Import optimized repeat scanner from scanner module
 try:
-    from utils.repeat_scanner import find_mirror_repeats
+    from scanner import find_mirror_repeats
 except ImportError:
-    # Fallback if import fails
-    find_mirror_repeats = None
+    try:
+        from utils.repeat_scanner import find_mirror_repeats
+    except ImportError:
+        # Fallback if import fails
+        find_mirror_repeats = None
 
 class TriplexDetector(BaseMotifDetector):
     """Detector for mirror repeat and sticky DNA triplex motifs using optimized scanner"""
@@ -2567,7 +2599,7 @@ class TriplexDetector(BaseMotifDetector):
 
         # First, detect mirror repeats using optimized scanner if available
         if find_mirror_repeats is not None:
-            from utils.repeat_scanner import find_mirror_repeats as optimized_find
+            optimized_find = find_mirror_repeats
             mirror_results = optimized_find(seq, min_arm=10, max_loop=100, purine_pyrimidine_threshold=0.9)
             
             # Only keep those that pass the triplex threshold (>90% purine or pyrimidine)
