@@ -1004,7 +1004,7 @@ class ZDNADetector(BaseMotifDetector):
 
     def detect_motifs(self, sequence: str, sequence_name: str = "sequence") -> List[Dict[str, Any]]:
         """
-        Override base method to use sophisticated Z-DNA detection.
+        Override base method to use sophisticated Z-DNA detection with component details.
         
         IMPORTANT: This method ALWAYS outputs merged regions, not individual 10-mers.
         All overlapping/adjacent 10-mer matches are merged into contiguous regions
@@ -1026,6 +1026,18 @@ class ZDNADetector(BaseMotifDetector):
             if region.get('sum_score', 0) > 50.0 and region.get('n_10mers', 0) >= 1:
                 start_pos = region['start']
                 end_pos = region['end']
+                motif_seq = sequence[start_pos:end_pos]
+                
+                # Extract CG/AT dinucleotides (characteristic of Z-DNA)
+                cg_count = motif_seq.count('CG') + motif_seq.count('GC')
+                at_count = motif_seq.count('AT') + motif_seq.count('TA')
+                
+                # Calculate GC content
+                gc_content = (motif_seq.count('G') + motif_seq.count('C')) / len(motif_seq) * 100 if len(motif_seq) > 0 else 0
+                
+                # Extract alternating pattern information
+                alternating_cg = len(re.findall(r'(?:CG){2,}', motif_seq)) + len(re.findall(r'(?:GC){2,}', motif_seq))
+                alternating_at = len(re.findall(r'(?:AT){2,}', motif_seq)) + len(re.findall(r'(?:TA){2,}', motif_seq))
                 
                 motifs.append({
                     'ID': f"{sequence_name}_ZDNA_{start_pos+1}",
@@ -1035,11 +1047,19 @@ class ZDNADetector(BaseMotifDetector):
                     'Start': start_pos + 1,  # 1-based coordinates
                     'End': end_pos,
                     'Length': region['length'],
-                    'Sequence': sequence[start_pos:end_pos],
+                    'Sequence': motif_seq,
                     'Score': round(region['sum_score'], 3),
                     'Strand': '+',
                     'Method': 'Z-DNA_detection',
-                    'Pattern_ID': f'ZDNA_{i+1}'
+                    'Pattern_ID': f'ZDNA_{i+1}',
+                    # Component details
+                    'Contributing_10mers': region.get('n_10mers', 0),
+                    'Mean_10mer_Score': region.get('mean_score_per10mer', 0),
+                    'CG_Dinucleotides': cg_count,
+                    'AT_Dinucleotides': at_count,
+                    'Alternating_CG_Regions': alternating_cg,
+                    'Alternating_AT_Regions': alternating_at,
+                    'GC_Content': round(gc_content, 2)
                 })
         
         return motifs
