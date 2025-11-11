@@ -1675,7 +1675,7 @@ def export_to_bed(motifs: List[Dict[str, Any]], sequence_name: str = "sequence",
 
 def export_to_csv(motifs: List[Dict[str, Any]], filename: Optional[str] = None) -> str:
     """
-    Export motifs to CSV format
+    Export motifs to CSV format with comprehensive fields
     
     Args:
         motifs: List of motif dictionaries
@@ -1687,26 +1687,83 @@ def export_to_csv(motifs: List[Dict[str, Any]], filename: Optional[str] = None) 
     if not motifs:
         return "No motifs to export"
     
-    # Get all unique keys from motifs
+    # Comprehensive column order matching user requirements
+    comprehensive_columns = [
+        'ID',
+        'Sequence_Name',  # Sequence Name (or Accession)
+        'Source',  # Source (e.g., genome, experiment, study)
+        'Class',  # Motif Class
+        'Subclass',  # Motif Subclass
+        'Pattern_ID',  # Pattern/Annotation ID
+        'Start',  # Start Position
+        'End',  # End Position
+        'Length',  # Length (bp)
+        'Sequence',  # Sequence
+        'Method',  # Detection Method
+        'Score',  # Motif Score
+        'Repeat_Type',  # Repeat/Tract Type
+        'Left_Arm',  # Left Arm Sequence
+        'Right_Arm',  # Right Arm Sequence
+        'Loop_Seq',  # Loop Sequence
+        'Arm_Length',  # Arm Length
+        'Loop_Length',  # Loop Length
+        'Stem_Length',  # Stem Length(s)
+        'Unit_Length',  # Unit/Repeat Length
+        'Number_Of_Copies',  # Number of Copies/Repeats
+        'Spacer_Length',  # Spacer Length
+        'Spacer_Sequence',  # Spacer Sequence
+        'GC_Content',  # GC Content (%)
+        'Structural_Features',  # Structural Features (e.g., Tract Type, Curvature Score)
+        'Strand'  # Strand information
+    ]
+    
+    # Get all unique keys from motifs to include additional fields
     all_keys = set()
     for motif in motifs:
         all_keys.update(motif.keys())
     
-    # Standard column order
-    standard_columns = ['ID', 'Sequence_Name', 'Class', 'Subclass', 'Start', 'End', 
-                       'Length', 'Sequence', 'Score', 'Strand', 'Method']
-    
-    # Arrange columns with standard ones first
-    columns = [col for col in standard_columns if col in all_keys]
-    columns.extend([col for col in sorted(all_keys) if col not in standard_columns])
+    # Start with comprehensive columns, then add any additional fields found
+    columns = comprehensive_columns.copy()
+    for key in sorted(all_keys):
+        if key not in columns:
+            columns.append(key)
     
     output = StringIO()
     writer = csv.DictWriter(output, fieldnames=columns)
     writer.writeheader()
     
     for motif in motifs:
-        # Ensure all columns have values
-        row = {col: motif.get(col, '') for col in columns}
+        # Create row with comprehensive field mappings
+        row = {}
+        for col in columns:
+            value = motif.get(col, 'NA')
+            
+            # Map alternative field names to comprehensive columns
+            if value == 'NA' or value == '' or value is None:
+                # Try alternative mappings
+                if col == 'Number_Of_Copies' and 'Repeat_Units' in motif:
+                    value = motif['Repeat_Units']
+                elif col == 'Repeat_Type' and 'Tract_Type' in motif:
+                    value = motif['Tract_Type']
+                elif col == 'GC_Content' and 'GC_Total' in motif:
+                    value = motif['GC_Total']
+                elif col == 'Structural_Features':
+                    # Combine relevant structural features
+                    features = []
+                    if 'Tract_Type' in motif and motif['Tract_Type'] not in ['', 'NA', None]:
+                        features.append(f"Tract:{motif['Tract_Type']}")
+                    if 'Curvature_Score' in motif and motif['Curvature_Score'] not in ['', 'NA', None]:
+                        features.append(f"Curvature:{motif['Curvature_Score']}")
+                    if 'Z_Score' in motif and motif['Z_Score'] not in ['', 'NA', None]:
+                        features.append(f"Z-Score:{motif['Z_Score']}")
+                    value = '; '.join(features) if features else 'NA'
+                
+                # If still empty, set to NA
+                if value == '' or value is None:
+                    value = 'NA'
+            
+            row[col] = value
+        
         writer.writerow(row)
     
     csv_content = output.getvalue()
