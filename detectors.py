@@ -336,7 +336,7 @@ class CurvedDNADetector(BaseMotifDetector):
         return non_overlapping
 
     def detect_motifs(self, sequence: str, sequence_name: str = "sequence") -> List[Dict[str, Any]]:
-        """Override base method to use sophisticated curved DNA detection"""
+        """Override base method to use sophisticated curved DNA detection with component details"""
         sequence = sequence.upper().strip()
         motifs = []
         
@@ -351,6 +351,16 @@ class CurvedDNADetector(BaseMotifDetector):
                 start_pos = max(0, start_pos)
                 end_pos = min(len(sequence), end_pos)
                 
+                motif_seq = sequence[start_pos:end_pos]
+                
+                # Extract A-tracts (components)
+                a_tracts = re.findall(r'A{3,}', motif_seq)
+                t_tracts = re.findall(r'T{3,}', motif_seq)
+                
+                # Calculate GC content
+                gc_total = (motif_seq.count('G') + motif_seq.count('C')) / len(motif_seq) * 100 if len(motif_seq) > 0 else 0
+                at_content = (motif_seq.count('A') + motif_seq.count('T')) / len(motif_seq) * 100 if len(motif_seq) > 0 else 0
+                
                 motifs.append({
                     'ID': f"{sequence_name}_CRV_APR_{start_pos+1}",
                     'Sequence_Name': sequence_name,
@@ -359,11 +369,21 @@ class CurvedDNADetector(BaseMotifDetector):
                     'Start': start_pos + 1,  # 1-based coordinates
                     'End': end_pos,
                     'Length': end_pos - start_pos,
-                    'Sequence': sequence[start_pos:end_pos],
+                    'Sequence': motif_seq,
                     'Score': round(apr.get('score', 0), 3),
                     'Strand': '+',
                     'Method': 'Curved_DNA_detection',
-                    'Pattern_ID': f'CRV_APR_{i+1}'
+                    'Pattern_ID': f'CRV_APR_{i+1}',
+                    # Component details
+                    'A_Tracts': a_tracts,
+                    'T_Tracts': t_tracts,
+                    'Num_A_Tracts': len(a_tracts),
+                    'Num_T_Tracts': len(t_tracts),
+                    'A_Tract_Lengths': [len(t) for t in a_tracts],
+                    'T_Tract_Lengths': [len(t) for t in t_tracts],
+                    'GC_Content': round(gc_total, 2),
+                    'AT_Content': round(at_content, 2),
+                    'Center_Positions': apr.get('center_positions', [])
                 })
         
         # Extract long tract motifs
@@ -371,6 +391,14 @@ class CurvedDNADetector(BaseMotifDetector):
             if tract.get('score', 0) > 0.1:  # Lower threshold for sensitivity
                 start_pos = tract['start']
                 end_pos = tract['end']
+                motif_seq = sequence[start_pos:end_pos]
+                
+                # Identify tract type
+                tract_type = 'A-tract' if motif_seq.count('A') > motif_seq.count('T') else 'T-tract'
+                
+                # Calculate GC content
+                gc_total = (motif_seq.count('G') + motif_seq.count('C')) / len(motif_seq) * 100 if len(motif_seq) > 0 else 0
+                at_content = (motif_seq.count('A') + motif_seq.count('T')) / len(motif_seq) * 100 if len(motif_seq) > 0 else 0
                 
                 motifs.append({
                     'ID': f"{sequence_name}_CRV_TRACT_{start_pos+1}",
@@ -380,11 +408,16 @@ class CurvedDNADetector(BaseMotifDetector):
                     'Start': start_pos + 1,  # 1-based coordinates
                     'End': end_pos,
                     'Length': end_pos - start_pos,
-                    'Sequence': sequence[start_pos:end_pos],
+                    'Sequence': motif_seq,
                     'Score': round(tract.get('score', 0), 3),
                     'Strand': '+',
                     'Method': 'Curved_DNA_detection',
-                    'Pattern_ID': f'CRV_TRACT_{i+1}'
+                    'Pattern_ID': f'CRV_TRACT_{i+1}',
+                    # Component details
+                    'Tract_Type': tract_type,
+                    'Tract_Length': end_pos - start_pos,
+                    'GC_Content': round(gc_total, 2),
+                    'AT_Content': round(at_content, 2)
                 })
         
         # Remove overlaps within each subclass
@@ -1833,7 +1866,16 @@ class SlippedDNADetector(BaseMotifDetector):
                         'unit_length': str_rec['Unit_Length'],
                         'repeat_units': str_rec['Copies'],
                         'repeat_type': f"{str_rec['Unit_Length']}-mer STR",
-                        'source': 'Wells 2005'
+                        'source': 'Wells 2005',
+                        # Enhanced component fields
+                        'repeat_unit': str_rec.get('Repeat_Unit', str_rec.get('Unit_Seq', '')),
+                        'number_of_copies': str_rec.get('Number_of_Copies', str_rec.get('Copies', 0)),
+                        'gc_unit': str_rec.get('GC_Unit', 0),
+                        'gc_total': str_rec.get('GC_Total', 0),
+                        'unit_a_count': str_rec.get('Unit_A_Count', 0),
+                        'unit_t_count': str_rec.get('Unit_T_Count', 0),
+                        'unit_g_count': str_rec.get('Unit_G_Count', 0),
+                        'unit_c_count': str_rec.get('Unit_C_Count', 0)
                     }
                 })
 
@@ -1852,7 +1894,14 @@ class SlippedDNADetector(BaseMotifDetector):
                         'unit_length': dr_rec['Unit_Length'],
                         'spacer_length': dr_rec['Spacer'],
                         'repeat_type': f'Direct repeat ({dr_rec["Unit_Length"]} bp unit, {dr_rec["Spacer"]} bp spacer)',
-                        'source': 'Wells 2005'
+                        'source': 'Wells 2005',
+                        # Enhanced component fields
+                        'left_unit': dr_rec.get('Left_Unit', ''),
+                        'right_unit': dr_rec.get('Right_Unit', ''),
+                        'spacer_seq': dr_rec.get('Spacer_Seq', ''),
+                        'gc_unit': dr_rec.get('GC_Unit', 0),
+                        'gc_spacer': dr_rec.get('GC_Spacer', 0),
+                        'gc_total': dr_rec.get('GC_Total', 0)
                     }
                 })
         else:
@@ -1895,12 +1944,12 @@ class SlippedDNADetector(BaseMotifDetector):
         return regions
     
     def detect_motifs(self, sequence: str, sequence_name: str = "sequence") -> List[Dict[str, Any]]:
-        """Main detection method using algorithmic repeat detection"""
+        """Main detection method using algorithmic repeat detection with component details"""
         regions = self.annotate_sequence(sequence)
         motifs = []
         
         for region in regions:
-            motifs.append({
+            motif_dict = {
                 'ID': f"{sequence_name}_{region['pattern_id']}_{region['start']+1}",
                 'Sequence_Name': sequence_name,
                 'Class': self.get_motif_class_name(),
@@ -1913,7 +1962,16 @@ class SlippedDNADetector(BaseMotifDetector):
                 'Strand': '+',
                 'Method': f'{self.get_motif_class_name()}_detection',
                 'Pattern_ID': region['pattern_id']
-            })
+            }
+            
+            # Add component details from the 'details' dictionary
+            if 'details' in region:
+                for key, value in region['details'].items():
+                    # Convert snake_case to Title_Case for consistency
+                    formatted_key = '_'.join(word.capitalize() for word in key.split('_'))
+                    motif_dict[formatted_key] = value
+            
+            motifs.append(motif_dict)
         
         return motifs
 
@@ -2332,7 +2390,7 @@ class CruciformDetector(BaseMotifDetector):
         return non_overlapping
 
     def detect_motifs(self, sequence: str, sequence_name: str = "sequence") -> List[Dict[str, Any]]:
-        """Override base method to use sophisticated cruciform detection"""
+        """Override base method to use sophisticated cruciform detection with component details"""
         sequence = sequence.upper().strip()
         motifs = []
         
@@ -2354,6 +2412,17 @@ class CruciformDetector(BaseMotifDetector):
             full_length = end_pos - start_pos
             full_seq = sequence[start_pos:end_pos]
             
+            # Extract components
+            left_arm = repeat.get('left_seq', '')
+            right_arm = repeat.get('right_seq', '')
+            loop_seq = sequence[repeat['left_end']:repeat['right_start']] if repeat['right_start'] > repeat['left_end'] else ''
+            
+            # Calculate GC content
+            gc_total = (full_seq.count('G') + full_seq.count('C')) / len(full_seq) * 100 if len(full_seq) > 0 else 0
+            gc_left_arm = (left_arm.count('G') + left_arm.count('C')) / len(left_arm) * 100 if len(left_arm) > 0 else 0
+            gc_right_arm = (right_arm.count('G') + right_arm.count('C')) / len(right_arm) * 100 if len(right_arm) > 0 else 0
+            gc_loop = (loop_seq.count('G') + loop_seq.count('C')) / len(loop_seq) * 100 if len(loop_seq) > 0 else 0
+            
             motifs.append({
                 'ID': f"{sequence_name}_CRU_{start_pos+1}",
                 'Sequence_Name': sequence_name,
@@ -2366,7 +2435,19 @@ class CruciformDetector(BaseMotifDetector):
                 'Score': round(repeat['score'], 3),
                 'Strand': '+',
                 'Method': 'Cruciform_detection',
-                'Pattern_ID': f'CRU_{i+1}'
+                'Pattern_ID': f'CRU_{i+1}',
+                # Component details
+                'Left_Arm': left_arm,
+                'Right_Arm': right_arm,
+                'Loop_Seq': loop_seq,
+                'Arm_Length': repeat.get('arm_len', 0),
+                'Loop_Length': repeat.get('loop_len', 0),
+                'GC_Total': round(gc_total, 2),
+                'GC_Left_Arm': round(gc_left_arm, 2),
+                'GC_Right_Arm': round(gc_right_arm, 2),
+                'GC_Loop': round(gc_loop, 2),
+                'Mismatches': repeat.get('mismatches', 0),
+                'Match_Fraction': repeat.get('match_fraction', 1.0)
             })
         
         return motifs
@@ -2498,7 +2579,7 @@ class RLoopDetector(BaseMotifDetector):
         return non_overlapping
 
     def detect_motifs(self, sequence: str, sequence_name: str = "sequence") -> List[Dict[str, Any]]:
-        """Override base method to use custom R-loop detection logic"""
+        """Override base method to use custom R-loop detection logic with component details"""
         sequence = sequence.upper().strip()
         motifs = []
         
@@ -2513,9 +2594,17 @@ class RLoopDetector(BaseMotifDetector):
             motif_seq = sequence[start:end]
             
             # Calculate GC content
-            gc_content = len(re.findall(r'[GC]', motif_seq)) / len(motif_seq)
-            if gc_content >= 0.75:  # At least 75% GC
-                score = gc_content * 0.8  # Simple GC-based score
+            gc_content_val = len(re.findall(r'[GC]', motif_seq)) / len(motif_seq)
+            if gc_content_val >= 0.75:  # At least 75% GC
+                score = gc_content_val * 0.8  # Simple GC-based score
+                
+                # Extract R-loop components
+                g_regions = re.findall(r'G+', motif_seq)
+                c_regions = re.findall(r'C+', motif_seq)
+                at_spacers = re.findall(r'[AT]+', motif_seq)
+                
+                # Calculate GC content percentage
+                gc_pct = gc_content_val * 100
                 
                 motifs.append({
                     'ID': f"{sequence_name}_RLP_GC_{start+1}",
@@ -2529,7 +2618,14 @@ class RLoopDetector(BaseMotifDetector):
                     'Score': round(score, 3),
                     'Strand': '+',
                     'Method': 'R-Loop_detection',
-                    'Pattern_ID': f'RLP_GC_{start+1}'
+                    'Pattern_ID': f'RLP_GC_{start+1}',
+                    # Component details
+                    'G_Regions': g_regions,
+                    'C_Regions': c_regions,
+                    'AT_Spacers': at_spacers,
+                    'Num_G_Regions': len(g_regions),
+                    'Num_C_Regions': len(c_regions),
+                    'GC_Content': round(gc_pct, 2)
                 })
         
         motifs.extend(base_motifs)
@@ -2941,6 +3037,7 @@ class GQuadruplexDetector(BaseMotifDetector):
         """
         Calculate per-region G4Hunter-derived score plus tract/GC penalties.
         Returns candidate dict plus 'score' and 'details'.
+        Also extracts G-quadruplex components (stems and loops).
         """
         s = candidate['start']
         e = candidate['end']
@@ -2975,6 +3072,16 @@ class GQuadruplexDetector(BaseMotifDetector):
         normalized_score = max(0.0, min(1.0, normalized_window + tract_bonus - gc_penalty))
         region_score = normalized_score * (L / float(ws)) if ws > 0 else 0.0
 
+        # Extract G-quadruplex components (stems and loops)
+        stems, loops = self._extract_g4_components(region)
+        
+        # Calculate GC content
+        gc_total = (region.count('G') + region.count('C')) / len(region) * 100 if len(region) > 0 else 0
+        gc_stems = 0
+        if stems:
+            all_stems = ''.join(stems)
+            gc_stems = (all_stems.count('G') + all_stems.count('C')) / len(all_stems) * 100 if len(all_stems) > 0 else 0
+        
         details = {
             'n_g_tracts': n_g,
             'total_g_len': total_g_len,
@@ -2984,12 +3091,45 @@ class GQuadruplexDetector(BaseMotifDetector):
             'tract_bonus': round(tract_bonus, 6),
             'gc_penalty': round(gc_penalty, 6),
             'normalized_score': round(normalized_score, 6),
-            'region_score': round(region_score, 6)
+            'region_score': round(region_score, 6),
+            # Component information
+            'stems': stems,
+            'loops': loops,
+            'num_stems': len(stems),
+            'num_loops': len(loops),
+            'stem_lengths': [len(s) for s in stems],
+            'loop_lengths': [len(l) for l in loops],
+            'GC_Total': round(gc_total, 2),
+            'GC_Stems': round(gc_stems, 2)
         }
         out = candidate.copy()
         out['score'] = float(region_score)
         out['details'] = details
         return out
+    
+    def _extract_g4_components(self, sequence: str) -> Tuple[List[str], List[str]]:
+        """
+        Extract stems (G-tracts) and loops from a G-quadruplex sequence.
+        Returns (stems_list, loops_list).
+        """
+        # Find all G-tracts (potential stems)
+        g_tract_pattern = re.compile(r'G{2,}')
+        matches = list(g_tract_pattern.finditer(sequence))
+        
+        stems = []
+        loops = []
+        
+        if len(matches) >= 2:
+            for i, match in enumerate(matches):
+                stems.append(match.group())
+                # Get loop between this stem and the next
+                if i < len(matches) - 1:
+                    loop_start = match.end()
+                    loop_end = matches[i + 1].start()
+                    if loop_end > loop_start:
+                        loops.append(sequence[loop_start:loop_end])
+        
+        return stems, loops
 
     def _resolve_overlaps(self, scored_candidates: List[Dict[str, Any]], merge_gap: int = 0) -> List[Dict[str, Any]]:
         """
@@ -3260,3 +3400,48 @@ class IMotifDetector(BaseMotifDetector):
         combined += [dict(class_name=r['class_name'], start=r['start'], end=r['end'], score=r['score'], details=r) for r in regex_cands]
         res['accepted'] = self._resolve_overlaps_greedy(combined, merge_gap=0)
         return res
+    
+    def detect_motifs(self, sequence: str, sequence_name: str = "sequence") -> List[Dict[str, Any]]:
+        """Detect i-motif structures with component details"""
+        seq = sequence.upper()
+        motifs = []
+        
+        # Use base detect method
+        base_motifs = super().detect_motifs(sequence, sequence_name)
+        
+        # Enhance with component information
+        for motif in base_motifs:
+            motif_seq = motif.get('Sequence', '')
+            
+            # Extract C-tracts (stems for i-motifs)
+            c_tracts = re.findall(r'C{2,}', motif_seq)
+            
+            # Extract loops (regions between C-tracts)
+            loops = []
+            c_tract_matches = list(re.finditer(r'C{2,}', motif_seq))
+            for i in range(len(c_tract_matches) - 1):
+                loop_start = c_tract_matches[i].end()
+                loop_end = c_tract_matches[i + 1].start()
+                if loop_end > loop_start:
+                    loops.append(motif_seq[loop_start:loop_end])
+            
+            # Calculate GC content
+            gc_total = (motif_seq.count('G') + motif_seq.count('C')) / len(motif_seq) * 100 if len(motif_seq) > 0 else 0
+            gc_stems = 0
+            if c_tracts:
+                all_stems = ''.join(c_tracts)
+                gc_stems = (all_stems.count('G') + all_stems.count('C')) / len(all_stems) * 100 if len(all_stems) > 0 else 0
+            
+            # Add component details
+            motif['Stems'] = c_tracts
+            motif['Loops'] = loops
+            motif['Num_Stems'] = len(c_tracts)
+            motif['Num_Loops'] = len(loops)
+            motif['Stem_Lengths'] = [len(s) for s in c_tracts]
+            motif['Loop_Lengths'] = [len(l) for l in loops]
+            motif['GC_Total'] = round(gc_total, 2)
+            motif['GC_Stems'] = round(gc_stems, 2)
+            
+            motifs.append(motif)
+        
+        return motifs
