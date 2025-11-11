@@ -156,6 +156,16 @@ def find_direct_repeats(seq: str,
                         if j_start + L > n or i + L > n:
                             continue
                         if seq[i:i + L] == seq[j_start:j_start + L]:
+                            # Calculate component details
+                            unit_seq = seq[i:i + L]
+                            spacer_seq = seq[i + L:j_start] if j_start > i + L else ''
+                            full_seq = seq[i:j_start + L]
+                            
+                            # Calculate GC content for components
+                            gc_unit = (unit_seq.count('G') + unit_seq.count('C')) / len(unit_seq) * 100 if len(unit_seq) > 0 else 0
+                            gc_spacer = (spacer_seq.count('G') + spacer_seq.count('C')) / len(spacer_seq) * 100 if len(spacer_seq) > 0 else 0
+                            gc_total = (full_seq.count('G') + full_seq.count('C')) / len(full_seq) * 100 if len(full_seq) > 0 else 0
+                            
                             rec = {
                                 'Class': 'Direct_Repeat',
                                 'Subclass': f'Direct_L{L}',
@@ -166,8 +176,15 @@ def find_direct_repeats(seq: str,
                                 'Spacer': j_start - (i + L),
                                 'Left_Pos': i + 1,
                                 'Right_Pos': j_start + 1,
-                                'Unit_Seq': seq[i:i + L],
-                                'Sequence': seq[i:j_start + L]
+                                'Unit_Seq': unit_seq,
+                                'Spacer_Seq': spacer_seq,
+                                'Sequence': full_seq,
+                                # Component details
+                                'Left_Unit': unit_seq,
+                                'Right_Unit': seq[j_start:j_start + L],
+                                'GC_Unit': round(gc_unit, 2),
+                                'GC_Spacer': round(gc_spacer, 2),
+                                'GC_Total': round(gc_total, 2)
                             }
                             results.append(rec)
                             break
@@ -229,6 +246,16 @@ def find_inverted_repeats(seq: str,
                     left_sub = seq[i:i + arm]
                     right_sub = seq[j:j + arm]
                     if left_sub == revcomp(right_sub):
+                        # Calculate component details
+                        loop_seq = seq[i + arm:j] if j > i + arm else ''
+                        full_seq = seq[i:j + arm]
+                        
+                        # Calculate GC content for components
+                        gc_left_arm = (left_sub.count('G') + left_sub.count('C')) / len(left_sub) * 100 if len(left_sub) > 0 else 0
+                        gc_right_arm = (right_sub.count('G') + right_sub.count('C')) / len(right_sub) * 100 if len(right_sub) > 0 else 0
+                        gc_loop = (loop_seq.count('G') + loop_seq.count('C')) / len(loop_seq) * 100 if len(loop_seq) > 0 else 0
+                        gc_total = (full_seq.count('G') + full_seq.count('C')) / len(full_seq) * 100 if len(full_seq) > 0 else 0
+                        
                         rec = {
                             'Class': 'Inverted_Repeat',
                             'Subclass': f'Inverted_arm_{arm}',
@@ -239,9 +266,17 @@ def find_inverted_repeats(seq: str,
                             'Right_Start': j + 1,
                             'Arm_Length': arm,
                             'Loop': delta - arm,
+                            'Loop_Length': len(loop_seq),
                             'Left_Arm': left_sub,
                             'Right_Arm': right_sub,
-                            'Sequence': seq[i:j + arm]
+                            'Loop_Seq': loop_seq,
+                            'Sequence': full_seq,
+                            # Component details
+                            'Stem': f'{left_sub}...{right_sub}',
+                            'GC_Left_Arm': round(gc_left_arm, 2),
+                            'GC_Right_Arm': round(gc_right_arm, 2),
+                            'GC_Loop': round(gc_loop, 2),
+                            'GC_Total': round(gc_total, 2)
                         }
                         results.append(rec)
                         break
@@ -309,6 +344,16 @@ def find_mirror_repeats(seq: str,
                         is_triplex = (purine_fraction >= purine_pyrimidine_threshold or 
                                      pyrimidine_fraction >= purine_pyrimidine_threshold)
                         
+                        # Calculate component details
+                        loop_seq = seq[i + arm:j] if j > i + arm else ''
+                        full_seq = seq[i:j + arm]
+                        
+                        # Calculate GC content for components
+                        gc_left_arm = (left_arm.count('G') + left_arm.count('C')) / len(left_arm) * 100 if len(left_arm) > 0 else 0
+                        gc_right_arm = (right_arm.count('G') + right_arm.count('C')) / len(right_arm) * 100 if len(right_arm) > 0 else 0
+                        gc_loop = (loop_seq.count('G') + loop_seq.count('C')) / len(loop_seq) * 100 if len(loop_seq) > 0 else 0
+                        gc_total = (full_seq.count('G') + full_seq.count('C')) / len(full_seq) * 100 if len(full_seq) > 0 else 0
+                        
                         rec = {
                             'Class': 'Mirror_Repeat',
                             'Subclass': f'Mirror_arm_{arm}',
@@ -319,12 +364,20 @@ def find_mirror_repeats(seq: str,
                             'Right_Start': j + 1,
                             'Arm_Length': arm,
                             'Loop': delta - arm,
+                            'Loop_Length': len(loop_seq),
                             'Left_Arm': left_arm,
                             'Right_Arm': right_arm,
-                            'Sequence': seq[i:j + arm],
+                            'Loop_Seq': loop_seq,
+                            'Sequence': full_seq,
                             'Is_Triplex': is_triplex,
                             'Purine_Fraction': round(purine_fraction, 3),
-                            'Pyrimidine_Fraction': round(pyrimidine_fraction, 3)
+                            'Pyrimidine_Fraction': round(pyrimidine_fraction, 3),
+                            # Component details
+                            'Stem': f'{left_arm}...{right_arm}',
+                            'GC_Left_Arm': round(gc_left_arm, 2),
+                            'GC_Right_Arm': round(gc_right_arm, 2),
+                            'GC_Loop': round(gc_loop, 2),
+                            'GC_Total': round(gc_total, 2)
                         }
                         results.append(rec)
                         break
@@ -367,6 +420,19 @@ def find_strs(seq: str,
                 j += k
             total_len = copies * k
             if total_len >= min_total:
+                # Calculate component details
+                full_seq = seq[i:j]
+                
+                # Calculate GC content
+                gc_unit = (unit.count('G') + unit.count('C')) / len(unit) * 100 if len(unit) > 0 else 0
+                gc_total = (full_seq.count('G') + full_seq.count('C')) / len(full_seq) * 100 if len(full_seq) > 0 else 0
+                
+                # Calculate AT/GC composition of unit
+                a_count = unit.count('A')
+                t_count = unit.count('T')
+                g_count = unit.count('G')
+                c_count = unit.count('C')
+                
                 results.append({
                     'Class': 'STR',
                     'Subclass': f'unit_{k}',
@@ -376,7 +442,16 @@ def find_strs(seq: str,
                     'Copies': copies,
                     'Length': total_len,
                     'Unit_Seq': unit,
-                    'Sequence': seq[i:j]
+                    'Sequence': full_seq,
+                    # Component details
+                    'Repeat_Unit': unit,
+                    'Number_of_Copies': copies,
+                    'GC_Unit': round(gc_unit, 2),
+                    'GC_Total': round(gc_total, 2),
+                    'Unit_A_Count': a_count,
+                    'Unit_T_Count': t_count,
+                    'Unit_G_Count': g_count,
+                    'Unit_C_Count': c_count
                 })
                 i = j  # skip to end of tandem block
             else:
