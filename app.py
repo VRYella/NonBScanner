@@ -43,9 +43,9 @@ from scanner import (
     get_motif_classification_info, export_results_to_dataframe
 )
 from visualizations import (
-    plot_motif_distribution, plot_coverage_map,
-    plot_length_distribution, plot_nested_pie_chart, save_all_plots,
-    MOTIF_CLASS_COLORS
+    plot_motif_distribution, plot_coverage_map, plot_density_heatmap,
+    plot_length_distribution, plot_score_distribution, plot_nested_pie_chart, 
+    save_all_plots, MOTIF_CLASS_COLORS
 )
 
 # Try to import Entrez for demo functionality
@@ -1430,19 +1430,38 @@ with tab_pages["Results"]:
             with viz_tabs[1]:  # Coverage Map
                 st.subheader("Sequence Coverage Analysis")
                 try:
+                    # Coverage map showing motif positions
+                    st.markdown("**Motif Position Map**")
                     fig4 = plot_coverage_map(filtered_motifs, sequence_length, title=f"Motif Coverage - {sequence_name}")
                     st.pyplot(fig4)
                     plt.close(fig4)
+                    
+                    # Add density heatmap for comprehensive coverage analysis
+                    st.markdown("**Motif Density Heatmap**")
+                    fig5 = plot_density_heatmap(filtered_motifs, sequence_length, 
+                                               window_size=max(100, sequence_length // 20),
+                                               title=f"Motif Density - {sequence_name}")
+                    st.pyplot(fig5)
+                    plt.close(fig5)
                 except Exception as e:
                     st.error(f"Error generating coverage map: {e}")
             
             with viz_tabs[2]:  # Statistics  
                 st.subheader("Statistical Analysis")
                 try:
-                    # Only show length distribution, not score distribution as per requirements
-                    fig6 = plot_length_distribution(filtered_motifs, by_class=True, title="Length Distribution by Class") 
+                    # Length distribution by class - violin plot for better distribution visualization
+                    st.markdown("**Motif Length Distribution by Class**")
+                    fig6 = plot_length_distribution(filtered_motifs, by_class=True, 
+                                                   title="Length Distribution by Motif Class") 
                     st.pyplot(fig6)
                     plt.close(fig6)
+                    
+                    # Score distribution by class - box plot for score comparison
+                    st.markdown("**Motif Score Distribution by Class**")
+                    fig7 = plot_score_distribution(filtered_motifs, by_class=True,
+                                                  title="Score Distribution by Motif Class")
+                    st.pyplot(fig7)
+                    plt.close(fig7)
                 except Exception as e:
                     st.error(f"Error generating statistical plots: {e}")
             
