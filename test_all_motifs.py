@@ -8,7 +8,7 @@ and subclasses, then validates that all are detected by the scanner.
 Author: Auto-generated for NonBScanner validation
 """
 
-from scanner import analyze_sequence, get_motif_classification_info
+from nonbscanner import analyze_sequence, get_motif_info as get_motif_classification_info
 from collections import defaultdict
 import json
 

@@ -2078,6 +2078,73 @@ def merge_detector_results(detector_results: Dict[str, List[Dict[str, Any]]],
     
     return resolved
 
+def export_results_to_dataframe(motifs: List[Dict[str, Any]]) -> pd.DataFrame:
+    """Convert motif results to pandas DataFrame with comprehensive fields"""
+    if not motifs:
+        return pd.DataFrame()
+    
+    df = pd.DataFrame(motifs)
+    
+    # Comprehensive column list based on user requirements
+    comprehensive_columns = [
+        'ID',
+        'Sequence_Name',  # Sequence Name (or Accession)
+        'Source',  # Source (e.g., genome, experiment, study)
+        'Class',  # Motif Class
+        'Subclass',  # Motif Subclass
+        'Pattern_ID',  # Pattern/Annotation ID
+        'Start',  # Start Position
+        'End',  # End Position
+        'Length',  # Length (bp)
+        'Sequence',  # Sequence
+        'Method',  # Detection Method
+        'Score',  # Motif Score
+        'Repeat_Type',  # Repeat/Tract Type
+        'Left_Arm',  # Left Arm Sequence
+        'Right_Arm',  # Right Arm Sequence
+        'Loop_Seq',  # Loop Sequence
+        'Arm_Length',  # Arm Length
+        'Loop_Length',  # Loop Length
+        'Stem_Length',  # Stem Length(s)
+        'Unit_Length',  # Unit/Repeat Length
+        'Number_Of_Copies',  # Number of Copies/Repeats
+        'Spacer_Length',  # Spacer Length
+        'Spacer_Sequence',  # Spacer Sequence
+        'GC_Content',  # GC Content (%)
+        'Structural_Features',  # Structural Features (e.g., Tract Type, Curvature Score)
+        'Strand'  # Strand information
+    ]
+    
+    # Ensure all comprehensive columns are present, fill missing with 'NA'
+    for col in comprehensive_columns:
+        if col not in df.columns:
+            df[col] = 'NA'
+    
+    # Map existing fields to comprehensive column names if they differ
+    column_mappings = {
+        'Repeat_Units': 'Number_Of_Copies',
+        'Tract_Type': 'Repeat_Type',
+        'GC_Total': 'GC_Content',
+        'Gc_Total': 'GC_Content',
+        'Curvature_Score': 'Structural_Features',
+        'Spacer': 'Spacer_Length',
+        'Spacer_Seq': 'Spacer_Sequence'
+    }
+    
+    for old_col, new_col in column_mappings.items():
+        if old_col in df.columns and new_col in comprehensive_columns:
+            # Only map if the new column is 'NA' (empty)
+            df[new_col] = df.apply(
+                lambda row: row[old_col] if pd.isna(row[new_col]) or row[new_col] == 'NA' else row[new_col],
+                axis=1
+            )
+    
+    # Fill all NaN/None values with 'NA' string
+    result_df = df[comprehensive_columns].fillna('NA')
+    
+    return result_df
+
+
 # =============================================================================
 # TESTING & EXAMPLES
 # =============================================================================

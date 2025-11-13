@@ -38,10 +38,11 @@ from utilities import (
     get_basic_stats, export_to_bed, export_to_csv, export_to_json,
     validate_sequence, quality_check_motifs
 )
-from scanner import (
+from nonbscanner import (
     analyze_sequence, analyze_multiple_sequences,
-    get_motif_classification_info, export_results_to_dataframe
+    get_motif_info as get_motif_classification_info
 )
+from utilities import export_results_to_dataframe
 from visualizations import (
     plot_motif_distribution, plot_coverage_map, plot_density_heatmap,
     plot_length_distribution, plot_score_distribution, plot_nested_pie_chart, 
