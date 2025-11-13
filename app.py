@@ -150,19 +150,19 @@ st.markdown("""
         border-right: none !important;
     }
     
-    /* Headings: Enhanced scientific typography hierarchy */
+    /* Headings: Enhanced scientific typography hierarchy - Bold and Clean */
     h1, h2, h3, h4 {
         font-family: 'IBM Plex Sans', 'Inter', 'Segoe UI', system-ui, sans-serif !important;
         color: #0d47a1 !important;
-        font-weight: 700 !important;
-        letter-spacing: -0.025em;
+        font-weight: 800 !important;
+        letter-spacing: -0.02em;
         margin-top: 1.3em;
         margin-bottom: 0.8em;
-        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+        text-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
     }
     h1 { 
-        font-size: 2.4rem !important; 
-        font-weight: 800 !important;
+        font-size: 2.6rem !important; 
+        font-weight: 900 !important;
         background: linear-gradient(135deg, #0d47a1 0%, #1976d2 50%, #42a5f5 100%);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
@@ -170,31 +170,31 @@ st.markdown("""
         letter-spacing: -0.03em;
     }
     h2 { 
-        font-size: 1.7rem !important; 
+        font-size: 1.8rem !important; 
         color: #0d47a1 !important; 
-        font-weight: 700 !important;
+        font-weight: 800 !important;
         border-bottom: 3px solid #e3f2fd;
         padding-bottom: 0.5rem;
     }
     h3 { 
-        font-size: 1.3rem !important; 
+        font-size: 1.4rem !important; 
         color: #1565c0 !important; 
-        font-weight: 700 !important;
+        font-weight: 800 !important;
     }
     h4 { 
-        font-size: 1.15rem !important; 
+        font-size: 1.2rem !important; 
         color: #1976d2 !important; 
-        font-weight: 600 !important;
+        font-weight: 700 !important;
     }
     
-    /* Body text: Scientific readability with optimal contrast */
+    /* Body text: Scientific readability with optimal contrast - Bold and Clean */
     .stMarkdown, .markdown-text-container, .stText, p, span, label {
-        font-size: 1.02rem !important;
+        font-size: 1.05rem !important;
         font-family: 'Source Sans Pro', 'Inter', 'Segoe UI', system-ui, sans-serif !important;
         line-height: 1.75 !important;
         color: #1e293b !important;
         margin-bottom: 0.75em !important;
-        font-weight: 400;
+        font-weight: 500;
     }
     
     /* Input fields: Premium scientific design with elegant borders */
@@ -1319,7 +1319,7 @@ with tab_pages["Results"]:
             
             # Motif class distribution summary (no score visualization as per requirements)
             if filtered_motifs:
-                st.markdown("### 📊 Motif Class Distribution")
+                # Display chart without header as per requirements
                 
                 # Motif class distribution - show all classes even if 0 (excluding Hybrid and Cluster)
                 motif_classes = [m.get('Class', 'Unknown') for m in filtered_motifs]
@@ -1380,7 +1380,7 @@ with tab_pages["Results"]:
                 plt.close(fig)
             
             # Enhanced motif table with new columns
-            st.markdown(f"### 📋 Detailed Motif Table for **{sequence_name}**")
+            # Display table without header as per requirements
             
             # Column selection for display (remove only Normalized_Score column)
             available_columns = df.columns.tolist()
@@ -1693,28 +1693,7 @@ with tab_pages["Download"]:
 with tab_pages["Documentation"]:
     st.header("Scientific Documentation & References")
     
-    # Add new visualization documentation
-    st.markdown("""
-    <div style='background:#f4faff; border-radius:12px; padding:18px; font-size:1.08rem; font-family:Montserrat,Arial;'>
-    <b>🎨 Enhanced Visualization Suite</b><br><br>
-    
-    The NBDScanner tool provides comprehensive visualization capabilities organized into 4 focused categories:
-    
-    <ul>
-        <li><b>Distribution Analysis</b>: Motif class/subclass distributions, nested pie charts, and hierarchical views</li>
-        <li><b>Coverage Mapping</b>: Sequence coverage maps showing motif positions and density heatmaps</li>
-        <li><b>Statistical Analysis</b>: Length distributions, violin plots, and score analysis by motif class</li>
-        <li><b>Cluster/Hybrid Analysis</b>: Specialized visualizations for hybrid motifs and cluster regions</li>
-    </ul>
-    
-    <b>🔧 Visualization Features</b><br>
-    All visualizations are publication-quality with advanced styling, colorblind-friendly palettes, and scientific formatting.
-    Plots can be exported in multiple formats (PNG, PDF, SVG) for use in manuscripts and presentations.
-    </div>
-    <br>
-    """, unsafe_allow_html=True)
-    
-
+    # Motif classes documentation
     st.markdown("""
     <div style='background:#f4faff; border-radius:12px; padding:18px; font-size:1.08rem; font-family:Montserrat,Arial;'>
     <b>Motif Classes Detected:</b><br><br>
