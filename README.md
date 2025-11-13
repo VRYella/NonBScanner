@@ -1,17 +1,18 @@
-# 🧬 NonBScanner - Non-B DNA Motif Detection Suite
+# 🧬 NonBScanner - Professional Non-B DNA Motif Detection Suite
 
-**Comprehensive detection and analysis of Non-B DNA structures with 10 major classes and 22+ specialized subclasses**
+**Comprehensive, elegant, and high-performance detection of Non-B DNA structures with 11 major classes and 22+ specialized subclasses**
 
 ## 🎯 Overview
 
 NonBScanner is a state-of-the-art bioinformatics tool for detecting and analyzing Non-B DNA motifs in genomic sequences. It combines high-performance optimized algorithms with scientific scoring methods to provide comprehensive analysis of structural DNA elements.
 
+**New in Version 2024.1:** Professional 5-file architecture for maximum elegance and maintainability.
+
 ### 📊 Detection Coverage
-- **10 Major Non-B DNA Classes** with comprehensive subclass analysis
+- **11 Major Non-B DNA Classes** with comprehensive subclass analysis  
 - **22+ Specialized Subclasses** for detailed motif characterization
 - **High-performance detection** (24,674 bp/s on 100K sequences)
 - **Literature-validated** scoring algorithms
-- **Normalized scoring** (0-1 scale) for cross-class comparison
 - **✨ Enhanced hybrid/cluster detection** with actual sequence extraction
 - **✨ 21+ advanced publication-quality visualizations** (colorblind-friendly)
 
@@ -20,6 +21,33 @@ NonBScanner is a state-of-the-art bioinformatics tool for detecting and analyzin
 - **24,674 bp/second** processing speed
 - **Memory efficient**: ~5 MB for 100K sequences
 - **Production ready**: Tested on large genomic datasets
+
+## 🏗️ Architecture - Professional 5-File Design
+
+NonBScanner features an elegant, professional architecture with just **5 core Python files**:
+
+```
+NonBScanner/
+├── nonbscanner.py      # Main API & Scanner Orchestration (~600 lines)
+├── detectors.py        # All 9 Motif Detector Classes (~3,500 lines)
+├── utilities.py        # Sequence I/O, Export & Statistics (~2,100 lines)
+├── visualizations.py   # Complete Visualization Suite (~1,000 lines)
+└── app.py              # Streamlit Web Interface (~1,800 lines)
+```
+
+**Key Features:**
+- ✅ **Minimal & Clean**: Just 5 files for the entire tool
+- ✅ **Professional**: Well-documented, type-annotated code
+- ✅ **Modular**: Clear separation of concerns
+- ✅ **Elegant**: Advanced algorithms in readable structure
+- ✅ **Production-Ready**: Tested on large genomic datasets
+
+### Supporting Files
+- `scanner.py` - Low-level k-mer indexing functions (used by detectors)
+- `test_all_motifs.py` - Comprehensive validation suite
+- `docs/` - Detailed documentation
+- `registry/` - Pattern registries for motif detection
+- `R_tool/` - R language interface
 
 ## 🔬 Supported Motif Classes
 
@@ -46,6 +74,27 @@ Comprehensive documentation is available:
 - **[ORGANIZATION.md](ORGANIZATION.md)** - Repository organization and structure
 
 ## 🚀 Quick Start
+
+### Python API (Recommended)
+```python
+import nonbscanner as nbs
+
+# Analyze a single sequence
+sequence = "GGGTTAGGGTTAGGGTTAGGG"
+motifs = nbs.analyze_sequence(sequence, "my_sequence")
+
+print(f"Found {len(motifs)} motifs:")
+for motif in motifs:
+    print(f"  {motif['Class']} at position {motif['Start']}-{motif['End']}")
+
+# Analyze FASTA file
+results = nbs.analyze_file("sequences.fasta")
+for name, motifs in results.items():
+    print(f"{name}: {len(motifs)} motifs detected")
+
+# Export results
+nbs.export_results(motifs, format='csv', filename='output.csv')
+```
 
 ### Web Interface
 ```bash
@@ -85,8 +134,6 @@ init_nonbscanner()
 # Analyze a sequence
 motifs <- analyze_sequence("GGGTTAGGGTTAGGGTTAGGG", "test")
 ```
-
-**New to NonBScanner?** Start with [QUICK_START.md](QUICK_START.md) for a step-by-step guide!
 
 ## 📱 User Interfaces
 
