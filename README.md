@@ -58,6 +58,34 @@ pip install -r requirements.txt
 streamlit run app.py                    # Web interface on :8501
 ```
 
+### Jupyter Notebook (Local)
+```bash
+# Launch Jupyter notebook
+jupyter notebook NonBScanner_Local.ipynb
+
+# Or with JupyterLab
+jupyter lab NonBScanner_Local.ipynb
+```
+
+### Shell Script (Batch Processing)
+```bash
+# Make script executable
+chmod +x generate_csv_output.sh
+
+# Run analysis on FASTA file
+./generate_csv_output.sh -i sequences.fasta -o output -v
+```
+
+### R Interface
+```r
+# In R console
+source("R_tool/nonbscanner.R")
+init_nonbscanner()
+
+# Analyze a sequence
+motifs <- analyze_sequence("GGGTTAGGGTTAGGGTTAGGG", "test")
+```
+
 **New to NonBScanner?** Start with [QUICK_START.md](QUICK_START.md) for a step-by-step guide!
 
 ## 📱 User Interfaces
@@ -68,6 +96,27 @@ streamlit run app.py                    # Web interface on :8501
 - Real-time analysis with progress tracking
 - Export capabilities (CSV, BED, BigWig)
 - Documentation and tutorial sections
+
+### **Jupyter Notebook** (Local Interactive Analysis)
+- **File**: `NonBScanner_Local.ipynb`
+- Interactive cell-by-cell analysis
+- Built-in visualizations and examples
+- Perfect for exploratory analysis
+- [Documentation](JUPYTER_NOTEBOOK_LOCAL_README.md)
+
+### **Shell Script** (Batch CSV Generation)
+- **File**: `generate_csv_output.sh`
+- Command-line batch processing
+- Generate CSV for all motif classes
+- Automated summary statistics
+- [Documentation](CSV_GENERATOR_README.md)
+
+### **R Interface** (R Programming Integration)
+- **Directory**: `R_tool/`
+- Native R wrapper for NonBScanner
+- ggplot2 visualizations
+- Complete R workflow support
+- [Documentation](R_tool/README.md)
 
 ## 🛠️ Technical Features
 
