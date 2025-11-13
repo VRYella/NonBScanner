@@ -1102,7 +1102,10 @@ class ZDNADetector(BaseMotifDetector):
         matches: List[Tuple[int, str, float]] = []
 
         def on_match(id, start, end, flags, context):
-            matches.append((start, id_to_ten[id], id_to_score[id]))
+            # Hyperscan 'end' parameter is the offset after the match
+            # Calculate actual start position: end - pattern_length
+            actual_start = end - 10
+            matches.append((actual_start, id_to_ten[id], id_to_score[id]))
 
         db.scan(seq.encode(), match_event_handler=on_match)
         matches.sort(key=lambda x: x[0])
@@ -1644,7 +1647,10 @@ class APhilicDetector(BaseMotifDetector):
         def on_match(id, start, end, flags, context):
             ten = id_to_ten[id]
             log2 = id_to_log2[id]
-            matches.append((start, ten, log2))
+            # Hyperscan 'end' parameter is the offset after the match
+            # Calculate actual start position: end - pattern_length
+            actual_start = end - 10
+            matches.append((actual_start, ten, log2))
 
         db.scan(seq.encode(), match_event_handler=on_match)
         matches.sort(key=lambda x: x[0])
