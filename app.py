@@ -1407,7 +1407,7 @@ with tab_pages["Results"]:
             st.markdown('<h3>📊 NBDScanner Visualizations</h3>', unsafe_allow_html=True)
             
             # Create tabs for different visualization categories including Cluster/Hybrid tab
-            viz_tabs = st.tabs(["📈 Distribution", "🗺️ Coverage Map", "📊 Statistics", "🎯 Interactive", "🔗 Cluster/Hybrid"])
+            viz_tabs = st.tabs(["📈 Distribution", "🗺️ Coverage Map", "📊 Statistics", "🔗 Cluster/Hybrid"])
             
             with viz_tabs[0]:  # Distribution
                 st.subheader("Motif Distribution Analysis")
@@ -1446,49 +1446,7 @@ with tab_pages["Results"]:
                 except Exception as e:
                     st.error(f"Error generating statistical plots: {e}")
             
-            with viz_tabs[3]:  # Interactive
-                st.subheader("Interactive Analysis")
-                try:
-                    from visualization import create_interactive_coverage_plot
-                    interactive_fig = create_interactive_coverage_plot(filtered_motifs, sequence_length, 
-                                                                     title=f"Interactive Motif Browser - {sequence_name}")
-                    if hasattr(interactive_fig, 'show'):  # Plotly figure
-                        st.plotly_chart(interactive_fig, use_container_width=True)
-                    else:  # Matplotlib fallback
-                        st.pyplot(interactive_fig)
-                        plt.close(interactive_fig)
-                except Exception as e:
-                    st.error(f"Error generating interactive plots: {e}")
-                    st.info("Interactive plots require plotly. Install with: pip install plotly")
-                    
-                    # Simple fallback visualization for error cases
-                    st.markdown('<h4>📊 Fallback Visualization</h4>', unsafe_allow_html=True)
-                    st.info("Using basic fallback visualizations since comprehensive analysis failed.")
-                    
-                    # Basic motif count chart
-                    st.markdown('<span style="font-family:Montserrat,Arial;font-size:1.11rem;"><b>Motif Class Distribution</b></span>', unsafe_allow_html=True)
-                    if filtered_motifs:
-                        df_viz = pd.DataFrame(filtered_motifs)
-                        fig, ax = plt.subplots(figsize=(10,6))
-                        class_counts = df_viz['Class'].value_counts()
-                        ax.barh(class_counts.index, class_counts.values)
-                        ax.set_xlabel("Motif Count")
-                        ax.set_title("Basic Motif Class Distribution")
-                        st.pyplot(fig)
-                        plt.close(fig)
-                        
-                        # Basic motif map
-                        st.markdown('<span style="font-family:Montserrat,Arial;font-size:1.11rem;"><b>Motif Position Map</b></span>', unsafe_allow_html=True)
-                        fig, ax = plt.subplots(figsize=(12,4))
-                        for i, (_, row) in enumerate(df_viz.iterrows()):
-                            ax.plot([row['Start'], row['End']], [i, i], lw=3, alpha=0.7)
-                        ax.set_xlabel("Sequence Position (bp)")
-                        ax.set_ylabel("Motif Index")
-                        ax.set_title("Basic Motif Position Map")
-                        st.pyplot(fig)
-                        plt.close(fig)
-            
-            with viz_tabs[4]:  # Cluster/Hybrid
+            with viz_tabs[3]:  # Cluster/Hybrid
                 st.subheader("🔗 Hybrid and Cluster Motifs")
                 
                 if not hybrid_cluster_motifs:
@@ -1718,21 +1676,20 @@ with tab_pages["Documentation"]:
     # Add new visualization documentation
     st.markdown("""
     <div style='background:#f4faff; border-radius:12px; padding:18px; font-size:1.08rem; font-family:Montserrat,Arial;'>
-    <b>🎨 Enhanced Visualization Suite (New Features)</b><br><br>
+    <b>🎨 Enhanced Visualization Suite</b><br><br>
     
-    The NBDFinder tool now includes a comprehensive visualization suite with 21+ chart types organized into 5 categories:
+    The NBDScanner tool provides comprehensive visualization capabilities organized into 4 focused categories:
     
     <ul>
-        <li><b>Basic Charts</b>: Motif counts, pie charts, stacked distributions, and motif tracks</li>
-        <li><b>Interactive Plots</b>: Plotly-powered sunburst, interactive browsers, and track plots</li>
-        <li><b>Statistical Analysis</b>: Score distributions, CDF plots, t-SNE clustering, and Manhattan plots</li>
-        <li><b>Genomic Mapping</b>: Position analysis, density heatmaps, sequence coverage, and GC content scatter</li>
-        <li><b>Advanced Analysis</b>: Class-subclass heatmaps, network graphs, Venn diagrams, and cluster density</li>
+        <li><b>Distribution Analysis</b>: Motif class/subclass distributions, nested pie charts, and hierarchical views</li>
+        <li><b>Coverage Mapping</b>: Sequence coverage maps showing motif positions and density heatmaps</li>
+        <li><b>Statistical Analysis</b>: Length distributions, violin plots, and score analysis by motif class</li>
+        <li><b>Cluster/Hybrid Analysis</b>: Specialized visualizations for hybrid motifs and cluster regions</li>
     </ul>
     
-    <b>🔧 Recent Updates & Integration</b><br>
-    These visualization features were developed in recent PRs but were previously not integrated into the Streamlit interface. 
-    They are now fully accessible through the "Analysis Results and Visualization" tab with an intuitive category-based selector.
+    <b>🔧 Visualization Features</b><br>
+    All visualizations are publication-quality with advanced styling, colorblind-friendly palettes, and scientific formatting.
+    Plots can be exported in multiple formats (PNG, PDF, SVG) for use in manuscripts and presentations.
     </div>
     <br>
     """, unsafe_allow_html=True)
