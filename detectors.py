@@ -1996,6 +1996,23 @@ class SlippedDNADetector(BaseMotifDetector):
                     # Convert snake_case to Title_Case for consistency
                     formatted_key = '_'.join(word.capitalize() for word in key.split('_'))
                     motif_dict[formatted_key] = value
+                
+                # Ensure standard field names are present (map from alternative names)
+                details = region['details']
+                
+                # Map number_of_copies to Number_Of_Copies if present
+                if 'number_of_copies' in details:
+                    motif_dict['Number_Of_Copies'] = details['number_of_copies']
+                elif 'repeat_units' in details:
+                    motif_dict['Number_Of_Copies'] = details['repeat_units']
+                
+                # Map spacer_seq to Spacer_Sequence for consistency
+                if 'spacer_seq' in details:
+                    motif_dict['Spacer_Sequence'] = details['spacer_seq']
+                
+                # Ensure spacer_length is mapped to Spacer_Length
+                if 'spacer_length' in details:
+                    motif_dict['Spacer_Length'] = details['spacer_length']
             
             motifs.append(motif_dict)
         
@@ -2468,6 +2485,7 @@ class CruciformDetector(BaseMotifDetector):
                 'Loop_Seq': loop_seq,
                 'Arm_Length': repeat.get('arm_len', 0),
                 'Loop_Length': repeat.get('loop_len', 0),
+                'Stem_Length': repeat.get('arm_len', 0),  # For cruciforms, stem length equals arm length
                 'GC_Total': round(gc_total, 2),
                 'GC_Left_Arm': round(gc_left_arm, 2),
                 'GC_Right_Arm': round(gc_right_arm, 2),
@@ -2943,14 +2961,9 @@ from typing import List, Dict, Any, Tuple
 # BaseMotifDetector is defined above
 
 # Import optimized repeat scanner from scanner module
-try:
-    from scanner import find_mirror_repeats
-except ImportError:
-    try:
-        from utils.repeat_scanner import find_mirror_repeats
-    except ImportError:
-        # Fallback if import fails
-        find_mirror_repeats = None
+# NOTE: Importing at module level causes circular dependency (scanner imports detectors)
+# So we do NOT import here - we'll import inside methods that need it
+find_mirror_repeats = None  # Will be imported lazily if needed
 
 class TriplexDetector(BaseMotifDetector):
     """Detector for mirror repeat and sticky DNA triplex motifs using optimized scanner"""
@@ -2976,10 +2989,17 @@ class TriplexDetector(BaseMotifDetector):
         used = [False] * len(seq)
         patterns = self.get_patterns()['triplex_forming_sequences']
 
+        # Lazy import to avoid circular dependency
+        find_mirror_repeats_func = None
+        try:
+            from scanner import find_mirror_repeats as fmr
+            find_mirror_repeats_func = fmr
+        except ImportError:
+            pass
+        
         # First, detect mirror repeats using optimized scanner if available
-        if find_mirror_repeats is not None:
-            optimized_find = find_mirror_repeats
-            mirror_results = optimized_find(seq, min_arm=10, max_loop=100, purine_pyrimidine_threshold=0.9)
+        if find_mirror_repeats_func is not None:
+            mirror_results = find_mirror_repeats_func(seq, min_arm=10, max_loop=100, purine_pyrimidine_threshold=0.9)
             
             # Only keep those that pass the triplex threshold (>90% purine or pyrimidine)
             for mr_rec in mirror_results:
@@ -3017,6 +3037,9 @@ class TriplexDetector(BaseMotifDetector):
                             'description': 'H-DNA formation',
                             'arm_length': mr_rec['Arm_Length'],
                             'loop_length': mr_rec['Loop'],
+                            'left_arm': mr_rec.get('Left_Arm', ''),
+                            'right_arm': mr_rec.get('Right_Arm', ''),
+                            'loop_seq': mr_rec.get('Loop_Seq', ''),
                             'purine_fraction': pur_frac,
                             'pyrimidine_fraction': pyr_frac
                         }
@@ -3149,7 +3172,7 @@ class TriplexDetector(BaseMotifDetector):
         return score >= 0.2  # Lower threshold for better sensitivity
 
     def detect_motifs(self, sequence: str, sequence_name: str = "sequence") -> List[Dict[str, Any]]:
-        """Override base method to use sophisticated triplex detection"""
+        """Override base method to use sophisticated triplex detection with component details"""
         sequence = sequence.upper().strip()
         motifs = []
         
@@ -3158,7 +3181,7 @@ class TriplexDetector(BaseMotifDetector):
         results = self.annotate_sequence(sequence)
         
         for i, result in enumerate(results):
-            motifs.append({
+            motif_dict = {
                 'ID': f"{sequence_name}_{result['pattern_id']}_{result['start']+1}",
                 'Sequence_Name': sequence_name,
                 'Class': self.get_motif_class_name(),
@@ -3171,7 +3194,59 @@ class TriplexDetector(BaseMotifDetector):
                 'Strand': '+',
                 'Method': 'Triplex_detection',
                 'Pattern_ID': result['pattern_id']
-            })
+            }
+            
+            # For mirror repeats, extract arm and loop components
+            if 'mirror repeat' in result['details']['type'].lower():
+                details = result['details']
+                
+                # Check if we have the arm/loop sequences from scanner
+                if 'left_arm' in details and details['left_arm']:
+                    motif_dict['Left_Arm'] = details['left_arm']
+                    motif_dict['Right_Arm'] = details['right_arm']
+                    motif_dict['Loop_Seq'] = details['loop_seq']
+                    motif_dict['Arm_Length'] = details.get('arm_length', len(details['left_arm']))
+                    motif_dict['Loop_Length'] = details.get('loop_length', len(details['loop_seq']))
+                    
+                    # Calculate GC content for components
+                    left_arm = details['left_arm']
+                    right_arm = details['right_arm']
+                    loop_seq = details['loop_seq']
+                    
+                    gc_left = (left_arm.count('G') + left_arm.count('C')) / len(left_arm) * 100 if len(left_arm) > 0 else 0
+                    gc_right = (right_arm.count('G') + right_arm.count('C')) / len(right_arm) * 100 if len(right_arm) > 0 else 0
+                    gc_loop = (loop_seq.count('G') + loop_seq.count('C')) / len(loop_seq) * 100 if len(loop_seq) > 0 else 0
+                    
+                    motif_dict['GC_Left_Arm'] = round(gc_left, 2)
+                    motif_dict['GC_Right_Arm'] = round(gc_right, 2)
+                    motif_dict['GC_Loop'] = round(gc_loop, 2)
+                else:
+                    # Fallback: extract from matched sequence if arm_length/loop_length are present
+                    arm_len = details.get('arm_length', 0)
+                    loop_len = details.get('loop_length', 0)
+                    
+                    if arm_len > 0 and loop_len > 0:
+                        matched_seq = result['matched_seq']
+                        left_arm = matched_seq[:arm_len]
+                        loop_seq = matched_seq[arm_len:arm_len + loop_len]
+                        right_arm = matched_seq[arm_len + loop_len:arm_len + loop_len + arm_len]
+                        
+                        motif_dict['Left_Arm'] = left_arm
+                        motif_dict['Right_Arm'] = right_arm
+                        motif_dict['Loop_Seq'] = loop_seq
+                        motif_dict['Arm_Length'] = arm_len
+                        motif_dict['Loop_Length'] = loop_len
+                        
+                        # Calculate GC content for components
+                        gc_left = (left_arm.count('G') + left_arm.count('C')) / len(left_arm) * 100 if len(left_arm) > 0 else 0
+                        gc_right = (right_arm.count('G') + right_arm.count('C')) / len(right_arm) * 100 if len(right_arm) > 0 else 0
+                        gc_loop = (loop_seq.count('G') + loop_seq.count('C')) / len(loop_seq) * 100 if len(loop_seq) > 0 else 0
+                        
+                        motif_dict['GC_Left_Arm'] = round(gc_left, 2)
+                        motif_dict['GC_Right_Arm'] = round(gc_right, 2)
+                        motif_dict['GC_Loop'] = round(gc_loop, 2)
+            
+            motifs.append(motif_dict)
         
         return motifs
 
@@ -3504,6 +3579,15 @@ class GQuadruplexDetector(BaseMotifDetector):
                 motif['Loop_Lengths'] = details.get('loop_lengths', [])
                 motif['GC_Total'] = details.get('GC_Total', 0)
                 motif['GC_Stems'] = details.get('GC_Stems', 0)
+                
+                # Add consolidated Stem_Length and Loop_Length fields
+                # These represent the average or typical length for compatibility
+                stem_lengths = details.get('stem_lengths', [])
+                loop_lengths = details.get('loop_lengths', [])
+                if stem_lengths:
+                    motif['Stem_Length'] = sum(stem_lengths) / len(stem_lengths)
+                if loop_lengths:
+                    motif['Loop_Length'] = sum(loop_lengths) / len(loop_lengths)
             
             motifs.append(motif)
         
@@ -3820,6 +3904,13 @@ class IMotifDetector(BaseMotifDetector):
                 'GC_Total': round(gc_total, 2),
                 'GC_Stems': round(gc_stems, 2)
             }
+            
+            # Add consolidated Stem_Length and Loop_Length fields
+            # These represent the average or typical length for compatibility
+            if c_tracts:
+                motif['Stem_Length'] = sum(len(s) for s in c_tracts) / len(c_tracts)
+            if loops:
+                motif['Loop_Length'] = sum(len(l) for l in loops) / len(loops)
             
             motifs.append(motif)
         
