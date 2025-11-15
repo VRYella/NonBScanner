@@ -173,6 +173,10 @@ class NonBScanner:
         hybrid_motifs = self._detect_hybrid_motifs(filtered_motifs, sequence)
         cluster_motifs = self._detect_clusters(filtered_motifs, sequence)
         
+        # Apply overlap removal to hybrid and cluster motifs too
+        hybrid_motifs = self._remove_overlaps(hybrid_motifs)
+        cluster_motifs = self._remove_overlaps(cluster_motifs)
+        
         final_motifs = filtered_motifs + hybrid_motifs + cluster_motifs
         
         # Sort by position
