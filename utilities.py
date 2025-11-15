@@ -95,6 +95,7 @@ API:
 import os
 import pickle
 import logging
+import json
 
 logger = logging.getLogger(__name__)
 
@@ -105,15 +106,43 @@ except Exception:
     hyperscan = None
     _HYPERSCAN_AVAILABLE = False
 
+# Cache for consolidated registry
+_CONSOLIDATED_REGISTRY = None
+
+
+def _load_consolidated_registry():
+    """Load the consolidated registry file once and cache it"""
+    global _CONSOLIDATED_REGISTRY
+    if _CONSOLIDATED_REGISTRY is not None:
+        return _CONSOLIDATED_REGISTRY
+    
+    # Try to load consolidated_registry.json from current directory
+    consolidated_path = "consolidated_registry.json"
+    if os.path.isfile(consolidated_path):
+        with open(consolidated_path, "r") as fh:
+            _CONSOLIDATED_REGISTRY = json.load(fh)
+            logger.info("Loaded consolidated registry from consolidated_registry.json")
+            return _CONSOLIDATED_REGISTRY
+    
+    return None
+
 
 def _load_registry(registry_dir: str, class_name: str):
+    """Load registry from consolidated file or fall back to individual files"""
+    # First try consolidated registry
+    consolidated = _load_consolidated_registry()
+    if consolidated and "registries" in consolidated:
+        if class_name in consolidated["registries"]:
+            logger.debug(f"Loading {class_name} from consolidated registry")
+            return consolidated["registries"][class_name]
+    
+    # Fall back to individual registry files
     pkl_path = os.path.join(registry_dir, f"{class_name}_registry.pkl")
     json_path = os.path.join(registry_dir, f"{class_name}_registry.json")
     if os.path.isfile(pkl_path):
         with open(pkl_path, "rb") as fh:
             return pickle.load(fh)
     if os.path.isfile(json_path):
-        import json
         with open(json_path, "r") as fh:
             return json.load(fh)
     raise FileNotFoundError(f"No registry found for {class_name} in {registry_dir}")
@@ -190,35 +219,6 @@ API:
       - id_to_subclass: dict mapping id -> subclass name (string)
       - id_to_score: dict mapping id -> score (float)
 """
-
-import os
-import pickle
-import json
-import logging
-
-logger = logging.getLogger(__name__)
-
-try:
-    import hyperscan
-    _HYPERSCAN_AVAILABLE = True
-except Exception:
-    hyperscan = None
-    _HYPERSCAN_AVAILABLE = False
-
-
-def _load_registry(registry_dir: str, class_name: str):
-    """Load registry # from .pkl or .json file."""
-    pkl_path = os.path.join(registry_dir, f"{class_name}_registry.pkl")
-    json_path = os.path.join(registry_dir, f"{class_name}_registry.json")
-    
-    if os.path.isfile(pkl_path):
-        with open(pkl_path, "rb") as fh:
-            return pickle.load(fh)
-    if os.path.isfile(json_path):
-        with open(json_path, "r") as fh:
-            return json.load(fh)
-    
-    raise FileNotFoundError(f"No registry found for {class_name} in {registry_dir}")
 
 
 def load_registry_for_class(class_name: str, registry_dir: str = "registry"):
