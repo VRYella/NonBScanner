@@ -8,13 +8,20 @@ NonBScanner is a state-of-the-art bioinformatics tool for detecting and analyzin
 
 **New in Version 2024.1:** Professional 5-file architecture for maximum elegance and maintainability.
 
+**✨ Latest Enhancements (2024.1.1):**
+- **Consolidated Registry**: Single file (`consolidated_registry.json`) instead of 18 separate files
+- **Enhanced Scientific Visualizations**: 4 new publication-quality plotting functions
+- **Comprehensive Class Analysis**: Shows all 11 classes with detection status
+- **Advanced Statistics**: Mean, median, std, min/max for scores and lengths
+- **300 DPI Output**: Publication-ready figures
+
 ### 📊 Detection Coverage
 - **11 Major Non-B DNA Classes** with comprehensive subclass analysis  
 - **22+ Specialized Subclasses** for detailed motif characterization
 - **High-performance detection** (24,674 bp/s on 100K sequences)
 - **Literature-validated** scoring algorithms
 - **✨ Enhanced hybrid/cluster detection** with actual sequence extraction
-- **✨ 21+ advanced publication-quality visualizations** (colorblind-friendly)
+- **✨ 25+ advanced publication-quality visualizations** (colorblind-friendly)
 
 ### ⚡ Performance Highlights
 - **100,000 bp in 4 seconds** with optimized detectors
@@ -44,8 +51,10 @@ NonBScanner/
 
 ### Supporting Files
 - `scanner.py` - Low-level k-mer indexing functions (used by detectors)
-- `registry/` - Pattern registries for motif detection
+- `consolidated_registry.json` - **NEW!** Single file with all 411 pattern definitions
+- `registry/` - Legacy pattern registries (fallback if consolidated file not found)
 - `example_motifs_multiline.fasta` - Example FASTA file with all motif types
+- `ENHANCED_FEATURES.md` - **NEW!** Documentation for latest enhancements
 
 ## 🔬 Supported Motif Classes
 
@@ -201,23 +210,48 @@ chmod +x generate_csv_output.sh
 - Sequence composition analysis
 - Class/subclass comparisons
 
-### Advanced Visualizations (NEW! 🎨)
-**Publication-quality static plots with colorblind-friendly palettes:**
+### Enhanced Scientific Visualizations (NEW! 🎨✨)
+**Publication-quality static plots with comprehensive statistics:**
 
-1. **Genome Landscape Track** - Horizontal ruler with colored glyphs showing motif positions
-2. **Sliding Window Heat Ribbon** - 1D heatmap with density and score overlay
-3. **Ridge Plots (Joyplots)** - Stacked density ridges for length distributions
-4. **Sunburst/Treemap** - Hierarchical composition visualization
-5. **Hexbin with Marginals** - 2D density plot with marginal histograms
-6. **UpSet Plot** - Clear intersection visualization (better than Venn diagrams)
-7. **Violin + Beeswarm** - Score distributions with individual data points
-8. **Cluster Hotspot Map** - Regional cluster analysis with annotations
+**Core Analysis Functions:**
+1. **Comprehensive Class Analysis** - Shows all 11 Non-B DNA classes with detection status
+   - Distribution bar chart with color coding
+   - Detection status pie chart
+   - Statistics table (count, avg length, avg score)
+   - List of non-detected classes
+   
+2. **Comprehensive Subclass Analysis** - Detailed subclass breakdown organized by parent class
+   - Horizontal bar chart of all subclasses
+   - Color-coded by parent class
+   - Summary statistics by class
+   
+3. **Score Statistics by Class** - Advanced statistical visualization
+   - Violin plots showing distributions
+   - Box plot overlays with quartiles
+   - Statistical annotations (μ, σ)
+   - Comprehensive stats table (mean, median, std, min, max)
+   
+4. **Length Statistics by Class** - Distribution analysis
+   - Overlaid histograms for each class
+   - Box plot comparison
+   - Statistical summary table
+
+**Previous Advanced Visualizations:**
+5. **Genome Landscape Track** - Horizontal ruler with colored glyphs showing motif positions
+6. **Sliding Window Heat Ribbon** - 1D heatmap with density and score overlay
+7. **Ridge Plots (Joyplots)** - Stacked density ridges for length distributions
+8. **Sunburst/Treemap** - Hierarchical composition visualization
+9. **Hexbin with Marginals** - 2D density plot with marginal histograms
+10. **UpSet Plot** - Clear intersection visualization (better than Venn diagrams)
+11. **Violin + Beeswarm** - Score distributions with individual data points
+12. **Cluster Hotspot Map** - Regional cluster analysis with annotations
 
 **Design Features:**
-- ✅ Export as SVG (vector, editable) and PNG @300 DPI
-- ✅ Okabe-Ito colorblind-safe palette (7 colors)
+- ✅ Export as PNG @300 DPI for publications
+- ✅ Colorblind-safe palette
 - ✅ Clean sans-serif typography
-- ✅ Annotated peaks and top features
+- ✅ Statistical annotations (mean, median, std)
+- ✅ Shows ALL classes (detected and not detected)
 - ✅ Publication-ready layouts
 
 ### Interactive Visualizations
