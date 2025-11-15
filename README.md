@@ -51,10 +51,8 @@ NonBScanner/
 
 ### Supporting Files
 - `scanner.py` - Low-level k-mer indexing functions (used by detectors)
-- `consolidated_registry.json` - **NEW!** Single file with all 411 pattern definitions
-- `registry/` - Legacy pattern registries (fallback if consolidated file not found)
+- `consolidated_registry.json` - Single file with all 411 pattern definitions
 - `example_motifs_multiline.fasta` - Example FASTA file with all motif types
-- `ENHANCED_FEATURES.md` - **NEW!** Documentation for latest enhancements
 
 ## 🔬 Supported Motif Classes
 

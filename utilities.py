@@ -128,24 +128,15 @@ def _load_consolidated_registry():
 
 
 def _load_registry(registry_dir: str, class_name: str):
-    """Load registry from consolidated file or fall back to individual files"""
-    # First try consolidated registry
+    """Load registry from consolidated file"""
+    # Load from consolidated registry
     consolidated = _load_consolidated_registry()
     if consolidated and "registries" in consolidated:
         if class_name in consolidated["registries"]:
             logger.debug(f"Loading {class_name} from consolidated registry")
             return consolidated["registries"][class_name]
     
-    # Fall back to individual registry files
-    pkl_path = os.path.join(registry_dir, f"{class_name}_registry.pkl")
-    json_path = os.path.join(registry_dir, f"{class_name}_registry.json")
-    if os.path.isfile(pkl_path):
-        with open(pkl_path, "rb") as fh:
-            return pickle.load(fh)
-    if os.path.isfile(json_path):
-        with open(json_path, "r") as fh:
-            return json.load(fh)
-    raise FileNotFoundError(f"No registry found for {class_name} in {registry_dir}")
+    raise FileNotFoundError(f"No registry found for {class_name} in consolidated_registry.json")
 
 
 def load_db_for_class(class_name: str, registry_dir: str = "registry"):
