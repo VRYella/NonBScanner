@@ -2483,181 +2483,438 @@ class CruciformDetector(BaseMotifDetector):
 # R Loop Detector
 # =============================================================================
 """
-R-loop DNA Motif Detector
-========================
+R-loop DNA Motif Detector (QmRLFS-finder v1.5-hs)
+================================================
+
+QmRLFS-finder (hyperscan-enhanced)
+Based on original QmRLFS-finder v1.5 by Piroon Jenjaroenpun & Thidathip Wongsurawat
+Updated: Hyperscan integration, Python 3 modernization, fallback to re when Hyperscan absent.
 
 Detects RNA-DNA hybrid structures including:
-- R-loop formation sites
-- QmRLFS models
+- RIZ (R-loop Initiation Zones) with G-tract patterns
+- REZ (R-loop Extension Zones) with optimized G content
+- QmRLFS Model 1 (m1): G{3,} tracts
+- QmRLFS Model 2 (m2): G{4,} tracts
 
-Based on Aguilera 2012 and Jenjaroenpun 2016.
+Based on Jenjaroenpun & Wongsurawat 2016.
 """
 
 import re
-from typing import List, Dict, Any, Tuple
-# # from .base_detector import BaseMotifDetector
+from typing import List, Dict, Any, Tuple, Optional
+from collections import defaultdict
+
+# Try to import hyperscan for performance
+try:
+    import hyperscan
+    HS_AVAILABLE = True
+except Exception:
+    HS_AVAILABLE = False
 
 
 class RLoopDetector(BaseMotifDetector):
-    """Detector for R-loop DNA motifs"""
+    """
+    QmRLFS-finder (hyperscan-enhanced) R-loop detector.
+    
+    Implements QmRLFS models for detecting R-loop forming sequences:
+    - Model 1 (m1): G{3,} tract patterns  
+    - Model 2 (m2): G{4,} tract patterns
+    
+    Uses Hyperscan when available for fast pattern matching, falls back to re otherwise.
+    """
+    
+    # QmRLFS parameters (from Jenjaroenpun 2016)
+    MIN_PERC_G_RIZ = 50      # Minimum G% in RIZ
+    NUM_LINKER = 50          # Linker length for REZ search
+    WINDOW_STEP = 100        # Window step for sliding window
+    MAX_LENGTH_REZ = 2000    # Maximum REZ length
+    MIN_PERC_G_REZ = 40      # Minimum G% in REZ
+    
+    def __init__(self):
+        super().__init__()
+        # Compile hyperscan database if available
+        self.hs_db = None
+        self.hs_id_to_model = {}
+        if HS_AVAILABLE:
+            self._compile_hyperscan_patterns()
     
     def get_motif_class_name(self) -> str:
         return "R-Loop"
     
     def get_patterns(self) -> Dict[str, List[Tuple]]:
-        """Return R-loop DNA patterns - optimized with non-capturing groups"""
+        """Return QmRLFS model patterns"""
         return {
-            'r_loop_formation_sites': [
-                (r'[GC]{10,}[AT]{2,10}[GC]{10,}', 'RLP_4_1', 'GC-rich R-loop site', 'R-loop formation sites', 20, 'r_loop_potential', 0.85, 'Transcription-replication conflicts', 'Aguilera 2012'),
-                (r'G{5,}[ATGC]{10,100}C{5,}', 'RLP_4_2', 'G-C rich region', 'R-loop formation sites', 20, 'r_loop_potential', 0.80, 'R-loop prone regions', 'Ginno 2012'),
-                (r'[GC]{6,}[AT]{1,5}[GC]{6,}', 'RLP_4_3', 'GC-AT pattern', 'R-loop formation sites', 15, 'r_loop_potential', 0.75, 'Transcriptional pausing', 'Skourti-Stathaki 2011'),
-            ],
             'qmrlfs_model_1': [
-                (r'G{3,}[ATCGU]{1,10}?G{3,}(?:[ATCGU]{1,10}?G{3,}){1,}?', 'QmRLFS_4_1', 'QmRLFS Model 1', 'QmRLFS-m1', 25, 'qmrlfs_score', 0.90, 'RIZ detection with 3+ G tracts', 'Jenjaroenpun 2016'),
+                (r'G{3,}[ATCGU]{1,10}?G{3,}(?:[ATCGU]{1,10}?G{3,}){1,}?', 
+                 'QmRLFS_M1', 'QmRLFS Model 1', 'QmRLFS-m1', 25, 'qmrlfs_score', 
+                 0.90, 'RIZ detection with 3+ G tracts', 'Jenjaroenpun 2016'),
             ],
             'qmrlfs_model_2': [
-                (r'G{4,}(?:[ATCGU]{1,10}?G{4,}){1,}?', 'QmRLFS_4_2', 'QmRLFS Model 2', 'QmRLFS-m2', 30, 'qmrlfs_score', 0.95, 'RIZ detection with 4+ G tracts', 'Jenjaroenpun 2016'),
+                (r'G{4,}(?:[ATCGU]{1,10}?G{4,}){1,}?', 
+                 'QmRLFS_M2', 'QmRLFS Model 2', 'QmRLFS-m2', 30, 'qmrlfs_score', 
+                 0.95, 'RIZ detection with 4+ G tracts', 'Jenjaroenpun 2016'),
             ]
         }
     
-    def calculate_score(self, sequence: str, pattern_info: Tuple) -> float:
-        """Calculate R-loop formation score for the sequence"""
-        scoring_method = pattern_info[5] if len(pattern_info) > 5 else 'r_loop_potential'
+    def _compile_hyperscan_patterns(self):
+        """Compile patterns for hyperscan if available"""
+        if not HS_AVAILABLE:
+            return
         
-        if scoring_method == 'r_loop_potential':
-            return self._r_loop_potential(sequence)
-        elif scoring_method == 'qmrlfs_score':
-            return self._qmrlfs_score(sequence)
-        else:
-            return self._r_loop_potential(sequence)
+        try:
+            self.hs_db = hyperscan.Database()
+            expressions = []
+            ids = []
+            flags = []
+            next_id = 1
+            
+            patterns = self.get_patterns()
+            for model_name, pattern_list in patterns.items():
+                for pattern_info in pattern_list:
+                    pattern = pattern_info[0]
+                    expressions.append(pattern.encode())
+                    ids.append(next_id)
+                    flags.append(hyperscan.HS_FLAG_DOTALL | hyperscan.HS_FLAG_UTF8)
+                    self.hs_id_to_model[next_id] = model_name
+                    next_id += 1
+            
+            if expressions:
+                self.hs_db.compile(expressions=expressions, ids=ids, flags=flags)
+        except Exception:
+            # If hyperscan compilation fails, fallback to re
+            self.hs_db = None
     
-    def _r_loop_potential(self, sequence: str) -> float:
-        """
-        R-loop formation potential (Aguilera & García-Muse, 2012)
-        """
-        if len(sequence) < 20:
-            return 0.0
-        
-        # GC skew calculation
-        gc_skew = 0
-        for base in sequence:
-            if base == 'G':
-                gc_skew += 1
-            elif base == 'C':
-                gc_skew -= 1
-        
-        # Normalize by sequence length
-        gc_skew = abs(gc_skew) / len(sequence)
-        
-        # GC content (R-loops prefer GC-rich regions)
-        gc_content = len(re.findall(r'[GC]', sequence)) / len(sequence)
-        
-        return min(gc_skew * 0.6 + gc_content * 0.4, 1.0)
-    
-    def _qmrlfs_score(self, sequence: str) -> float:
-        """
-        Simplified QmRLFS-based R-loop formation scoring
-        """
-        if len(sequence) < 25:
-            return 0.0
-        
-        # Count G-tracts
-        g_tracts = re.findall(r'G{3,}', sequence)
-        if len(g_tracts) < 2:
-            return 0.0
-        
-        # Calculate score based on G-tract density and spacing
-        total_g_length = sum(len(tract) for tract in g_tracts)
-        g_density = total_g_length / len(sequence)
-        tract_bonus = len(g_tracts) / 5  # Bonus for multiple tracts
-        
-        return min(g_density + tract_bonus * 0.3, 1.0)
-
-    def passes_quality_threshold(self, sequence: str, score: float, pattern_info: Tuple) -> bool:
-        """Lower threshold for R-loop detection"""
-        return score >= 0.3  # Lower threshold for better sensitivity
-
-    def _remove_overlaps(self, motifs: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-        """Remove overlapping motifs, keeping highest scoring non-overlapping set"""
-        if not motifs:
+    def _riz_search_hyperscan(self, seq: str, model: str) -> List[Dict[str, Any]]:
+        """Search for RIZ regions using Hyperscan (fast path)"""
+        if not HS_AVAILABLE or self.hs_db is None:
             return []
         
-        # Sort by score (descending), then by length (descending)
-        sorted_motifs = sorted(motifs, 
-                              key=lambda x: (-x.get('Score', 0), -x.get('Length', 0)))
+        result_list = []
+        seq_bytes = seq.encode('utf-8')
+        
+        def on_match(id, from_, to, flags, context):
+            model_name = self.hs_id_to_model.get(id, None)
+            if model_name and model_name == model:
+                match_bytes = seq_bytes[from_:to]
+                try:
+                    match_str = match_bytes.decode('utf-8')
+                    result_list.append({
+                        'start': from_,
+                        'end': to,
+                        'sequence': match_str
+                    })
+                except UnicodeDecodeError:
+                    pass
+            return 0
+        
+        try:
+            self.hs_db.scan(seq_bytes, match_event_handler=on_match)
+        except Exception:
+            return []
+        
+        return result_list
+    
+    def _riz_search_regex(self, seq: str, model: str) -> List[Dict[str, Any]]:
+        """Search for RIZ regions using regex (fallback path)"""
+        result_list = []
+        patterns = self.get_patterns()
+        
+        if model not in patterns:
+            return result_list
+        
+        for pattern_info in patterns[model]:
+            pattern = pattern_info[0]
+            compiled_pattern = re.compile(pattern, re.IGNORECASE | re.ASCII)
+            
+            for match in compiled_pattern.finditer(seq):
+                result_list.append({
+                    'start': match.start(),
+                    'end': match.end(),
+                    'sequence': match.group(0)
+                })
+        
+        return result_list
+    
+    def _riz_search(self, seq: str, model: str) -> List[Dict[str, Any]]:
+        """
+        Search for RIZ (R-loop Initiation Zone) regions.
+        Uses Hyperscan if available, otherwise falls back to regex.
+        """
+        # Try hyperscan first
+        if HS_AVAILABLE and self.hs_db is not None:
+            results = self._riz_search_hyperscan(seq, model)
+            if results:
+                return results
+        
+        # Fallback to regex
+        return self._riz_search_regex(seq, model)
+    
+    def _percent_g(self, seq: str) -> float:
+        """Calculate percentage of G in sequence"""
+        if not seq:
+            return 0.0
+        return round((seq.count("G") / float(len(seq))) * 100.0, 2)
+    
+    def _find_rez(self, seq: str, riz_end: int) -> Optional[Dict[str, Any]]:
+        """
+        Find REZ (R-loop Extension Zone) following a RIZ.
+        Searches for G-rich regions downstream of RIZ.
+        """
+        seq_len = len(seq)
+        
+        # Start search from RIZ end + linker
+        search_start = riz_end + self.NUM_LINKER
+        if search_start >= seq_len:
+            return None
+        
+        # Find the best REZ within max length
+        best_rez = None
+        max_score = 0.0
+        
+        # Sliding window to find best G-rich region
+        for window_start in range(search_start, min(seq_len, riz_end + self.MAX_LENGTH_REZ), self.WINDOW_STEP):
+            for window_end in range(window_start + 50, min(seq_len, window_start + self.MAX_LENGTH_REZ), 50):
+                window_seq = seq[window_start:window_end]
+                
+                perc_g = self._percent_g(window_seq)
+                if perc_g >= self.MIN_PERC_G_REZ:
+                    # Score based on G% and length
+                    score = perc_g * (window_end - window_start) / 100.0
+                    
+                    if score > max_score:
+                        max_score = score
+                        best_rez = {
+                            'start': window_start,
+                            'end': window_end,
+                            'sequence': window_seq,
+                            'perc_g': perc_g,
+                            'length': window_end - window_start,
+                            'score': score
+                        }
+        
+        return best_rez
+    
+    def _count_g_tracts(self, seq: str, min_g: int) -> Tuple[int, int]:
+        """Count G-tracts of minimum length"""
+        pattern = r'G{' + str(min_g) + r',}'
+        tracts = re.findall(pattern, seq)
+        total_g = sum(len(t) for t in tracts)
+        return len(tracts), total_g
+    
+    def annotate_sequence(self, sequence: str, models: Optional[List[str]] = None) -> List[Dict[str, Any]]:
+        """
+        Annotate sequence with QmRLFS predictions.
+        
+        Args:
+            sequence: DNA sequence to analyze
+            models: List of models to use ['qmrlfs_model_1', 'qmrlfs_model_2'], default both
+        
+        Returns:
+            List of R-loop region annotations with RIZ and REZ information
+        """
+        seq = sequence.upper()
+        
+        if models is None:
+            models = ['qmrlfs_model_1', 'qmrlfs_model_2']
+        
+        results = []
+        
+        for model in models:
+            # Find all RIZ regions for this model
+            riz_regions = self._riz_search(seq, model)
+            
+            for riz in riz_regions:
+                riz_seq = riz['sequence']
+                riz_start = riz['start']
+                riz_end = riz['end']
+                
+                # Check if RIZ meets G% threshold
+                perc_g_riz = self._percent_g(riz_seq)
+                if perc_g_riz < self.MIN_PERC_G_RIZ:
+                    continue
+                
+                # Count G-tracts in RIZ
+                min_g = 3 if model == 'qmrlfs_model_1' else 4
+                num_3gs, total_3gs_riz = self._count_g_tracts(riz_seq, 3)
+                num_4gs, total_4gs_riz = self._count_g_tracts(riz_seq, 4)
+                
+                # Try to find REZ
+                rez = self._find_rez(seq, riz_end)
+                
+                # Create result entry
+                result = {
+                    'model': model,
+                    'riz_start': riz_start,
+                    'riz_end': riz_end,
+                    'riz_length': len(riz_seq),
+                    'riz_sequence': riz_seq,
+                    'riz_perc_g': perc_g_riz,
+                    'riz_g_total': riz_seq.count('G'),
+                    'riz_3gs_count': num_3gs,
+                    'riz_4gs_count': num_4gs,
+                    'riz_3gs_total': total_3gs_riz,
+                    'riz_4gs_total': total_4gs_riz,
+                }
+                
+                if rez:
+                    num_3gs_rez, total_3gs_rez = self._count_g_tracts(rez['sequence'], 3)
+                    num_4gs_rez, total_4gs_rez = self._count_g_tracts(rez['sequence'], 4)
+                    
+                    result.update({
+                        'rez_start': rez['start'],
+                        'rez_end': rez['end'],
+                        'rez_length': rez['length'],
+                        'rez_sequence': rez['sequence'],
+                        'rez_perc_g': rez['perc_g'],
+                        'rez_g_total': rez['sequence'].count('G'),
+                        'rez_3gs_count': num_3gs_rez,
+                        'rez_4gs_count': num_4gs_rez,
+                        'rez_3gs_total': total_3gs_rez,
+                        'rez_4gs_total': total_4gs_rez,
+                        'rez_score': rez['score'],
+                        'linker_length': rez['start'] - riz_end,
+                        'total_start': riz_start,
+                        'total_end': rez['end'],
+                        'total_length': rez['end'] - riz_start
+                    })
+                else:
+                    # RIZ only (no REZ found)
+                    result.update({
+                        'rez_start': None,
+                        'rez_end': None,
+                        'rez_length': 0,
+                        'rez_sequence': '',
+                        'rez_perc_g': 0.0,
+                        'rez_g_total': 0,
+                        'rez_3gs_count': 0,
+                        'rez_4gs_count': 0,
+                        'rez_3gs_total': 0,
+                        'rez_4gs_total': 0,
+                        'rez_score': 0.0,
+                        'linker_length': 0,
+                        'total_start': riz_start,
+                        'total_end': riz_end,
+                        'total_length': len(riz_seq)
+                    })
+                
+                results.append(result)
+        
+        # Remove overlaps - keep higher scoring entries
+        results = self._remove_overlapping_results(results)
+        
+        return results
+    
+    def _remove_overlapping_results(self, results: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        """Remove overlapping R-loop predictions, keeping highest scoring"""
+        if not results:
+            return []
+        
+        # Sort by score (RIZ G% + REZ score), then by length
+        sorted_results = sorted(
+            results,
+            key=lambda x: (
+                -x.get('riz_perc_g', 0) - x.get('rez_score', 0),
+                -x.get('total_length', 0)
+            )
+        )
         
         non_overlapping = []
-        for motif in sorted_motifs:
-            # Check if this motif overlaps with any already selected
+        for result in sorted_results:
+            start = result['total_start']
+            end = result['total_end']
+            
+            # Check for overlap with already selected results
             overlaps = False
             for selected in non_overlapping:
-                # Two motifs overlap if their regions overlap
-                if not (motif['End'] <= selected['Start'] or 
-                       motif['Start'] >= selected['End']):
+                sel_start = selected['total_start']
+                sel_end = selected['total_end']
+                
+                if not (end <= sel_start or start >= sel_end):
                     overlaps = True
                     break
             
             if not overlaps:
-                non_overlapping.append(motif)
+                non_overlapping.append(result)
         
-        # Sort by start position for output
-        non_overlapping.sort(key=lambda x: x['Start'])
+        # Sort by start position
+        non_overlapping.sort(key=lambda x: x['total_start'])
         return non_overlapping
-
+    
+    def calculate_score(self, sequence: str, pattern_info: Tuple) -> float:
+        """Calculate R-loop formation score using QmRLFS algorithm"""
+        annotations = self.annotate_sequence(sequence)
+        
+        if not annotations:
+            return 0.0
+        
+        # Sum scores from all detected regions
+        total_score = sum(
+            (ann.get('riz_perc_g', 0) / 100.0) + 
+            (ann.get('rez_score', 0) / 100.0)
+            for ann in annotations
+        )
+        
+        return min(total_score, 1.0)
+    
+    def passes_quality_threshold(self, sequence: str, score: float, pattern_info: Tuple) -> bool:
+        """Quality threshold for R-loop detection"""
+        return score >= 0.4
+    
     def detect_motifs(self, sequence: str, sequence_name: str = "sequence") -> List[Dict[str, Any]]:
-        """Override base method to use custom R-loop detection logic with component details"""
+        """
+        Detect R-loop forming sequences using QmRLFS algorithm.
+        
+        Returns motifs with RIZ and REZ component information.
+        """
         sequence = sequence.upper().strip()
         motifs = []
         
-        # Use base method but with lowered thresholds
-        base_motifs = super().detect_motifs(sequence, sequence_name)
+        # Use annotation method to find R-loops
+        annotations = self.annotate_sequence(sequence)
         
-        # Also add simple GC-rich region detection
-        # Look for GC-rich regions that might form R-loops
-        gc_pattern = re.compile(r'[GC]{8,}', re.IGNORECASE | re.ASCII)
-        for match in gc_pattern.finditer(sequence):
-            start, end = match.span()
-            motif_seq = sequence[start:end]
+        for i, ann in enumerate(annotations):
+            # Determine model subclass
+            model = ann['model']
+            subclass = 'QmRLFS-m1' if model == 'qmrlfs_model_1' else 'QmRLFS-m2'
             
-            # Calculate GC content
-            gc_content_val = len(re.findall(r'[GC]', motif_seq)) / len(motif_seq)
-            if gc_content_val >= 0.75:  # At least 75% GC
-                score = gc_content_val * 0.8  # Simple GC-based score
-                
-                # Extract R-loop components
-                g_regions = re.findall(r'G+', motif_seq)
-                c_regions = re.findall(r'C+', motif_seq)
-                at_spacers = re.findall(r'[AT]+', motif_seq)
-                
-                # Calculate GC content percentage
-                gc_pct = gc_content_val * 100
-                
-                motifs.append({
-                    'ID': f"{sequence_name}_RLP_GC_{start+1}",
-                    'Sequence_Name': sequence_name,
-                    'Class': self.get_motif_class_name(),
-                    'Subclass': 'R-loop formation sites',
-                    'Start': start + 1,  # 1-based coordinates
-                    'End': end,
-                    'Length': len(motif_seq),
-                    'Sequence': motif_seq,
-                    'Score': round(score, 3),
-                    'Strand': '+',
-                    'Method': 'R-Loop_detection',
-                    'Pattern_ID': f'RLP_GC_{start+1}',
-                    # Component details
-                    'G_Regions': g_regions,
-                    'C_Regions': c_regions,
-                    'AT_Spacers': at_spacers,
-                    'Num_G_Regions': len(g_regions),
-                    'Num_C_Regions': len(c_regions),
-                    'GC_Content': round(gc_pct, 2)
-                })
-        
-        motifs.extend(base_motifs)
-        
-        # Remove overlapping motifs
-        motifs = self._remove_overlaps(motifs)
+            # Calculate combined score
+            score = (ann['riz_perc_g'] / 100.0) + (ann.get('rez_score', 0) / 100.0)
+            
+            # Create motif entry
+            motif = {
+                'ID': f"{sequence_name}_RLOOP_{ann['total_start']+1}",
+                'Sequence_Name': sequence_name,
+                'Class': self.get_motif_class_name(),
+                'Subclass': subclass,
+                'Start': ann['total_start'] + 1,  # 1-based coordinates
+                'End': ann['total_end'],
+                'Length': ann['total_length'],
+                'Sequence': sequence[ann['total_start']:ann['total_end']],
+                'Score': round(score, 3),
+                'Strand': '+',
+                'Method': 'QmRLFS_detection',
+                'Pattern_ID': f"QmRLFS_{i+1}",
+                # RIZ component details
+                'RIZ_Start': ann['riz_start'] + 1,
+                'RIZ_End': ann['riz_end'],
+                'RIZ_Length': ann['riz_length'],
+                'RIZ_Sequence': ann['riz_sequence'],
+                'RIZ_G_Percent': ann['riz_perc_g'],
+                'RIZ_G_Total': ann['riz_g_total'],
+                'RIZ_3G_Tracts': ann['riz_3gs_count'],
+                'RIZ_4G_Tracts': ann['riz_4gs_count'],
+                # REZ component details (if present)
+                'REZ_Start': ann.get('rez_start', None),
+                'REZ_End': ann.get('rez_end', None),
+                'REZ_Length': ann.get('rez_length', 0),
+                'REZ_Sequence': ann.get('rez_sequence', ''),
+                'REZ_G_Percent': ann.get('rez_perc_g', 0.0),
+                'REZ_G_Total': ann.get('rez_g_total', 0),
+                'REZ_3G_Tracts': ann.get('rez_3gs_count', 0),
+                'REZ_4G_Tracts': ann.get('rez_4gs_count', 0),
+                'Linker_Length': ann.get('linker_length', 0)
+            }
+            
+            motifs.append(motif)
         
         return motifs
 
