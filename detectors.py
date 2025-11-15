@@ -3188,6 +3188,70 @@ class GQuadruplexDetector(BaseMotifDetector):
         accepted.sort(key=lambda x: x['start'])
         return accepted
 
+    def detect_motifs(self, sequence: str, sequence_name: str = "sequence") -> List[Dict[str, Any]]:
+        """
+        Override base method to use annotate_sequence with overlap resolution.
+        
+        This ensures that for overlapping G4 subclass motifs, only the longest or 
+        highest-scoring non-overlapping motif is reported within each subclass.
+        
+        Returns:
+            List of motif dictionaries with complete G4 component information
+        """
+        sequence = sequence.upper().strip()
+        motifs = []
+        
+        # Use annotate_sequence which includes overlap resolution
+        annotations = self.annotate_sequence(sequence)
+        
+        for i, annotation in enumerate(annotations):
+            # Map class_name to subclass display name
+            class_name = annotation['class_name']
+            subclass_map = {
+                'canonical_g4': 'Canonical G4',
+                'relaxed_g4': 'Relaxed G4',
+                'long_loop_g4': 'Long-loop G4',
+                'bulged_g4': 'Bulged G4',
+                'multimeric_g4': 'Multimeric G4',
+                'imperfect_g4': 'Imperfect G4',
+                'g_triplex': 'G-Triplex intermediate'
+            }
+            subclass = subclass_map.get(class_name, class_name)
+            
+            start_pos = annotation['start']
+            end_pos = annotation['end']
+            details = annotation.get('details', {})
+            
+            motif = {
+                'ID': f"{sequence_name}_{annotation['pattern_id']}_{start_pos+1}",
+                'Sequence_Name': sequence_name,
+                'Class': self.get_motif_class_name(),
+                'Subclass': subclass,
+                'Start': start_pos + 1,  # 1-based coordinates
+                'End': end_pos,
+                'Length': annotation['length'],
+                'Sequence': annotation['matched_seq'],
+                'Score': round(annotation['score'], 3),
+                'Strand': '+',
+                'Method': 'G4Hunter_detection',
+                'Pattern_ID': annotation['pattern_id']
+            }
+            
+            # Add component details if available
+            if details:
+                motif['Stems'] = details.get('stems', [])
+                motif['Loops'] = details.get('loops', [])
+                motif['Num_Stems'] = details.get('num_stems', 0)
+                motif['Num_Loops'] = details.get('num_loops', 0)
+                motif['Stem_Lengths'] = details.get('stem_lengths', [])
+                motif['Loop_Lengths'] = details.get('loop_lengths', [])
+                motif['GC_Total'] = details.get('GC_Total', 0)
+                motif['GC_Stems'] = details.get('GC_Stems', 0)
+            
+            motifs.append(motif)
+        
+        return motifs
+
 
 """
 The code is scientifically correct, rigorously implements current computational standards for G-quadruplex detection, and directly incorporates biologically validated pattern classes and scoring strategies from several pivotal references in the G4 literature. Below you will find:
@@ -3428,16 +3492,34 @@ class IMotifDetector(BaseMotifDetector):
         return res
     
     def detect_motifs(self, sequence: str, sequence_name: str = "sequence") -> List[Dict[str, Any]]:
-        """Detect i-motif structures with component details"""
+        """
+        Detect i-motif structures with component details and overlap resolution.
+        
+        This ensures that for overlapping i-motif subclass motifs, only the longest or 
+        highest-scoring non-overlapping motif is reported within each subclass.
+        """
         seq = sequence.upper()
         motifs = []
         
-        # Use base detect method
-        base_motifs = super().detect_motifs(sequence, sequence_name)
+        # Use annotate_sequence which includes overlap resolution
+        annotation_result = self.annotate_sequence(seq)
+        accepted_motifs = annotation_result.get('accepted', [])
         
-        # Enhance with component information
-        for motif in base_motifs:
-            motif_seq = motif.get('Sequence', '')
+        # Map class_name to subclass display name
+        subclass_map = {
+            'canonical_imotif': 'Canonical i-Motif',
+            'hur_ac_motif': 'HUR AC-Motif',
+            'ac_motif_hur': 'HUR AC-Motif'
+        }
+        
+        # Create motif dictionaries from accepted motifs
+        for i, accepted in enumerate(accepted_motifs):
+            start_pos = accepted['start']
+            end_pos = accepted['end']
+            motif_seq = seq[start_pos:end_pos]
+            class_name = accepted.get('class_name', 'canonical_imotif')
+            subclass = subclass_map.get(class_name, 'i-Motif')
+            score = accepted.get('score', 0)
             
             # Extract C-tracts (stems for i-motifs)
             c_tracts = re.findall(r'C{2,}', motif_seq)
@@ -3445,9 +3527,9 @@ class IMotifDetector(BaseMotifDetector):
             # Extract loops (regions between C-tracts)
             loops = []
             c_tract_matches = list(re.finditer(r'C{2,}', motif_seq))
-            for i in range(len(c_tract_matches) - 1):
-                loop_start = c_tract_matches[i].end()
-                loop_end = c_tract_matches[i + 1].start()
+            for j in range(len(c_tract_matches) - 1):
+                loop_start = c_tract_matches[j].end()
+                loop_end = c_tract_matches[j + 1].start()
                 if loop_end > loop_start:
                     loops.append(motif_seq[loop_start:loop_end])
             
@@ -3458,15 +3540,29 @@ class IMotifDetector(BaseMotifDetector):
                 all_stems = ''.join(c_tracts)
                 gc_stems = (all_stems.count('G') + all_stems.count('C')) / len(all_stems) * 100 if len(all_stems) > 0 else 0
             
-            # Add component details
-            motif['Stems'] = c_tracts
-            motif['Loops'] = loops
-            motif['Num_Stems'] = len(c_tracts)
-            motif['Num_Loops'] = len(loops)
-            motif['Stem_Lengths'] = [len(s) for s in c_tracts]
-            motif['Loop_Lengths'] = [len(l) for l in loops]
-            motif['GC_Total'] = round(gc_total, 2)
-            motif['GC_Stems'] = round(gc_stems, 2)
+            motif = {
+                'ID': f"{sequence_name}_IMOT_{start_pos+1}",
+                'Sequence_Name': sequence_name,
+                'Class': self.get_motif_class_name(),
+                'Subclass': subclass,
+                'Start': start_pos + 1,  # 1-based coordinates
+                'End': end_pos,
+                'Length': end_pos - start_pos,
+                'Sequence': motif_seq,
+                'Score': round(score, 3),
+                'Strand': '+',
+                'Method': 'i-Motif_detection',
+                'Pattern_ID': f'IMOT_{i+1}',
+                # Component details
+                'Stems': c_tracts,
+                'Loops': loops,
+                'Num_Stems': len(c_tracts),
+                'Num_Loops': len(loops),
+                'Stem_Lengths': [len(s) for s in c_tracts],
+                'Loop_Lengths': [len(l) for l in loops],
+                'GC_Total': round(gc_total, 2),
+                'GC_Stems': round(gc_stems, 2)
+            }
             
             motifs.append(motif)
         
