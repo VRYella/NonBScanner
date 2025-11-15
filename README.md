@@ -44,10 +44,8 @@ NonBScanner/
 
 ### Supporting Files
 - `scanner.py` - Low-level k-mer indexing functions (used by detectors)
-- `test_all_motifs.py` - Comprehensive validation suite
-- `docs/` - Detailed documentation
 - `registry/` - Pattern registries for motif detection
-- `R_tool/` - R language interface
+- `example_motifs_multiline.fasta` - Example FASTA file with all motif types
 
 ## 🔬 Supported Motif Classes
 
@@ -66,12 +64,11 @@ NonBScanner/
 
 ## 📚 Documentation
 
-Comprehensive documentation is available:
-
-- **[QUICK_START.md](QUICK_START.md)** - Fast installation and first analysis guide
-- **[HYPERSCAN_ARCHITECTURE.md](HYPERSCAN_ARCHITECTURE.md)** - Hyperscan integration details
-- **[OPTIMIZED_SCANNER_ARCHITECTURE.md](OPTIMIZED_SCANNER_ARCHITECTURE.md)** - Optimized repeat scanner architecture
-- **[ORGANIZATION.md](ORGANIZATION.md)** - Repository organization and structure
+This README provides comprehensive documentation for using NonBScanner. The tool supports multiple interfaces:
+- Python API (see Quick Start below)
+- Web Interface (Streamlit app)
+- Jupyter Notebook (`NonBScanner_Local.ipynb`)
+- Shell Script (`generate_csv_output.sh`)
 
 ## 🚀 Quick Start
 
@@ -125,16 +122,6 @@ chmod +x generate_csv_output.sh
 ./generate_csv_output.sh -i sequences.fasta -o output -v
 ```
 
-### R Interface
-```r
-# In R console
-source("R_tool/nonbscanner.R")
-init_nonbscanner()
-
-# Analyze a sequence
-motifs <- analyze_sequence("GGGTTAGGGTTAGGGTTAGGG", "test")
-```
-
 ## 📱 User Interfaces
 
 ### **Streamlit Web Application** (`http://localhost:8501`)
@@ -149,21 +136,13 @@ motifs <- analyze_sequence("GGGTTAGGGTTAGGGTTAGGG", "test")
 - Interactive cell-by-cell analysis
 - Built-in visualizations and examples
 - Perfect for exploratory analysis
-- [Documentation](JUPYTER_NOTEBOOK_LOCAL_README.md)
 
 ### **Shell Script** (Batch CSV Generation)
 - **File**: `generate_csv_output.sh`
 - Command-line batch processing
 - Generate CSV for all motif classes
 - Automated summary statistics
-- [Documentation](CSV_GENERATOR_README.md)
-
-### **R Interface** (R Programming Integration)
-- **Directory**: `R_tool/`
-- Native R wrapper for NonBScanner
-- ggplot2 visualizations
-- Complete R workflow support
-- [Documentation](R_tool/README.md)
+- Run with `--help` flag for usage information
 
 ## 🛠️ Technical Features
 
