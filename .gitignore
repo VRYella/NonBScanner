@@ -78,6 +78,13 @@ tmp/
 # Test output files
 *.tsv
 !example*.tsv
+test_*.xlsx
+test_*.csv
+test_*.txt
+*_output.xlsx
+detection_report.txt
+summary_statistics.csv
+*.png
 
 # Exclude original complex directories - using consolidated scripts instead
 motifs/

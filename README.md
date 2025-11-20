@@ -82,6 +82,7 @@ This README provides comprehensive documentation for using NonBScanner. The tool
 ### Python API (Recommended)
 ```python
 import nonbscanner as nbs
+from utilities import analyze_class_subclass_detection, print_detection_report
 
 # Analyze a single sequence
 sequence = "GGGTTAGGGTTAGGGTTAGGG"
@@ -96,8 +97,21 @@ results = nbs.analyze_file("sequences.fasta")
 for name, motifs in results.items():
     print(f"{name}: {len(motifs)} motifs detected")
 
-# Export results
-nbs.export_results(motifs, format='csv', filename='output.csv')
+# Combine all motifs for comprehensive analysis
+all_motifs = []
+for name, motifs in results.items():
+    all_motifs.extend(motifs)
+
+# Export results to Excel with separate sheets for each motif class
+nbs.export_results(all_motifs, format='excel', filename='output.xlsx')
+
+# Export to CSV (traditional format)
+nbs.export_results(all_motifs, format='csv', filename='output.csv')
+
+# Analyze class/subclass detection status
+detection_report = analyze_class_subclass_detection(all_motifs)
+report_text = print_detection_report(detection_report)
+print(report_text)
 ```
 
 ### Web Interface
@@ -111,23 +125,21 @@ pip install -r requirements.txt
 streamlit run app.py                    # Web interface on :8501
 ```
 
-### Jupyter Notebook (Local)
+### Jupyter Notebook (Recommended for Comprehensive Analysis)
 ```bash
-# Launch Jupyter notebook
+# Launch Jupyter notebook - includes Excel export and detection analysis
 jupyter notebook NonBScanner_Local.ipynb
 
 # Or with JupyterLab
 jupyter lab NonBScanner_Local.ipynb
 ```
 
-### Shell Script (Batch Processing)
-```bash
-# Make script executable
-chmod +x generate_csv_output.sh
+The notebook provides:
+- **Excel output** with separate sheets for each motif class/subclass
+- **Comprehensive class/subclass detection analysis** showing which motifs were not predicted
+- **Publication-quality visualizations**
+- **Step-by-step workflow** from FASTA input to final reports
 
-# Run analysis on FASTA file
-./generate_csv_output.sh -i sequences.fasta -o output -v
-```
 
 ## 📱 User Interfaces
 
