@@ -1527,6 +1527,154 @@ def calculate_motif_statistics(motifs: List[Dict[str, Any]], sequence_length: in
     
     return stats
 
+
+def analyze_class_subclass_detection(motifs: List[Dict[str, Any]]) -> Dict[str, Any]:
+    """
+    Analyze which classes and subclasses were detected and which were not.
+    Provides comprehensive report on all 11 Non-B DNA classes.
+    
+    Args:
+        motifs: List of detected motif dictionaries
+        
+    Returns:
+        Dictionary with detailed class/subclass detection analysis
+    """
+    # Define all expected Non-B DNA classes and their subclasses
+    all_classes = {
+        'Curved DNA': ['Global Curvature', 'Local Curvature'],
+        'Slipped DNA': ['Direct Repeat', 'STR'],
+        'Cruciform DNA': ['Inverted Repeats'],
+        'R-loop': ['R-loop formation sites', 'QmRLFS-m1', 'QmRLFS-m2'],
+        'Triplex': ['Triplex', 'Sticky DNA'],
+        'G-Quadruplex': [
+            'Multimeric G4', 'Canonical G4', 'Relaxed G4', 'Bulged G4',
+            'Bipartite G4', 'Imperfect G4', 'G-Triplex intermediate', 'Long-loop G4'
+        ],
+        'i-Motif': ['Canonical i-motif', 'Relaxed i-motif', 'AC-motif'],
+        'Z-DNA': ['Z-DNA', 'eGZ'],
+        'A-philic DNA': ['A-philic DNA'],
+        'Hybrid': ['Dynamic overlaps'],
+        'Non-B_DNA_Clusters': ['Dynamic clusters']
+    }
+    
+    # Count detected classes and subclasses
+    detected_classes = defaultdict(int)
+    detected_subclasses = defaultdict(lambda: defaultdict(int))
+    
+    for motif in motifs:
+        cls = motif.get('Class', 'Unknown')
+        subcls = motif.get('Subclass', 'Unknown')
+        detected_classes[cls] += 1
+        detected_subclasses[cls][subcls] += 1
+    
+    # Analyze detection status
+    detection_report = {
+        'total_classes': len(all_classes),
+        'detected_classes': len(detected_classes),
+        'not_detected_classes': [],
+        'class_details': {},
+        'summary': {}
+    }
+    
+    for cls, expected_subclasses in all_classes.items():
+        if cls in detected_classes:
+            # Class was detected
+            detected_subs = list(detected_subclasses[cls].keys())
+            not_detected_subs = [sub for sub in expected_subclasses 
+                                if sub not in detected_subs and sub not in ['Dynamic overlaps', 'Dynamic clusters']]
+            
+            detection_report['class_details'][cls] = {
+                'status': 'DETECTED',
+                'count': detected_classes[cls],
+                'expected_subclasses': expected_subclasses,
+                'detected_subclasses': detected_subs,
+                'not_detected_subclasses': not_detected_subs,
+                'subclass_counts': dict(detected_subclasses[cls])
+            }
+        else:
+            # Class was not detected
+            detection_report['not_detected_classes'].append(cls)
+            detection_report['class_details'][cls] = {
+                'status': 'NOT_DETECTED',
+                'count': 0,
+                'expected_subclasses': expected_subclasses,
+                'detected_subclasses': [],
+                'not_detected_subclasses': expected_subclasses,
+                'subclass_counts': {}
+            }
+    
+    # Create summary
+    detection_report['summary'] = {
+        'Total Classes': len(all_classes),
+        'Detected Classes': len(detected_classes),
+        'Not Detected Classes': len(detection_report['not_detected_classes']),
+        'Total Motifs': len(motifs),
+        'Detection Rate': f"{len(detected_classes) / len(all_classes) * 100:.1f}%"
+    }
+    
+    return detection_report
+
+
+def print_detection_report(detection_report: Dict[str, Any]) -> str:
+    """
+    Format detection report as readable text
+    
+    Args:
+        detection_report: Report from analyze_class_subclass_detection()
+        
+    Returns:
+        Formatted text report
+    """
+    lines = []
+    lines.append("="*80)
+    lines.append("NON-B DNA MOTIF DETECTION ANALYSIS REPORT")
+    lines.append("="*80)
+    lines.append("")
+    
+    # Summary
+    lines.append("SUMMARY:")
+    for key, value in detection_report['summary'].items():
+        lines.append(f"  {key}: {value}")
+    lines.append("")
+    
+    # Detected classes
+    lines.append("DETECTED CLASSES:")
+    lines.append("-"*80)
+    for cls, details in sorted(detection_report['class_details'].items()):
+        if details['status'] == 'DETECTED':
+            lines.append(f"\n{cls} ({details['count']} motifs):")
+            lines.append(f"  Expected subclasses: {len(details['expected_subclasses'])}")
+            lines.append(f"  Detected subclasses: {len(details['detected_subclasses'])}")
+            
+            if details['detected_subclasses']:
+                lines.append("  ✓ Detected:")
+                for subcls in details['detected_subclasses']:
+                    count = details['subclass_counts'].get(subcls, 0)
+                    lines.append(f"    - {subcls} ({count} motifs)")
+            
+            if details['not_detected_subclasses']:
+                lines.append("  ✗ Not Detected:")
+                for subcls in details['not_detected_subclasses']:
+                    lines.append(f"    - {subcls}")
+    
+    lines.append("")
+    
+    # Not detected classes
+    if detection_report['not_detected_classes']:
+        lines.append("NOT DETECTED CLASSES:")
+        lines.append("-"*80)
+        for cls in detection_report['not_detected_classes']:
+            details = detection_report['class_details'][cls]
+            lines.append(f"\n✗ {cls}:")
+            lines.append(f"  Expected subclasses: {', '.join(details['expected_subclasses'])}")
+            lines.append(f"  Reason: No motifs of this class were found in the sequence")
+    
+    lines.append("")
+    lines.append("="*80)
+    
+    return '\n'.join(lines)
+
+
 # =============================================================================
 # FORMATTING & OUTPUT UTILITIES
 # =============================================================================
@@ -1802,6 +1950,129 @@ def export_to_json(motifs: List[Dict[str, Any]], filename: Optional[str] = None,
             print(f"Error writing JSON file {filename}: {e}")
     
     return json_content
+
+
+def export_to_excel(motifs: List[Dict[str, Any]], filename: str = "nonbscanner_results.xlsx") -> str:
+    """
+    Export motifs to Excel format with multiple sheets:
+    - First sheet: Consolidated non-overlapping motifs
+    - Subsequent sheets: Individual motif classes/subclasses
+    
+    Args:
+        motifs: List of motif dictionaries
+        filename: Output Excel filename (default: "nonbscanner_results.xlsx")
+        
+    Returns:
+        Success message string
+    """
+    try:
+        import openpyxl
+    except ImportError:
+        raise ImportError("openpyxl is required for Excel export. Install with: pip install openpyxl")
+    
+    if not motifs:
+        return "No motifs to export"
+    
+    # Comprehensive column order
+    comprehensive_columns = [
+        'ID', 'Sequence_Name', 'Source', 'Class', 'Subclass', 'Pattern_ID',
+        'Start', 'End', 'Length', 'Sequence', 'Method', 'Score',
+        'Repeat_Type', 'Left_Arm', 'Right_Arm', 'Loop_Seq',
+        'Arm_Length', 'Loop_Length', 'Stem_Length', 'Unit_Length',
+        'Number_Of_Copies', 'Spacer_Length', 'Spacer_Sequence',
+        'GC_Content', 'Structural_Features', 'Strand'
+    ]
+    
+    # Get all unique keys from motifs
+    all_keys = set()
+    for motif in motifs:
+        all_keys.update(motif.keys())
+    
+    # Add any additional fields found
+    columns = comprehensive_columns.copy()
+    for key in sorted(all_keys):
+        if key not in columns:
+            columns.append(key)
+    
+    # Prepare data rows
+    def prepare_row(motif):
+        row = {}
+        for col in columns:
+            value = motif.get(col, 'NA')
+            
+            # Map alternative field names
+            if value == 'NA' or value == '' or value is None:
+                if col == 'Number_Of_Copies' and 'Repeat_Units' in motif:
+                    value = motif['Repeat_Units']
+                elif col == 'Repeat_Type' and 'Tract_Type' in motif:
+                    value = motif['Tract_Type']
+                elif col == 'GC_Content' and 'GC_Total' in motif:
+                    value = motif['GC_Total']
+                elif col == 'Structural_Features':
+                    features = []
+                    if 'Tract_Type' in motif and motif['Tract_Type'] not in ['', 'NA', None]:
+                        features.append(f"Tract:{motif['Tract_Type']}")
+                    if 'Curvature_Score' in motif and motif['Curvature_Score'] not in ['', 'NA', None]:
+                        features.append(f"Curvature:{motif['Curvature_Score']}")
+                    if 'Z_Score' in motif and motif['Z_Score'] not in ['', 'NA', None]:
+                        features.append(f"Z-Score:{motif['Z_Score']}")
+                    value = '; '.join(features) if features else 'NA'
+                
+                if value == '' or value is None:
+                    value = 'NA'
+            
+            row[col] = value
+        return row
+    
+    # Create Excel writer
+    with pd.ExcelWriter(filename, engine='openpyxl') as writer:
+        # Sheet 1: Consolidated non-overlapping motifs (exclude Hybrid and Cluster)
+        consolidated_motifs = [m for m in motifs 
+                             if m.get('Class') not in ['Hybrid', 'Non-B_DNA_Clusters']]
+        
+        if consolidated_motifs:
+            consolidated_data = [prepare_row(m) for m in consolidated_motifs]
+            df_consolidated = pd.DataFrame(consolidated_data, columns=columns)
+            df_consolidated.to_excel(writer, sheet_name='Consolidated_NonOverlapping', index=False)
+        
+        # Group motifs by class
+        class_groups = defaultdict(list)
+        for motif in motifs:
+            cls = motif.get('Class', 'Unknown')
+            class_groups[cls].append(motif)
+        
+        # Create separate sheets for each class
+        for cls, class_motifs in sorted(class_groups.items()):
+            # Sanitize sheet name (Excel has 31 character limit)
+            sheet_name = cls.replace('/', '_').replace(' ', '_').replace('-', '_')[:31]
+            
+            class_data = [prepare_row(m) for m in class_motifs]
+            df_class = pd.DataFrame(class_data, columns=columns)
+            df_class.to_excel(writer, sheet_name=sheet_name, index=False)
+            
+            # Also create sheets by subclass if there are multiple subclasses
+            subclass_groups = defaultdict(list)
+            for motif in class_motifs:
+                subclass = motif.get('Subclass', 'Other')
+                subclass_groups[subclass].append(motif)
+            
+            # Only create subclass sheets if there are multiple subclasses
+            if len(subclass_groups) > 1:
+                for subclass, subclass_motifs in sorted(subclass_groups.items()):
+                    # Sanitize subclass sheet name
+                    subclass_name = f"{cls}_{subclass}".replace('/', '_').replace(' ', '_').replace('-', '_')[:31]
+                    
+                    subclass_data = [prepare_row(m) for m in subclass_motifs]
+                    df_subclass = pd.DataFrame(subclass_data, columns=columns)
+                    
+                    # Try to add sheet, skip if name collision
+                    try:
+                        df_subclass.to_excel(writer, sheet_name=subclass_name, index=False)
+                    except:
+                        pass  # Skip if sheet name collision
+    
+    return f"Excel file exported successfully to {filename}"
+
 
 def export_to_gff3(motifs: List[Dict[str, Any]], sequence_name: str = "sequence", 
                    filename: Optional[str] = None) -> str:

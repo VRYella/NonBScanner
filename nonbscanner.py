@@ -94,8 +94,11 @@ from utilities import (
     export_to_csv,
     export_to_bed,
     export_to_json,
+    export_to_excel,
     get_basic_stats,
-    calculate_motif_statistics
+    calculate_motif_statistics,
+    analyze_class_subclass_detection,
+    print_detection_report
 )
 
 __version__ = "2024.1"
@@ -474,7 +477,7 @@ def export_results(motifs: List[Dict[str, Any]], format: str = 'csv',
     
     Args:
         motifs: List of motif dictionaries
-        format: Export format ('csv', 'bed', 'json')
+        format: Export format ('csv', 'bed', 'json', 'excel')
         filename: Optional output filename
         **kwargs: Additional format-specific arguments
         
@@ -484,6 +487,7 @@ def export_results(motifs: List[Dict[str, Any]], format: str = 'csv',
     Example:
         >>> motifs = analyze_sequence("GGGTTAGGGTTAGGGTTAGGG")
         >>> csv_data = export_results(motifs, format='csv', filename='results.csv')
+        >>> excel_data = export_results(motifs, format='excel', filename='results.xlsx')
     """
     if format.lower() == 'csv':
         return export_to_csv(motifs, filename)
@@ -493,8 +497,12 @@ def export_results(motifs: List[Dict[str, Any]], format: str = 'csv',
     elif format.lower() == 'json':
         pretty = kwargs.get('pretty', True)
         return export_to_json(motifs, filename, pretty)
+    elif format.lower() in ['excel', 'xlsx']:
+        if not filename:
+            filename = 'nonbscanner_results.xlsx'
+        return export_to_excel(motifs, filename)
     else:
-        raise ValueError(f"Unsupported format: {format}. Use 'csv', 'bed', or 'json'")
+        raise ValueError(f"Unsupported format: {format}. Use 'csv', 'bed', 'json', or 'excel'")
 
 
 # =============================================================================
