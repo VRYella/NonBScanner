@@ -36,7 +36,7 @@ from collections import Counter
 from utilities import (
     canonicalize_motif, parse_fasta, gc_content, reverse_complement, wrap,
     get_basic_stats, export_to_bed, export_to_csv, export_to_json,
-    validate_sequence, quality_check_motifs
+    validate_sequence, quality_check_motifs, export_to_excel
 )
 from nonbscanner import (
     analyze_sequence, analyze_multiple_sequences,
@@ -77,6 +77,39 @@ def ensure_subclass(motif):
     else:
         # Handle non-dict motifs gracefully
         return {'Subclass': 'Other', 'Motif': motif}
+
+
+# ---------- HELPER: Generate Excel data as bytes for download ----------
+def generate_excel_bytes(motifs):
+    """
+    Generate Excel file as bytes for Streamlit download button.
+    
+    Args:
+        motifs: List of motif dictionaries
+        
+    Returns:
+        bytes: Excel file data as bytes
+    """
+    import tempfile
+    import os
+    
+    # Create a temporary file
+    with tempfile.NamedTemporaryFile(mode='wb', suffix='.xlsx', delete=False) as tmp:
+        tmp_path = tmp.name
+    
+    try:
+        # Use the existing export_to_excel function to create the file
+        export_to_excel(motifs, tmp_path)
+        
+        # Read the file as bytes
+        with open(tmp_path, 'rb') as f:
+            excel_bytes = f.read()
+        
+        return excel_bytes
+    finally:
+        # Clean up the temporary file
+        if os.path.exists(tmp_path):
+            os.remove(tmp_path)
 
 
 # ---------- ENHANCED PROFESSIONAL CSS FOR RESEARCH-QUALITY UI ----------
@@ -1612,7 +1645,16 @@ with tab_pages["Download"]:
         
         # Export buttons using consolidated functions
         st.markdown("### 💾 Download Files")
-        col1, col2, col3 = st.columns(3)
+        
+        # Add helpful info about Excel format
+        st.info("""
+        💡 **Excel Format**: Downloads a multi-sheet workbook with:
+        • **Consolidated Sheet**: All non-overlapping motifs
+        • **Class Sheets**: Separate sheets for each motif class (G-Quadruplex, Z-DNA, etc.)
+        • **Subclass Sheets**: Detailed breakdown by subclass (when multiple subclasses exist)
+        """)
+        
+        col1, col2, col3, col4 = st.columns(4)
         
         with col1:
             # CSV Export
@@ -1628,11 +1670,27 @@ with tab_pages["Download"]:
                 )
         
         with col2:
+            # Excel Export
+            if all_motifs:
+                try:
+                    excel_bytes = generate_excel_bytes(all_motifs)
+                    st.download_button(
+                        "📊 Download Excel", 
+                        data=excel_bytes, 
+                        file_name="nbdscanner_results.xlsx", 
+                        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                        use_container_width=True,
+                        help="Excel format with multiple sheets (Consolidated + per-class)"
+                    )
+                except Exception as e:
+                    st.error(f"Excel export error: {str(e)}")
+        
+        with col3:
             # JSON Export  
             if all_motifs:
                 json_data = export_to_json(all_motifs, pretty=True)
                 st.download_button(
-                    "📊 Download JSON", 
+                    "📋 Download JSON", 
                     data=json_data.encode('utf-8'), 
                     file_name="nbdscanner_results.json", 
                     mime="application/json",
@@ -1640,7 +1698,7 @@ with tab_pages["Download"]:
                     help="JSON format with metadata"
                 )
         
-        with col3:
+        with col4:
             # BED Export
             if all_motifs and st.session_state.names:
                 bed_data = export_to_bed(all_motifs, st.session_state.names[0])
@@ -1652,8 +1710,13 @@ with tab_pages["Download"]:
                     use_container_width=True,
                     help="BED format for genome browsers"
                 )
-            
-            # Config Export - always available when results exist
+        
+        # Additional export options in a new row
+        st.markdown("### 🔧 Additional Exports")
+        col5, col6, col7, col8 = st.columns(4)
+        
+        with col5:
+            # Config Export
             if all_motifs:
                 import json
                 # Create a basic configuration summary
