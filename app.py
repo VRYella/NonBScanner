@@ -1645,6 +1645,15 @@ with tab_pages["Download"]:
         
         # Export buttons using consolidated functions
         st.markdown("### 💾 Download Files")
+        
+        # Add helpful info about Excel format
+        st.info("""
+        💡 **Excel Format**: Downloads a multi-sheet workbook with:
+        • **Consolidated Sheet**: All non-overlapping motifs
+        • **Class Sheets**: Separate sheets for each motif class (G-Quadruplex, Z-DNA, etc.)
+        • **Subclass Sheets**: Detailed breakdown by subclass (when multiple subclasses exist)
+        """)
+        
         col1, col2, col3, col4 = st.columns(4)
         
         with col1:
