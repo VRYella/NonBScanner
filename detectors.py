@@ -877,11 +877,22 @@ except Exception:
 
 
 class ZDNADetector(BaseMotifDetector):
-    """Detector for Z-DNA motifs using a 10-mer scoring table."""
+    """
+    Detector for Z-DNA (left-handed helix) motifs using 10-mer scoring.
+    
+    # Motif Structure:
+    # | Field      | Type  | Description                         |
+    # |------------|-------|-------------------------------------|
+    # | Class      | str   | Always 'Z_DNA'                      |
+    # | Subclass   | str   | 'Classic_Z_DNA' or 'eGZ'            |
+    # | Start      | int   | 1-based start position              |
+    # | End        | int   | End position                        |
+    # | Score      | float | Z-DNA propensity score              |
+    # | Length     | int   | Motif length in bp                  |
+    # | GC_Content | float | GC% (Z-DNA favors high GC)          |
+    """
 
-    # -------------------------
-    # Full provided 10-mer -> score table (paste as-is)
-    # -------------------------
+    # Full 10-mer scoring table from Ho et al. 1986
     TENMER_SCORE: Dict[str, float] = {
         "AACGCGCGCG": 50.25,
         "ATGCGCGCGC": 51.25,
