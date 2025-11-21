@@ -79,7 +79,25 @@ from typing import List, Dict, Any, Tuple, Optional
 
 
 class BaseMotifDetector(ABC):
-    """Abstract base class for all motif detectors"""
+    """
+    Abstract base class for all Non-B DNA motif detectors.
+    
+    # Motif Output Structure:
+    # | Field         | Type  | Description                          |
+    # |---------------|-------|--------------------------------------|
+    # | ID            | str   | Unique motif identifier              |
+    # | Sequence_Name | str   | Source sequence name                 |
+    # | Class         | str   | Motif class (e.g., 'Curved_DNA')     |
+    # | Subclass      | str   | Motif subclass/variant               |
+    # | Start         | int   | 1-based start position               |
+    # | End           | int   | End position (inclusive)             |
+    # | Length        | int   | Motif length in bp                   |
+    # | Sequence      | str   | Actual DNA sequence                  |
+    # | Score         | float | Detection confidence score (0-1)     |
+    # | Strand        | str   | Strand orientation ('+' or '-')      |
+    # | Method        | str   | Detection method identifier          |
+    # | Pattern_ID    | str   | Pattern identifier used for match    |
+    """
     
     def __init__(self):
         self.patterns = self.get_patterns()
@@ -87,21 +105,48 @@ class BaseMotifDetector(ABC):
     
     @abstractmethod
     def get_patterns(self) -> Dict[str, List[Tuple]]:
-        """Return patterns specific to this motif class"""
+        """
+        Return patterns specific to this motif class.
+        
+        # Pattern Structure:
+        # | Field       | Type  | Description                    |
+        # |-------------|-------|--------------------------------|
+        # | regex       | str   | Regular expression pattern     |
+        # | pattern_id  | str   | Unique pattern identifier      |
+        # | name        | str   | Human-readable name            |
+        # | subclass    | str   | Motif subclass                 |
+        # | min_length  | int   | Minimum match length           |
+        # | score_type  | str   | Scoring method name            |
+        # | threshold   | float | Quality threshold (0-1)        |
+        # | description | str   | Pattern description            |
+        # | reference   | str   | Literature citation            |
+        """
         pass
     
     @abstractmethod  
     def get_motif_class_name(self) -> str:
-        """Return the motif class name"""
+        """Return the motif class name (e.g., 'Curved_DNA', 'G_Quadruplex')"""
         pass
     
     @abstractmethod
     def calculate_score(self, sequence: str, pattern_info: Tuple) -> float:
-        """Calculate motif-specific score"""
+        """
+        Calculate motif-specific confidence score.
+        
+        Args:
+            sequence: DNA sequence string (uppercase)
+            pattern_info: Pattern tuple with metadata
+            
+        Returns:
+            Score value between 0.0 and 1.0
+        """
         pass
     
     def _compile_patterns(self) -> Dict[str, List[Tuple]]:
-        """Compile all regex patterns for performance with optimized flags"""
+        """
+        Compile all regex patterns once for performance.
+        Uses re.IGNORECASE | re.ASCII for optimal DNA sequence matching.
+        """
         compiled_patterns = {}
         
         for pattern_group, patterns in self.patterns.items():
@@ -109,9 +154,8 @@ class BaseMotifDetector(ABC):
             for pattern_info in patterns:
                 pattern, pattern_id, name, subclass = pattern_info[:4]
                 try:
-                    # Use IGNORECASE | ASCII for better performance on DNA sequences
-                    compiled_pattern = re.compile(pattern, re.IGNORECASE | re.ASCII)
-                    compiled_group.append((compiled_pattern, pattern_id, name, subclass, pattern_info))
+                    compiled_re = re.compile(pattern, re.IGNORECASE | re.ASCII)
+                    compiled_group.append((compiled_re, pattern_id, name, subclass, pattern_info))
                 except re.error as e:
                     print(f"Warning: Invalid pattern {pattern}: {e}")
                     continue
@@ -120,27 +164,44 @@ class BaseMotifDetector(ABC):
         return compiled_patterns
     
     def detect_motifs(self, sequence: str, sequence_name: str = "sequence") -> List[Dict[str, Any]]:
-        """Main detection method"""
+        """
+        Main detection method - scans sequence for all compiled patterns.
+        
+        # Detection Process:
+        # | Step | Action                              |
+        # |------|-------------------------------------|
+        # | 1    | Normalize sequence to uppercase     |
+        # | 2    | Iterate through compiled patterns   |
+        # | 3    | Find all regex matches              |
+        # | 4    | Calculate motif-specific scores     |
+        # | 5    | Apply quality thresholds            |
+        # | 6    | Return list of motif dictionaries   |
+        
+        Args:
+            sequence: DNA sequence string
+            sequence_name: Identifier for the sequence
+            
+        Returns:
+            List of motif dictionaries with standardized fields
+        """
         sequence = sequence.upper().strip()
         motifs = []
         
         for pattern_group, compiled_patterns in self.compiled_patterns.items():
-            for compiled_pattern, pattern_id, name, subclass, full_pattern_info in compiled_patterns:
-                for match in compiled_pattern.finditer(sequence):
+            for compiled_re, pattern_id, name, subclass, full_info in compiled_patterns:
+                for match in compiled_re.finditer(sequence):
                     start, end = match.span()
                     motif_seq = sequence[start:end]
                     
-                    # Calculate motif-specific score
-                    score = self.calculate_score(motif_seq, full_pattern_info)
+                    score = self.calculate_score(motif_seq, full_info)
                     
-                    # Apply quality thresholds
-                    if self.passes_quality_threshold(motif_seq, score, full_pattern_info):
+                    if self.passes_quality_threshold(motif_seq, score, full_info):
                         motifs.append({
                             'ID': f"{sequence_name}_{pattern_id}_{start+1}",
                             'Sequence_Name': sequence_name,
                             'Class': self.get_motif_class_name(),
                             'Subclass': subclass,
-                            'Start': start + 1,  # 1-based coordinates
+                            'Start': start + 1,
                             'End': end,
                             'Length': len(motif_seq),
                             'Sequence': motif_seq,
@@ -197,100 +258,117 @@ def revcomp(seq: str) -> str:
     return seq.translate(trans)[::-1]
 
 
+def _generate_phased_repeat_patterns(base: str, num_tracts: int, tract_sizes: range, 
+                                      id_start: int) -> List[Tuple]:
+    """
+    Generate phased repeat patterns programmatically.
+    
+    # Output Pattern Structure:
+    # | Field       | Type  | Description                           |
+    # |-------------|-------|---------------------------------------|
+    # | pattern     | str   | Regex pattern for matching            |
+    # | pattern_id  | str   | Unique pattern identifier             |
+    # | name        | str   | Human-readable pattern name           |
+    # | subclass    | str   | Motif subclass                        |
+    # | min_length  | int   | Minimum expected match length         |
+    # | score_type  | str   | Scoring method identifier             |
+    # | threshold   | float | Quality threshold (0-1)               |
+    # | description | str   | Pattern description                   |
+    # | reference   | str   | Literature reference                  |
+    
+    Args:
+        base: Base nucleotide ('A' or 'T')
+        num_tracts: Number of tracts (3, 4, or 5)
+        tract_sizes: Range of tract sizes (e.g., range(3, 10))
+        id_start: Starting ID number for pattern naming
+    
+    Returns:
+        List of pattern tuples
+    """
+    patterns = []
+    label = 'APR' if base == 'A' else 'TPR'
+    scores = {3: 0.90, 4: 0.92, 5: 0.95}
+    min_lens = {3: 20, 4: 25, 5: 30}
+    
+    pattern_id = id_start
+    for size in tract_sizes:
+        spacing_min = max(0, 11 - size)
+        spacing_max = min(8, 11 - size + 2)
+        
+        # Build pattern: base{size}[ACGT]{spacing}... repeated num_tracts times
+        repeat_unit = f'{base}{{{size}}}[ACGT]{{{spacing_min},{spacing_max}}}'
+        pattern = '(?:' + repeat_unit * (num_tracts - 1) + f'{base}{{{size}}}' + ')'
+        
+        name = f'{base}{size}-{label}' + (f'-{num_tracts}' if num_tracts > 3 else '')
+        patterns.append((
+            pattern,
+            f'CRV_{pattern_id:03d}',
+            name,
+            'Global Curvature',
+            min_lens[num_tracts],
+            'phasing_score',
+            scores[num_tracts],
+            f'{num_tracts}-tract {label}',
+            'Koo 1986'
+        ))
+        pattern_id += 1
+    
+    return patterns
+
+
 class CurvedDNADetector(BaseMotifDetector):
+    """
+    Detects curved DNA motifs using A-tract and T-tract phasing patterns.
+    
+    # Motif Structure:
+    # | Field           | Type  | Description                        |
+    # |-----------------|-------|------------------------------------|
+    # | Class           | str   | Always 'Curved_DNA'                |
+    # | Subclass        | str   | 'Local Curvature' or 'Global Curvature' |
+    # | Start           | int   | 1-based start position             |
+    # | End             | int   | End position (inclusive)           |
+    # | Score           | float | Phasing or curvature score (0-1)   |
+    # | Tract_Type      | str   | 'A-tract' or 'T-tract' (local)     |
+    # | Center_Positions| list  | Tract center positions (global)    |
+    """
+    
     def get_motif_class_name(self) -> str:
         return "Curved_DNA"
 
-    # ---------- Parameters you can tune ----------
-    MIN_AT_TRACT = 3         # minimum A-tract length (for global APR detection)
-    MAX_AT_WINDOW = None     # None => no hard upper limit on AT window used to search AnTn patterns
-    PHASING_CENTER_SPACING = 11.0  # ideal center-to-center spacing in bp for APR phasing
-    PHASING_TOL_LOW = 9.9    # lower tolerance
-    PHASING_TOL_HIGH = 11.1  # upper tolerance
-    MIN_APR_TRACTS = 3       # at least this many A-tract centers to call an APR
-    LOCAL_LONG_TRACT = 7     # local curvature: A>=7 or T>=7
-    # --------------------------------------------
+    # Tunable parameters
+    MIN_AT_TRACT = 3
+    MAX_AT_WINDOW = None
+    PHASING_CENTER_SPACING = 11.0
+    PHASING_TOL_LOW = 9.9
+    PHASING_TOL_HIGH = 11.1
+    MIN_APR_TRACTS = 3
+    LOCAL_LONG_TRACT = 7
 
     def get_patterns(self) -> Dict[str, List[Tuple]]:
         """
-        Comprehensive curved DNA patterns including:
-        - Local curvature: long A/T tracts (>=7)
-        - Global curvature: A-phased and T-phased repeats (APRs)
-        Based on problem statement specifications.
+        Generate curved DNA patterns programmatically (reduces ~65 lines to ~20).
         """
-        return {
-            # Local curvature patterns
+        patterns = {
             'local_curved': [
-                (r'A{7,}', 'CRV_002', 'Long A-tract', 'Local Curvature', 7, 'curvature_score', 0.95, 'A-tract curvature', 'Olson 1998'),
-                (r'T{7,}', 'CRV_003', 'Long T-tract', 'Local Curvature', 7, 'curvature_score', 0.95, 'T-tract curvature', 'Olson 1998'),
-            ],
-            
-            # Global curvature: 3-tract A-phased repeats (APRs)
-            'global_curved_a_3tract': [
-                (r'(?:A{3}[ACGT]{6,8}A{3}[ACGT]{6,8}A{3})', 'CRV_008', 'A3-APR', 'Global Curvature', 20, 'phasing_score', 0.90, '3-tract APR', 'Koo 1986'),
-                (r'(?:A{4}[ACGT]{5,7}A{4}[ACGT]{5,7}A{4})', 'CRV_009', 'A4-APR', 'Global Curvature', 20, 'phasing_score', 0.90, '3-tract APR', 'Koo 1986'),
-                (r'(?:A{5}[ACGT]{4,6}A{5}[ACGT]{4,6}A{5})', 'CRV_010', 'A5-APR', 'Global Curvature', 20, 'phasing_score', 0.90, '3-tract APR', 'Koo 1986'),
-                (r'(?:A{6}[ACGT]{3,5}A{6}[ACGT]{3,5}A{6})', 'CRV_011', 'A6-APR', 'Global Curvature', 20, 'phasing_score', 0.90, '3-tract APR', 'Koo 1986'),
-                (r'(?:A{7}[ACGT]{2,4}A{7}[ACGT]{2,4}A{7})', 'CRV_012', 'A7-APR', 'Global Curvature', 20, 'phasing_score', 0.90, '3-tract APR', 'Koo 1986'),
-                (r'(?:A{8}[ACGT]{1,3}A{8}[ACGT]{1,3}A{8})', 'CRV_013', 'A8-APR', 'Global Curvature', 20, 'phasing_score', 0.90, '3-tract APR', 'Koo 1986'),
-                (r'(?:A{9}[ACGT]{0,2}A{9}[ACGT]{0,2}A{9})', 'CRV_014', 'A9-APR', 'Global Curvature', 20, 'phasing_score', 0.90, '3-tract APR', 'Koo 1986'),
-            ],
-            
-            # Global curvature: 4-tract A-phased repeats
-            'global_curved_a_4tract': [
-                (r'(?:A{3}[ACGT]{6,8}A{3}[ACGT]{6,8}A{3}[ACGT]{6,8}A{3})', 'CRV_015', 'A3-APR-4', 'Global Curvature', 25, 'phasing_score', 0.92, '4-tract APR', 'Koo 1986'),
-                (r'(?:A{4}[ACGT]{5,7}A{4}[ACGT]{5,7}A{4}[ACGT]{5,7}A{4})', 'CRV_016', 'A4-APR-4', 'Global Curvature', 25, 'phasing_score', 0.92, '4-tract APR', 'Koo 1986'),
-                (r'(?:A{5}[ACGT]{4,6}A{5}[ACGT]{4,6}A{5}[ACGT]{4,6}A{5})', 'CRV_017', 'A5-APR-4', 'Global Curvature', 25, 'phasing_score', 0.92, '4-tract APR', 'Koo 1986'),
-                (r'(?:A{6}[ACGT]{3,5}A{6}[ACGT]{3,5}A{6}[ACGT]{3,5}A{6})', 'CRV_018', 'A6-APR-4', 'Global Curvature', 25, 'phasing_score', 0.92, '4-tract APR', 'Koo 1986'),
-                (r'(?:A{7}[ACGT]{2,4}A{7}[ACGT]{2,4}A{7}[ACGT]{2,4}A{7})', 'CRV_019', 'A7-APR-4', 'Global Curvature', 25, 'phasing_score', 0.92, '4-tract APR', 'Koo 1986'),
-                (r'(?:A{8}[ACGT]{1,3}A{8}[ACGT]{1,3}A{8}[ACGT]{1,3}A{8})', 'CRV_020', 'A8-APR-4', 'Global Curvature', 25, 'phasing_score', 0.92, '4-tract APR', 'Koo 1986'),
-                (r'(?:A{9}[ACGT]{0,2}A{9}[ACGT]{0,2}A{9}[ACGT]{0,2}A{9})', 'CRV_021', 'A9-APR-4', 'Global Curvature', 25, 'phasing_score', 0.92, '4-tract APR', 'Koo 1986'),
-            ],
-            
-            # Global curvature: 5-tract A-phased repeats
-            'global_curved_a_5tract': [
-                (r'(?:A{3}[ACGT]{6,8}A{3}[ACGT]{6,8}A{3}[ACGT]{6,8}A{3}[ACGT]{6,8}A{3})', 'CRV_022', 'A3-APR-5', 'Global Curvature', 30, 'phasing_score', 0.95, '5-tract APR', 'Koo 1986'),
-                (r'(?:A{4}[ACGT]{5,7}A{4}[ACGT]{5,7}A{4}[ACGT]{5,7}A{4}[ACGT]{5,7}A{4})', 'CRV_023', 'A4-APR-5', 'Global Curvature', 30, 'phasing_score', 0.95, '5-tract APR', 'Koo 1986'),
-                (r'(?:A{5}[ACGT]{4,6}A{5}[ACGT]{4,6}A{5}[ACGT]{4,6}A{5}[ACGT]{4,6}A{5})', 'CRV_024', 'A5-APR-5', 'Global Curvature', 30, 'phasing_score', 0.95, '5-tract APR', 'Koo 1986'),
-                (r'(?:A{6}[ACGT]{3,5}A{6}[ACGT]{3,5}A{6}[ACGT]{3,5}A{6}[ACGT]{3,5}A{6})', 'CRV_025', 'A6-APR-5', 'Global Curvature', 30, 'phasing_score', 0.95, '5-tract APR', 'Koo 1986'),
-                (r'(?:A{7}[ACGT]{2,4}A{7}[ACGT]{2,4}A{7}[ACGT]{2,4}A{7}[ACGT]{2,4}A{7})', 'CRV_026', 'A7-APR-5', 'Global Curvature', 30, 'phasing_score', 0.95, '5-tract APR', 'Koo 1986'),
-                (r'(?:A{8}[ACGT]{1,3}A{8}[ACGT]{1,3}A{8}[ACGT]{1,3}A{8}[ACGT]{1,3}A{8})', 'CRV_027', 'A8-APR-5', 'Global Curvature', 30, 'phasing_score', 0.95, '5-tract APR', 'Koo 1986'),
-                (r'(?:A{9}[ACGT]{0,2}A{9}[ACGT]{0,2}A{9}[ACGT]{0,2}A{9}[ACGT]{0,2}A{9})', 'CRV_028', 'A9-APR-5', 'Global Curvature', 30, 'phasing_score', 0.95, '5-tract APR', 'Koo 1986'),
-            ],
-            
-            # Global curvature: 3-tract T-phased repeats
-            'global_curved_t_3tract': [
-                (r'(?:T{3}[ACGT]{6,8}T{3}[ACGT]{6,8}T{3})', 'CRV_029', 'T3-TPR', 'Global Curvature', 20, 'phasing_score', 0.90, '3-tract TPR', 'Koo 1986'),
-                (r'(?:T{4}[ACGT]{5,7}T{4}[ACGT]{5,7}T{4})', 'CRV_030', 'T4-TPR', 'Global Curvature', 20, 'phasing_score', 0.90, '3-tract TPR', 'Koo 1986'),
-                (r'(?:T{5}[ACGT]{4,6}T{5}[ACGT]{4,6}T{5})', 'CRV_031', 'T5-TPR', 'Global Curvature', 20, 'phasing_score', 0.90, '3-tract TPR', 'Koo 1986'),
-                (r'(?:T{6}[ACGT]{3,5}T{6}[ACGT]{3,5}T{6})', 'CRV_032', 'T6-TPR', 'Global Curvature', 20, 'phasing_score', 0.90, '3-tract TPR', 'Koo 1986'),
-                (r'(?:T{7}[ACGT]{2,4}T{7}[ACGT]{2,4}T{7})', 'CRV_033', 'T7-TPR', 'Global Curvature', 20, 'phasing_score', 0.90, '3-tract TPR', 'Koo 1986'),
-                (r'(?:T{8}[ACGT]{1,3}T{8}[ACGT]{1,3}T{8})', 'CRV_034', 'T8-TPR', 'Global Curvature', 20, 'phasing_score', 0.90, '3-tract TPR', 'Koo 1986'),
-                (r'(?:T{9}[ACGT]{0,2}T{9}[ACGT]{0,2}T{9})', 'CRV_035', 'T9-TPR', 'Global Curvature', 20, 'phasing_score', 0.90, '3-tract TPR', 'Koo 1986'),
-            ],
-            
-            # Global curvature: 4-tract T-phased repeats
-            'global_curved_t_4tract': [
-                (r'(?:T{3}[ACGT]{6,8}T{3}[ACGT]{6,8}T{3}[ACGT]{6,8}T{3})', 'CRV_036', 'T3-TPR-4', 'Global Curvature', 25, 'phasing_score', 0.92, '4-tract TPR', 'Koo 1986'),
-                (r'(?:T{4}[ACGT]{5,7}T{4}[ACGT]{5,7}T{4}[ACGT]{5,7}T{4})', 'CRV_037', 'T4-TPR-4', 'Global Curvature', 25, 'phasing_score', 0.92, '4-tract TPR', 'Koo 1986'),
-                (r'(?:T{5}[ACGT]{4,6}T{5}[ACGT]{4,6}T{5}[ACGT]{4,6}T{5})', 'CRV_038', 'T5-TPR-4', 'Global Curvature', 25, 'phasing_score', 0.92, '4-tract TPR', 'Koo 1986'),
-                (r'(?:T{6}[ACGT]{3,5}T{6}[ACGT]{3,5}T{6}[ACGT]{3,5}T{6})', 'CRV_039', 'T6-TPR-4', 'Global Curvature', 25, 'phasing_score', 0.92, '4-tract TPR', 'Koo 1986'),
-                (r'(?:T{7}[ACGT]{2,4}T{7}[ACGT]{2,4}T{7}[ACGT]{2,4}T{7})', 'CRV_040', 'T7-TPR-4', 'Global Curvature', 25, 'phasing_score', 0.92, '4-tract TPR', 'Koo 1986'),
-                (r'(?:T{8}[ACGT]{1,3}T{8}[ACGT]{1,3}T{8}[ACGT]{1,3}T{8})', 'CRV_041', 'T8-TPR-4', 'Global Curvature', 25, 'phasing_score', 0.92, '4-tract TPR', 'Koo 1986'),
-                (r'(?:T{9}[ACGT]{0,2}T{9}[ACGT]{0,2}T{9}[ACGT]{0,2}T{9})', 'CRV_042', 'T9-TPR-4', 'Global Curvature', 25, 'phasing_score', 0.92, '4-tract TPR', 'Koo 1986'),
-            ],
-            
-            # Global curvature: 5-tract T-phased repeats
-            'global_curved_t_5tract': [
-                (r'(?:T{3}[ACGT]{6,8}T{3}[ACGT]{6,8}T{3}[ACGT]{6,8}T{3}[ACGT]{6,8}T{3})', 'CRV_043', 'T3-TPR-5', 'Global Curvature', 30, 'phasing_score', 0.95, '5-tract TPR', 'Koo 1986'),
-                (r'(?:T{4}[ACGT]{5,7}T{4}[ACGT]{5,7}T{4}[ACGT]{5,7}T{4}[ACGT]{5,7}T{4})', 'CRV_044', 'T4-TPR-5', 'Global Curvature', 30, 'phasing_score', 0.95, '5-tract TPR', 'Koo 1986'),
-                (r'(?:T{5}[ACGT]{4,6}T{5}[ACGT]{4,6}T{5}[ACGT]{4,6}T{5}[ACGT]{4,6}T{5})', 'CRV_045', 'T5-TPR-5', 'Global Curvature', 30, 'phasing_score', 0.95, '5-tract TPR', 'Koo 1986'),
-                (r'(?:T{6}[ACGT]{3,5}T{6}[ACGT]{3,5}T{6}[ACGT]{3,5}T{6}[ACGT]{3,5}T{6})', 'CRV_046', 'T6-TPR-5', 'Global Curvature', 30, 'phasing_score', 0.95, '5-tract TPR', 'Koo 1986'),
-                (r'(?:T{7}[ACGT]{2,4}T{7}[ACGT]{2,4}T{7}[ACGT]{2,4}T{7}[ACGT]{2,4}T{7})', 'CRV_047', 'T7-TPR-5', 'Global Curvature', 30, 'phasing_score', 0.95, '5-tract TPR', 'Koo 1986'),
-                (r'(?:T{8}[ACGT]{1,3}T{8}[ACGT]{1,3}T{8}[ACGT]{1,3}T{8}[ACGT]{1,3}T{8})', 'CRV_048', 'T8-TPR-5', 'Global Curvature', 30, 'phasing_score', 0.95, '5-tract TPR', 'Koo 1986'),
-                (r'(?:T{9}[ACGT]{0,2}T{9}[ACGT]{0,2}T{9}[ACGT]{0,2}T{9}[ACGT]{0,2}T{9})', 'CRV_049', 'T9-TPR-5', 'Global Curvature', 30, 'phasing_score', 0.95, '5-tract TPR', 'Koo 1986'),
+                (r'A{7,}', 'CRV_002', 'Long A-tract', 'Local Curvature', 7, 
+                 'curvature_score', 0.95, 'A-tract curvature', 'Olson 1998'),
+                (r'T{7,}', 'CRV_003', 'Long T-tract', 'Local Curvature', 7, 
+                 'curvature_score', 0.95, 'T-tract curvature', 'Olson 1998'),
             ]
         }
+        
+        # Generate A-phased repeats programmatically (3-, 4-, and 5-tract)
+        tract_range = range(3, 10)  # A3..A9
+        patterns['global_curved_a_3tract'] = _generate_phased_repeat_patterns('A', 3, tract_range, 8)
+        patterns['global_curved_a_4tract'] = _generate_phased_repeat_patterns('A', 4, tract_range, 15)
+        patterns['global_curved_a_5tract'] = _generate_phased_repeat_patterns('A', 5, tract_range, 22)
+        
+        # Generate T-phased repeats programmatically
+        patterns['global_curved_t_3tract'] = _generate_phased_repeat_patterns('T', 3, tract_range, 29)
+        patterns['global_curved_t_4tract'] = _generate_phased_repeat_patterns('T', 4, tract_range, 36)
+        patterns['global_curved_t_5tract'] = _generate_phased_repeat_patterns('T', 5, tract_range, 43)
+        
+        return patterns
 
     def _remove_overlaps(self, motifs: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         """

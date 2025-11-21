@@ -90,25 +90,49 @@ def revcomp(s: str) -> str:
 
 
 # -------------------------
+# Performance utilities
+# -------------------------
+def _calc_gc_content(seq: str) -> float:
+    """Fast GC content calculation (percentage)."""
+    if not seq:
+        return 0.0
+    return (seq.count('G') + seq.count('C')) * 100.0 / len(seq)
+
+
+# -------------------------
 # K-mer index builder
 # -------------------------
 def build_kmer_index(seq: str, k: int) -> Dict[str, List[int]]:
     """
-    Build dictionary mapping k-mer -> list(positions). Skips k-mers containing non-ACGT.
+    Build k-mer position index for seed-and-extend pattern matching.
+    
+    # Index Structure:
+    # | Field    | Type       | Description                        |
+    # |----------|------------|------------------------------------|
+    # | key      | str        | k-mer sequence (length k)          |
+    # | value    | List[int]  | 0-based positions in sequence      |
+    
+    Args:
+        seq: DNA sequence (ACGT)
+        k: K-mer length
+        
+    Returns:
+        Dictionary mapping k-mer -> position list (filtered for frequency)
     """
     n = len(seq)
     idx: Dict[str, List[int]] = defaultdict(list)
-    for i in range(0, n - k + 1):
+    
+    # Build index with early filtering
+    valid_bases = frozenset("ACGT")
+    for i in range(n - k + 1):
         kmer = seq[i:i + k]
-        if 'N' in kmer or any(ch not in "ACGT" for ch in kmer):
-            continue
-        lst = idx[kmer]
-        if len(lst) <= MAX_POSITIONS_PER_KMER:
-            lst.append(i)
-    # Remove too-frequent k-mers entirely
-    to_delete = [kmer for kmer, lst in idx.items() if len(lst) > MAX_POSITIONS_PER_KMER]
-    for kmer in to_delete:
-        del idx[kmer]
+        if 'N' not in kmer and all(ch in valid_bases for ch in kmer):
+            lst = idx[kmer]
+            if len(lst) <= MAX_POSITIONS_PER_KMER:
+                lst.append(i)
+    
+    # Remove overly-frequent k-mers
+    idx = {kmer: lst for kmer, lst in idx.items() if len(lst) <= MAX_POSITIONS_PER_KMER}
     return idx
 
 
@@ -120,10 +144,22 @@ def find_direct_repeats(seq: str,
                        max_unit: int = DIRECT_MAX_UNIT,
                        max_spacer: int = DIRECT_MAX_SPACER) -> List[Dict]:
     """
-    Use k-mer index (k == len(kmer) >= min_unit) to find direct repeats:
-    - For each kmer positions list, iterate pairs (i, j) with j > i and delta <= max_unit + max_spacer
-    - For each pair compute delta = j - i; for s in 0..max_spacer, L = delta - s; if L in [min_unit,max_unit]
-      verify seq[i:i+L] == seq[j:j+L] and record.
+    Find direct repeats using k-mer seed-and-extend strategy.
+    
+    # Output Structure:
+    # | Field       | Type  | Description                      |
+    # |-------------|-------|----------------------------------|
+    # | Class       | str   | Always 'Direct_Repeat'           |
+    # | Subclass    | str   | Direct_L{unit_length}            |
+    # | Start       | int   | 1-based start position           |
+    # | End         | int   | End position                     |
+    # | Unit_Length | int   | Length of repeat unit            |
+    # | Spacer      | int   | Spacer length between units      |
+    # | GC_Unit     | float | GC% of repeat unit               |
+    # | GC_Total    | float | GC% of full motif                |
+    
+    Returns:
+        List of direct repeat dictionaries
     """
     n = len(seq)
     idx = build_kmer_index(seq, K_DIRECT)
@@ -131,40 +167,30 @@ def find_direct_repeats(seq: str,
     max_delta = max_unit + max_spacer
     
     for kmer, poses in idx.items():
-        poses_sorted = poses  # already in increasing order
-        m = len(poses_sorted)
+        m = len(poses)
         if m < 2:
             continue
-        # for each pair (i_pos, j_pos) with proximity constraint
+            
         for a in range(m):
-            i = poses_sorted[a]
+            i = poses[a]
             b = a + 1
             while b < m:
-                j = poses_sorted[b]
+                j = poses[b]
                 delta = j - i
                 if delta > max_delta:
-                    break  # further j will only be larger
-                # for each possible spacer s
-                # s = delta - L  => L = delta - s
-                # s in [0, max_spacer] -> L in [delta - max_spacer, delta]
+                    break
+                    
                 L_min = max(min_unit, delta - max_spacer)
                 L_max = min(max_unit, delta)
                 if L_min <= L_max:
-                    # test candidate lengths L in this small interval; prefer larger L first (maximal)
                     for L in range(L_max, L_min - 1, -1):
                         j_start = j
                         if j_start + L > n or i + L > n:
                             continue
                         if seq[i:i + L] == seq[j_start:j_start + L]:
-                            # Calculate component details
                             unit_seq = seq[i:i + L]
                             spacer_seq = seq[i + L:j_start] if j_start > i + L else ''
                             full_seq = seq[i:j_start + L]
-                            
-                            # Calculate GC content for components
-                            gc_unit = (unit_seq.count('G') + unit_seq.count('C')) / len(unit_seq) * 100 if len(unit_seq) > 0 else 0
-                            gc_spacer = (spacer_seq.count('G') + spacer_seq.count('C')) / len(spacer_seq) * 100 if len(spacer_seq) > 0 else 0
-                            gc_total = (full_seq.count('G') + full_seq.count('C')) / len(full_seq) * 100 if len(full_seq) > 0 else 0
                             
                             rec = {
                                 'Class': 'Direct_Repeat',
@@ -179,17 +205,17 @@ def find_direct_repeats(seq: str,
                                 'Unit_Seq': unit_seq,
                                 'Spacer_Seq': spacer_seq,
                                 'Sequence': full_seq,
-                                # Component details
                                 'Left_Unit': unit_seq,
                                 'Right_Unit': seq[j_start:j_start + L],
-                                'GC_Unit': round(gc_unit, 2),
-                                'GC_Spacer': round(gc_spacer, 2),
-                                'GC_Total': round(gc_total, 2)
+                                'GC_Unit': round(_calc_gc_content(unit_seq), 2),
+                                'GC_Spacer': round(_calc_gc_content(spacer_seq), 2),
+                                'GC_Total': round(_calc_gc_content(full_seq), 2)
                             }
                             results.append(rec)
                             break
                 b += 1
-    # dedupe: prefer maximal unit_length per (Left_Pos, Spacer)
+    
+    # Deduplicate: prefer maximal unit_length per (Left_Pos, Spacer)
     dedup: Dict[Tuple[int, int], Dict] = {}
     for rec in results:
         key = (rec['Left_Pos'], rec['Spacer'])
@@ -205,56 +231,54 @@ def find_inverted_repeats(seq: str,
                          min_arm: int = INVERTED_MIN_ARM, 
                          max_loop: int = INVERTED_MAX_LOOP) -> List[Dict]:
     """
-    For each k-mer (of size >= min_arm) and its reverse complement locations:
-    iterate pairs (i in idx[kmer], j in idx[rc_kmer]) with j > i, delta = j - i,
-    possible arm lengths: arm = delta - loop for loop in 0..max_loop, require arm >= min_arm.
-    Verify equality: seq[i:i+arm] == revcomp(seq[j:j+arm])
+    Find inverted repeats (cruciform precursors) using k-mer indexing.
+    
+    # Output Structure:
+    # | Field       | Type  | Description                      |
+    # |-------------|-------|----------------------------------|
+    # | Class       | str   | Always 'Inverted_Repeat'         |
+    # | Subclass    | str   | Inverted_arm_{arm_length}        |
+    # | Arm_Length  | int   | Length of palindromic arm        |
+    # | Loop_Length | int   | Length of loop/spacer            |
+    # | Left_Arm    | str   | Left arm sequence                |
+    # | Right_Arm   | str   | Right arm sequence (RC of left)  |
+    # | GC_Total    | float | GC% of full structure            |
+    
+    Returns:
+        List of inverted repeat dictionaries
     """
     n = len(seq)
     idx = build_kmer_index(seq, K_INVERTED)
     results = []
     
-    # Precompute reverse complement mapping of keys present
-    keys = list(idx.keys())
+    # Precompute reverse complement mapping
     rc_map = {}
-    for kmer in keys:
+    for kmer in list(idx.keys()):
         rc = revcomp(kmer)
         if rc in idx:
             rc_map[kmer] = idx[rc]
     
-    # For each kmer and its rc positions, test pairs
+    # Find inverted repeats
     for kmer, rc_positions in rc_map.items():
         left_positions = idx[kmer]
-        # iterate positions pairs
         for i in left_positions:
             for j in rc_positions:
                 if j <= i:
                     continue
                 delta = j - i
-                # arm = delta - loop must be >= min_arm and <= available space
-                # loop in 0..max_loop -> arm in [delta - max_loop, delta]
                 arm_min = max(min_arm, delta - max_loop)
-                arm_max = delta
-                # cap arm_max by sequence boundary
-                arm_max = min(arm_max, n - j, n - i)
+                arm_max = min(delta, n - j, n - i)
                 if arm_min > arm_max:
                     continue
-                # try maximal arms first
+                    
                 for arm in range(arm_max, arm_min - 1, -1):
                     if i + arm > n or j + arm > n:
                         continue
                     left_sub = seq[i:i + arm]
                     right_sub = seq[j:j + arm]
                     if left_sub == revcomp(right_sub):
-                        # Calculate component details
                         loop_seq = seq[i + arm:j] if j > i + arm else ''
                         full_seq = seq[i:j + arm]
-                        
-                        # Calculate GC content for components
-                        gc_left_arm = (left_sub.count('G') + left_sub.count('C')) / len(left_sub) * 100 if len(left_sub) > 0 else 0
-                        gc_right_arm = (right_sub.count('G') + right_sub.count('C')) / len(right_sub) * 100 if len(right_sub) > 0 else 0
-                        gc_loop = (loop_seq.count('G') + loop_seq.count('C')) / len(loop_seq) * 100 if len(loop_seq) > 0 else 0
-                        gc_total = (full_seq.count('G') + full_seq.count('C')) / len(full_seq) * 100 if len(full_seq) > 0 else 0
                         
                         rec = {
                             'Class': 'Inverted_Repeat',
@@ -271,17 +295,16 @@ def find_inverted_repeats(seq: str,
                             'Right_Arm': right_sub,
                             'Loop_Seq': loop_seq,
                             'Sequence': full_seq,
-                            # Component details
                             'Stem': f'{left_sub}...{right_sub}',
-                            'GC_Left_Arm': round(gc_left_arm, 2),
-                            'GC_Right_Arm': round(gc_right_arm, 2),
-                            'GC_Loop': round(gc_loop, 2),
-                            'GC_Total': round(gc_total, 2)
+                            'GC_Left_Arm': round(_calc_gc_content(left_sub), 2),
+                            'GC_Right_Arm': round(_calc_gc_content(right_sub), 2),
+                            'GC_Loop': round(_calc_gc_content(loop_seq), 2),
+                            'GC_Total': round(_calc_gc_content(full_seq), 2)
                         }
                         results.append(rec)
                         break
     
-    # dedupe: keep maximal arm per (Left_Start, Loop)
+    # Deduplicate: keep maximal arm per (Left_Start, Loop)
     dedup: Dict[Tuple[int, int], Dict] = {}
     for rec in results:
         key = (rec['Left_Start'], rec['Loop'])
