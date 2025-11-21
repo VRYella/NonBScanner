@@ -1812,6 +1812,53 @@ def export_to_bed(motifs: List[Dict[str, Any]], sequence_name: str = "sequence",
     
     return bed_content
 
+# Field Mapping Configuration - Alternative Names to Standard Fields
+# ┌─────────────────────┬────────────────────┐
+# │ Alternative Name    │ Standard Field     │
+# ├─────────────────────┼────────────────────┤
+# │ Repeat_Units        │ Number_Of_Copies   │
+# │ Tract_Type          │ Repeat_Type        │
+# │ GC_Total/Gc_Total   │ GC_Content         │
+# │ Curvature_Score     │ (→ Features)       │
+# │ Spacer              │ Spacer_Length      │
+# │ Spacer_Seq          │ Spacer_Sequence    │
+# └─────────────────────┴────────────────────┘
+FIELD_MAPPINGS = {
+    'Number_Of_Copies': ['Repeat_Units'],
+    'Repeat_Type': ['Tract_Type'],
+    'GC_Content': ['GC_Total', 'Gc_Total'],
+    'Spacer_Length': ['Spacer'],
+    'Spacer_Sequence': ['Spacer_Seq']
+}
+
+def _map_motif_fields(motif: Dict[str, Any], target_col: str) -> Any:
+    """Map alternative field names to standard comprehensive columns"""
+    value = motif.get(target_col, 'NA')
+    
+    # Return value if already present
+    if value not in ('NA', '', None):
+        return value
+    
+    # Try field mappings
+    if target_col in FIELD_MAPPINGS:
+        for alt_field in FIELD_MAPPINGS[target_col]:
+            if alt_field in motif and motif[alt_field] not in ('', 'NA', None):
+                return motif[alt_field]
+    
+    # Special handling for Structural_Features (combine multiple fields)
+    if target_col == 'Structural_Features':
+        features = [
+            f"Tract:{motif[k]}" for k in ['Tract_Type'] 
+            if k in motif and motif[k] not in ('', 'NA', None)
+        ] + [
+            f"{k.replace('_', '-')}:{motif[k]}" for k in ['Curvature_Score', 'Z_Score']
+            if k in motif and motif[k] not in ('', 'NA', None)
+        ]
+        return '; '.join(features) if features else 'NA'
+    
+    return 'NA'
+
+
 def export_to_csv(motifs: List[Dict[str, Any]], filename: Optional[str] = None) -> str:
     """
     Export motifs to CSV format with comprehensive fields
@@ -1826,94 +1873,64 @@ def export_to_csv(motifs: List[Dict[str, Any]], filename: Optional[str] = None) 
     if not motifs:
         return "No motifs to export"
     
-    # Comprehensive column order matching user requirements
+    # Comprehensive Output Fields - Tabular Definition
+    # ┌──────────────────────┬────────────────────────────────────────────┐
+    # │ Field                │ Description                                │
+    # ├──────────────────────┼────────────────────────────────────────────┤
+    # │ ID                   │ Unique motif identifier                    │
+    # │ Sequence_Name        │ Source sequence/accession                  │
+    # │ Source               │ Data source (genome, study, etc.)          │
+    # │ Class                │ Major motif class                          │
+    # │ Subclass             │ Motif subclass                             │
+    # │ Pattern_ID           │ Detection pattern ID                       │
+    # │ Start/End            │ Genomic coordinates (1-based)              │
+    # │ Length               │ Motif length (bp)                          │
+    # │ Sequence             │ Motif DNA sequence                         │
+    # │ Method               │ Detection algorithm                        │
+    # │ Score                │ Confidence score                           │
+    # │ Repeat_Type          │ Type of repeat/tract                       │
+    # │ Left/Right_Arm       │ Arm sequences (cruciform/triplex)          │
+    # │ Loop_Seq             │ Loop sequence                              │
+    # │ Arm/Loop_Length      │ Component lengths                          │
+    # │ Stem_Length          │ Stem length(s)                             │
+    # │ Unit_Length          │ Repeat unit length                         │
+    # │ Number_Of_Copies     │ Number of repeats                          │
+    # │ Spacer_Length        │ Spacer between repeats                     │
+    # │ Spacer_Sequence      │ Spacer DNA sequence                        │
+    # │ GC_Content           │ GC percentage                              │
+    # │ Structural_Features  │ Additional structural info                 │
+    # │ Strand               │ DNA strand (+/-)                           │
+    # └──────────────────────┴────────────────────────────────────────────┘
     comprehensive_columns = [
-        'ID',
-        'Sequence_Name',  # Sequence Name (or Accession)
-        'Source',  # Source (e.g., genome, experiment, study)
-        'Class',  # Motif Class
-        'Subclass',  # Motif Subclass
-        'Pattern_ID',  # Pattern/Annotation ID
-        'Start',  # Start Position
-        'End',  # End Position
-        'Length',  # Length (bp)
-        'Sequence',  # Sequence
-        'Method',  # Detection Method
-        'Score',  # Motif Score
-        'Repeat_Type',  # Repeat/Tract Type
-        'Left_Arm',  # Left Arm Sequence
-        'Right_Arm',  # Right Arm Sequence
-        'Loop_Seq',  # Loop Sequence
-        'Arm_Length',  # Arm Length
-        'Loop_Length',  # Loop Length
-        'Stem_Length',  # Stem Length(s)
-        'Unit_Length',  # Unit/Repeat Length
-        'Number_Of_Copies',  # Number of Copies/Repeats
-        'Spacer_Length',  # Spacer Length
-        'Spacer_Sequence',  # Spacer Sequence
-        'GC_Content',  # GC Content (%)
-        'Structural_Features',  # Structural Features (e.g., Tract Type, Curvature Score)
-        'Strand'  # Strand information
+        'ID', 'Sequence_Name', 'Source', 'Class', 'Subclass', 'Pattern_ID',
+        'Start', 'End', 'Length', 'Sequence', 'Method', 'Score', 
+        'Repeat_Type', 'Left_Arm', 'Right_Arm', 'Loop_Seq', 
+        'Arm_Length', 'Loop_Length', 'Stem_Length', 'Unit_Length',
+        'Number_Of_Copies', 'Spacer_Length', 'Spacer_Sequence',
+        'GC_Content', 'Structural_Features', 'Strand'
     ]
     
-    # Get all unique keys from motifs to include additional fields
-    all_keys = set()
-    for motif in motifs:
-        all_keys.update(motif.keys())
+    # Get comprehensive columns + any additional fields from motifs
+    all_keys = set().union(*(m.keys() for m in motifs))
+    columns = comprehensive_columns + sorted(k for k in all_keys if k not in comprehensive_columns)
     
-    # Start with comprehensive columns, then add any additional fields found
-    columns = comprehensive_columns.copy()
-    for key in sorted(all_keys):
-        if key not in columns:
-            columns.append(key)
-    
+    # Build CSV output
     output = StringIO()
     writer = csv.DictWriter(output, fieldnames=columns)
     writer.writeheader()
     
+    # Write rows with mapped fields
     for motif in motifs:
-        # Create row with comprehensive field mappings
-        row = {}
-        for col in columns:
-            value = motif.get(col, 'NA')
-            
-            # Map alternative field names to comprehensive columns
-            if value == 'NA' or value == '' or value is None:
-                # Try alternative mappings
-                if col == 'Number_Of_Copies' and 'Repeat_Units' in motif:
-                    value = motif['Repeat_Units']
-                elif col == 'Repeat_Type' and 'Tract_Type' in motif:
-                    value = motif['Tract_Type']
-                elif col == 'GC_Content' and 'GC_Total' in motif:
-                    value = motif['GC_Total']
-                elif col == 'Structural_Features':
-                    # Combine relevant structural features
-                    features = []
-                    if 'Tract_Type' in motif and motif['Tract_Type'] not in ['', 'NA', None]:
-                        features.append(f"Tract:{motif['Tract_Type']}")
-                    if 'Curvature_Score' in motif and motif['Curvature_Score'] not in ['', 'NA', None]:
-                        features.append(f"Curvature:{motif['Curvature_Score']}")
-                    if 'Z_Score' in motif and motif['Z_Score'] not in ['', 'NA', None]:
-                        features.append(f"Z-Score:{motif['Z_Score']}")
-                    value = '; '.join(features) if features else 'NA'
-                
-                # If still empty, set to NA
-                if value == '' or value is None:
-                    value = 'NA'
-            
-            row[col] = value
-        
+        row = {col: _map_motif_fields(motif, col) for col in columns}
         writer.writerow(row)
     
     csv_content = output.getvalue()
     output.close()
     
+    # Write to file if specified
     if filename:
-        try:
-            with open(filename, 'w', newline='') as f:
-                f.write(csv_content)
-        except Exception as e:
-            print(f"Error writing CSV file {filename}: {e}")
+        with open(filename, 'w', newline='') as f:
+            f.write(csv_content)
     
     return csv_content
 
@@ -1973,100 +1990,43 @@ def export_to_excel(motifs: List[Dict[str, Any]], filename: str = "nonbscanner_r
     if not motifs:
         return "No motifs to export"
     
-    # Comprehensive column order
-    comprehensive_columns = [
-        'ID', 'Sequence_Name', 'Source', 'Class', 'Subclass', 'Pattern_ID',
-        'Start', 'End', 'Length', 'Sequence', 'Method', 'Score',
-        'Repeat_Type', 'Left_Arm', 'Right_Arm', 'Loop_Seq',
-        'Arm_Length', 'Loop_Length', 'Stem_Length', 'Unit_Length',
-        'Number_Of_Copies', 'Spacer_Length', 'Spacer_Sequence',
-        'GC_Content', 'Structural_Features', 'Strand'
-    ]
-    
-    # Get all unique keys from motifs
-    all_keys = set()
-    for motif in motifs:
-        all_keys.update(motif.keys())
-    
-    # Add any additional fields found
-    columns = comprehensive_columns.copy()
-    for key in sorted(all_keys):
-        if key not in columns:
-            columns.append(key)
-    
-    # Prepare data rows
-    def prepare_row(motif):
-        row = {}
-        for col in columns:
-            value = motif.get(col, 'NA')
-            
-            # Map alternative field names
-            if value == 'NA' or value == '' or value is None:
-                if col == 'Number_Of_Copies' and 'Repeat_Units' in motif:
-                    value = motif['Repeat_Units']
-                elif col == 'Repeat_Type' and 'Tract_Type' in motif:
-                    value = motif['Tract_Type']
-                elif col == 'GC_Content' and 'GC_Total' in motif:
-                    value = motif['GC_Total']
-                elif col == 'Structural_Features':
-                    features = []
-                    if 'Tract_Type' in motif and motif['Tract_Type'] not in ['', 'NA', None]:
-                        features.append(f"Tract:{motif['Tract_Type']}")
-                    if 'Curvature_Score' in motif and motif['Curvature_Score'] not in ['', 'NA', None]:
-                        features.append(f"Curvature:{motif['Curvature_Score']}")
-                    if 'Z_Score' in motif and motif['Z_Score'] not in ['', 'NA', None]:
-                        features.append(f"Z-Score:{motif['Z_Score']}")
-                    value = '; '.join(features) if features else 'NA'
-                
-                if value == '' or value is None:
-                    value = 'NA'
-            
-            row[col] = value
-        return row
+    # Get comprehensive columns + any additional fields from motifs
+    all_keys = set().union(*(m.keys() for m in motifs))
+    columns = comprehensive_columns + sorted(k for k in all_keys if k not in comprehensive_columns)
     
     # Create Excel writer
     with pd.ExcelWriter(filename, engine='openpyxl') as writer:
         # Sheet 1: Consolidated non-overlapping motifs (exclude Hybrid and Cluster)
-        consolidated_motifs = [m for m in motifs 
-                             if m.get('Class') not in ['Hybrid', 'Non-B_DNA_Clusters']]
+        consolidated_motifs = [m for m in motifs if m.get('Class') not in ['Hybrid', 'Non-B_DNA_Clusters']]
         
         if consolidated_motifs:
-            consolidated_data = [prepare_row(m) for m in consolidated_motifs]
-            df_consolidated = pd.DataFrame(consolidated_data, columns=columns)
+            df_consolidated = pd.DataFrame([{col: _map_motif_fields(m, col) for col in columns} 
+                                          for m in consolidated_motifs], columns=columns)
             df_consolidated.to_excel(writer, sheet_name='Consolidated_NonOverlapping', index=False)
         
-        # Group motifs by class
+        # Group motifs by class and create sheets
         class_groups = defaultdict(list)
         for motif in motifs:
-            cls = motif.get('Class', 'Unknown')
-            class_groups[cls].append(motif)
+            class_groups[motif.get('Class', 'Unknown')].append(motif)
         
         # Create separate sheets for each class
         for cls, class_motifs in sorted(class_groups.items()):
-            # Sanitize sheet name (Excel has 31 character limit)
             sheet_name = cls.replace('/', '_').replace(' ', '_').replace('-', '_')[:31]
-            
-            class_data = [prepare_row(m) for m in class_motifs]
-            df_class = pd.DataFrame(class_data, columns=columns)
+            df_class = pd.DataFrame([{col: _map_motif_fields(m, col) for col in columns} 
+                                   for m in class_motifs], columns=columns)
             df_class.to_excel(writer, sheet_name=sheet_name, index=False)
             
-            # Also create sheets by subclass if there are multiple subclasses
+            # Create subclass sheets if there are multiple subclasses
             subclass_groups = defaultdict(list)
             for motif in class_motifs:
-                subclass = motif.get('Subclass', 'Other')
-                subclass_groups[subclass].append(motif)
+                subclass_groups[motif.get('Subclass', 'Other')].append(motif)
             
-            # Only create subclass sheets if there are multiple subclasses
             if len(subclass_groups) > 1:
                 for subclass, subclass_motifs in sorted(subclass_groups.items()):
-                    # Sanitize subclass sheet name
                     subclass_name = f"{cls}_{subclass}".replace('/', '_').replace(' ', '_').replace('-', '_')[:31]
-                    
-                    subclass_data = [prepare_row(m) for m in subclass_motifs]
-                    df_subclass = pd.DataFrame(subclass_data, columns=columns)
-                    
-                    # Try to add sheet, skip if name collision
                     try:
+                        df_subclass = pd.DataFrame([{col: _map_motif_fields(m, col) for col in columns} 
+                                                  for m in subclass_motifs], columns=columns)
                         df_subclass.to_excel(writer, sheet_name=subclass_name, index=False)
                     except:
                         pass  # Skip if sheet name collision
@@ -2345,66 +2305,15 @@ def export_results_to_dataframe(motifs: List[Dict[str, Any]]) -> pd.DataFrame:
     if not motifs:
         return pd.DataFrame()
     
-    df = pd.DataFrame(motifs)
+    # Get comprehensive columns + any additional fields from motifs
+    all_keys = set().union(*(m.keys() for m in motifs))
+    columns = comprehensive_columns + sorted(k for k in all_keys if k not in comprehensive_columns)
     
-    # Comprehensive column list based on user requirements
-    comprehensive_columns = [
-        'ID',
-        'Sequence_Name',  # Sequence Name (or Accession)
-        'Source',  # Source (e.g., genome, experiment, study)
-        'Class',  # Motif Class
-        'Subclass',  # Motif Subclass
-        'Pattern_ID',  # Pattern/Annotation ID
-        'Start',  # Start Position
-        'End',  # End Position
-        'Length',  # Length (bp)
-        'Sequence',  # Sequence
-        'Method',  # Detection Method
-        'Score',  # Motif Score
-        'Repeat_Type',  # Repeat/Tract Type
-        'Left_Arm',  # Left Arm Sequence
-        'Right_Arm',  # Right Arm Sequence
-        'Loop_Seq',  # Loop Sequence
-        'Arm_Length',  # Arm Length
-        'Loop_Length',  # Loop Length
-        'Stem_Length',  # Stem Length(s)
-        'Unit_Length',  # Unit/Repeat Length
-        'Number_Of_Copies',  # Number of Copies/Repeats
-        'Spacer_Length',  # Spacer Length
-        'Spacer_Sequence',  # Spacer Sequence
-        'GC_Content',  # GC Content (%)
-        'Structural_Features',  # Structural Features (e.g., Tract Type, Curvature Score)
-        'Strand'  # Strand information
-    ]
+    # Create DataFrame with mapped fields
+    df = pd.DataFrame([{col: _map_motif_fields(m, col) for col in comprehensive_columns} 
+                      for m in motifs], columns=comprehensive_columns)
     
-    # Ensure all comprehensive columns are present, fill missing with 'NA'
-    for col in comprehensive_columns:
-        if col not in df.columns:
-            df[col] = 'NA'
-    
-    # Map existing fields to comprehensive column names if they differ
-    column_mappings = {
-        'Repeat_Units': 'Number_Of_Copies',
-        'Tract_Type': 'Repeat_Type',
-        'GC_Total': 'GC_Content',
-        'Gc_Total': 'GC_Content',
-        'Curvature_Score': 'Structural_Features',
-        'Spacer': 'Spacer_Length',
-        'Spacer_Seq': 'Spacer_Sequence'
-    }
-    
-    for old_col, new_col in column_mappings.items():
-        if old_col in df.columns and new_col in comprehensive_columns:
-            # Only map if the new column is 'NA' (empty)
-            df[new_col] = df.apply(
-                lambda row: row[old_col] if pd.isna(row[new_col]) or row[new_col] == 'NA' else row[new_col],
-                axis=1
-            )
-    
-    # Fill all NaN/None values with 'NA' string
-    result_df = df[comprehensive_columns].fillna('NA')
-    
-    return result_df
+    return df.fillna('NA')
 
 
 # =============================================================================
