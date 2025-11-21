@@ -274,7 +274,7 @@ def revcomp(seq: str) -> str:
 
 
 def _generate_phased_repeat_patterns(base: str, num_tracts: int, tract_sizes: range, 
-                                      id_start: int) -> List[Tuple]:
+                                      id_start: int) -> List[Tuple[str, str, str, str, int, str, float, str, str]]:
     """
     Generate phased repeat patterns programmatically.
     
@@ -298,7 +298,7 @@ def _generate_phased_repeat_patterns(base: str, num_tracts: int, tract_sizes: ra
         id_start: Starting ID number for pattern naming
     
     Returns:
-        List of pattern tuples
+        List of 9-field pattern tuples
     """
     patterns = []
     label = 'APR' if base == 'A' else 'TPR'
@@ -310,9 +310,9 @@ def _generate_phased_repeat_patterns(base: str, num_tracts: int, tract_sizes: ra
         spacing_min = max(0, 11 - size)
         spacing_max = min(8, 11 - size + 2)
         
-        # Build pattern: base{size}[ACGT]{spacing}... repeated num_tracts times
+        # Build pattern using f-string for clarity
         repeat_unit = f'{base}{{{size}}}[ACGT]{{{spacing_min},{spacing_max}}}'
-        pattern = '(?:' + repeat_unit * (num_tracts - 1) + f'{base}{{{size}}}' + ')'
+        pattern = f'(?:{repeat_unit * (num_tracts - 1)}{base}{{{size}}})'
         
         name = f'{base}{size}-{label}' + (f'-{num_tracts}' if num_tracts > 3 else '')
         patterns.append((

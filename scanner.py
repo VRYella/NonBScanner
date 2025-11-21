@@ -126,13 +126,16 @@ def build_kmer_index(seq: str, k: int) -> Dict[str, List[int]]:
     valid_bases = frozenset("ACGT")
     for i in range(n - k + 1):
         kmer = seq[i:i + k]
-        if 'N' not in kmer and all(ch in valid_bases for ch in kmer):
+        if all(ch in valid_bases for ch in kmer):
             lst = idx[kmer]
             if len(lst) <= MAX_POSITIONS_PER_KMER:
                 lst.append(i)
     
-    # Remove overly-frequent k-mers
-    idx = {kmer: lst for kmer, lst in idx.items() if len(lst) <= MAX_POSITIONS_PER_KMER}
+    # Remove overly-frequent k-mers in-place for memory efficiency
+    for kmer in list(idx.keys()):
+        if len(idx[kmer]) > MAX_POSITIONS_PER_KMER:
+            del idx[kmer]
+    
     return idx
 
 
