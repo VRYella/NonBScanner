@@ -529,18 +529,8 @@ import warnings
 
 logger = logging.getLogger(__name__)
 
-# Import individual motif detectors
-from detectors import (
-    CurvedDNADetector,
-    SlippedDNADetector,
-    CruciformDetector,
-    RLoopDetector,
-    TriplexDetector,
-    GQuadruplexDetector,
-    IMotifDetector,
-    ZDNADetector,
-    APhilicDetector
-)
+# Note: Detectors are imported lazily to avoid circular dependency
+# (detectors.py imports from scanner.py for optimized functions)
 
 warnings.filterwarnings("ignore")
 
@@ -584,7 +574,20 @@ class ModularMotifDetector:
     """
     
     def __init__(self, registry_dir: str = DEFAULT_REGISTRY_DIR):
-        """Initialize all individual detectors"""
+        """Initialize all individual detectors (lazy import to avoid circular dependency)"""
+        # Lazy import of detectors to break circular dependency
+        from detectors import (
+            CurvedDNADetector,
+            SlippedDNADetector,
+            CruciformDetector,
+            RLoopDetector,
+            TriplexDetector,
+            GQuadruplexDetector,
+            IMotifDetector,
+            ZDNADetector,
+            APhilicDetector
+        )
+        
         self.registry_dir = registry_dir
         self.detectors = {
             'curved_dna': CurvedDNADetector(),

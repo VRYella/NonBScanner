@@ -45,6 +45,21 @@ from abc import ABC, abstractmethod
 from typing import List, Dict, Any, Tuple, Optional, Set
 from collections import defaultdict, Counter
 
+# Import optimized scanner functions
+try:
+    from scanner import (
+        find_direct_repeats as _find_direct_repeats_optimized,
+        find_inverted_repeats as _find_inverted_repeats_optimized,
+        find_mirror_repeats as _find_mirror_repeats_optimized,
+        find_strs as _find_strs_optimized
+    )
+except ImportError:
+    # Fallback if scanner module unavailable
+    _find_direct_repeats_optimized = None
+    _find_inverted_repeats_optimized = None
+    _find_mirror_repeats_optimized = None
+    _find_strs_optimized = None
+
 """
 Base Detector Class for Modular Motif Detection
 ================================================
@@ -1853,26 +1868,29 @@ import re
 from typing import List, Dict, Any, Tuple
 
 # BaseMotifDetector is defined above
-
-# Import optimized repeat scanner from scanner module
-try:
-    from scanner import find_direct_repeats, find_strs
-except ImportError:
-    try:
-        from utils.repeat_scanner import find_direct_repeats, find_strs
-    except ImportError:
-        # Fallback if import fails
-        find_direct_repeats = None
-        find_strs = None
+# Optimized scanner functions imported at module top
 
 class SlippedDNADetector(BaseMotifDetector):
-    """Detector for slipped DNA motifs: captures full repeat regions[web:79]"""
+    """
+    Detector for slipped DNA motifs: STRs and direct repeats.
+    
+    # Motif Structure:
+    # | Field         | Type  | Description                      |
+    # |---------------|-------|----------------------------------|
+    # | Class         | str   | Always 'Slipped_DNA'             |
+    # | Subclass      | str   | 'STR' or 'Direct_Repeat'         |
+    # | Unit_Length   | int   | Length of repeat unit            |
+    # | Repeat_Units  | int   | Number of repeat copies          |
+    # | Spacer_Length | int   | Length of spacer (direct only)   |
+    # | GC_Unit       | float | GC% of repeat unit               |
+    # | Score         | float | Instability score (0-1)          |
+    """
 
     def get_motif_class_name(self) -> str:
         return "Slipped_DNA"
 
     def get_patterns(self) -> Dict[str, List[Tuple]]:
-        # All detection now done via optimized repeat_scanner
+        # Detection via optimized k-mer scanner
         # Keep patterns for metadata/compatibility but don't use for regex matching
         return {
             "short_tandem_repeats": [],
@@ -1954,9 +1972,9 @@ class SlippedDNADetector(BaseMotifDetector):
         regions = []
 
         # Use optimized repeat_scanner if available
-        if find_strs and find_direct_repeats:
+        if _find_strs_optimized and _find_direct_repeats_optimized:
             # STRs (unit 1–9 bp)
-            str_results = find_strs(seq, min_u=1, max_u=9, min_total=10)
+            str_results = _find_strs_optimized(seq, min_u=1, max_u=9, min_total=10)
             for str_rec in str_results:
                 regions.append({
                     'class_name': 'STR',
@@ -1984,7 +2002,7 @@ class SlippedDNADetector(BaseMotifDetector):
                 })
 
             # Direct repeats
-            direct_results = find_direct_repeats(seq, min_unit=10, max_unit=300, max_spacer=10)
+            direct_results = _find_direct_repeats_optimized(seq, min_unit=10, max_unit=300, max_spacer=10)
             for dr_rec in direct_results:
                 regions.append({
                     'class_name': 'Direct_Repeat',
@@ -2182,57 +2200,51 @@ import re
 from typing import List, Dict, Any, Tuple
 # # from .base_detector import BaseMotifDetector
 
-# Import optimized repeat scanner from scanner module
-try:
-    from scanner import find_inverted_repeats
-except ImportError:
-    try:
-        from utils.repeat_scanner import find_inverted_repeats
-    except ImportError:
-        # Fallback if import fails
-        find_inverted_repeats = None
-
 
 def revcomp(seq: str) -> str:
+    """Fast reverse complement using str.translate."""
     trans = str.maketrans("ACGTacgt", "TGCAtgca")
     return seq.translate(trans)[::-1]
 
 
 class CruciformDetector(BaseMotifDetector):
+    """
+    Detector for cruciform (inverted repeat) DNA structures.
+    
+    # Motif Structure:
+    # | Field       | Type  | Description                      |
+    # |-------------|-------|----------------------------------|
+    # | Class       | str   | Always 'Cruciform'               |
+    # | Subclass    | str   | Inverted_arm_{length}            |
+    # | Arm_Length  | int   | Length of palindromic arm        |
+    # | Loop_Length | int   | Length of loop between arms      |
+    # | Left_Arm    | str   | Left arm sequence                |
+    # | Right_Arm   | str   | Right arm (RC of left)           |
+    # | Score       | float | Stability score (0-1)            |
+    """
+    
     def get_motif_class_name(self) -> str:
         return "Cruciform"
 
     def get_patterns(self) -> Dict[str, List[Tuple]]:
-        """
-        Provide pattern metadata to remain compatible with your framework.
-        The actual detection uses find_inverted_repeats() and the criterion:
-           - arm >= 6
-           - loop <= 100
-        """
+        """Pattern metadata for compatibility (actual detection uses k-mer indexing)."""
         return {
             'inverted_repeats': [
-                # Metadata kept for compatibility; actual search enforces arm>=6 and loop<=100
-                (r'palindrome_like', 'CRU_3_1', 'Potential palindrome', 'Inverted Repeats', 12, 'cruciform_stability', 0.95, 'DNA secondary structure', 'Lilley 2000'),
+                (r'palindrome_like', 'CRU_3_1', 'Potential palindrome', 'Inverted Repeats', 
+                 12, 'cruciform_stability', 0.95, 'DNA secondary structure', 'Lilley 2000'),
             ]
         }
 
-    # --------------------------
-    # Configuration (tweakable)
-    # --------------------------
-    MIN_ARM = 6          # minimum arm length (user-specified criterion)
-    MAX_LOOP = 100       # maximum loop (spacer) length
-    MAX_MISMATCHES = 0   # allowed mismatches between arm and RC(arm). Set >0 to allow imperfect arms.
+    # Configuration
+    MIN_ARM = 6
+    MAX_LOOP = 100
+    MAX_MISMATCHES = 0
 
-    # --------------------------
-    # Core search function (uses optimized repeat_scanner)
-    # --------------------------
     def find_inverted_repeats(self, sequence: str, min_arm: int = None,
                               max_loop: int = None, max_mismatches: int = None) -> List[Dict[str, Any]]:
         """
-        Scan sequence for inverted repeats using optimized k-mer index approach.
-        Much faster than exhaustive search, handles sequences of any size efficiently.
-        
-        Returns list of hits with detailed information.
+        Find inverted repeats (cruciform precursors) using optimized k-mer indexing.
+        Falls back to slower exhaustive search only if mismatch tolerance needed.
         """
         seq = sequence.upper()
         
@@ -2245,18 +2257,16 @@ class CruciformDetector(BaseMotifDetector):
 
         hits: List[Dict[str, Any]] = []
         
-        # Use optimized repeat_scanner if available
-        if find_inverted_repeats is not None and max_mismatches == 0:
-            # The optimized scanner only supports perfect matches (max_mismatches=0)
-            optimized_find = find_inverted_repeats
-            results = optimized_find(seq, min_arm=min_arm, max_loop=max_loop)
+        # Use optimized scanner when available and perfect matches required
+        if _find_inverted_repeats_optimized is not None and max_mismatches == 0:
+            results = _find_inverted_repeats_optimized(seq, min_arm=min_arm, max_loop=max_loop)
             
-            # Convert to our format
+            # Convert to internal format
             for rec in results:
-                match_fraction = 1.0  # Perfect match from optimized scanner
+                match_fraction = 1.0
                 score = self._score_arm_loop(rec['Arm_Length'], rec['Loop'], match_fraction)
                 hits.append({
-                    'left_start': rec['Start'] - 1,  # Convert to 0-based
+                    'left_start': rec['Start'] - 1,
                     'left_end': rec['Start'] - 1 + rec['Arm_Length'],
                     'right_start': rec['Right_Start'] - 1,
                     'right_end': rec['Right_Start'] - 1 + rec['Arm_Length'],
@@ -2264,16 +2274,16 @@ class CruciformDetector(BaseMotifDetector):
                     'loop_len': rec['Loop'],
                     'left_seq': rec['Left_Arm'],
                     'right_seq': rec['Right_Arm'],
-                    'right_seq_rc': rec['Right_Arm'],  # Already RC-matched
+                    'right_seq_rc': rec['Right_Arm'],
                     'mismatches': 0,
                     'match_fraction': 1.0,
                     'score': round(score, 6)
                 })
         else:
-            # Fallback to original sliding window implementation for mismatches or if import fails
+            # Fallback for mismatch tolerance or when optimized scanner unavailable
             hits = self._find_inverted_repeats_fallback(seq, min_arm, max_loop, max_mismatches)
         
-        # Sort hits by descending score, then by left_start
+        # Sort by descending score, then position
         hits.sort(key=lambda h: (-h['score'], h['left_start'], -h['arm_len']))
         return hits
     
@@ -3038,26 +3048,34 @@ from typing import List, Dict, Any, Tuple
 
 # BaseMotifDetector is defined above
 
-# Import optimized repeat scanner from scanner module
-# NOTE: Importing at module level causes circular dependency (scanner imports detectors)
-# So we do NOT import here - we'll import inside methods that need it
-find_mirror_repeats = None  # Will be imported lazily if needed
+
 
 class TriplexDetector(BaseMotifDetector):
-    """Detector for mirror repeat and sticky DNA triplex motifs using optimized scanner"""
+    """
+    Detector for triplex-forming DNA: mirror repeats and sticky DNA.
+    
+    # Motif Structure:
+    # | Field       | Type  | Description                      |
+    # |-------------|-------|----------------------------------|
+    # | Class       | str   | Always 'Triplex'                 |
+    # | Subclass    | str   | 'Mirror_Repeat' or 'Sticky_DNA'  |
+    # | Arm_Length  | int   | Length of mirror arm             |
+    # | Loop_Length | int   | Length of loop (mirror only)     |
+    # | Score       | float | Formation potential (0-1)        |
+    """
 
     def get_motif_class_name(self) -> str:
         return "Triplex"
 
     def get_patterns(self) -> Dict[str, List[Tuple]]:
-        # Sticky DNA patterns still use regex (simple and efficient)
-        # Mirror repeats now use optimized k-mer index from repeat_scanner
+        # Sticky DNA patterns (simple regex)
+        # Mirror repeats use optimized k-mer scanner
         return {
             'triplex_forming_sequences': [
-                # GAA sticky DNA - optimized with non-capturing group
-                (r'(?:GAA){4,}', 'TRX_5_4', 'GAA repeat', 'Sticky_DNA', 12, 'sticky_dna_score', 0.95, 'Disease-associated repeats', 'Sakamoto 1999'),
-                # TTC sticky DNA - optimized with non-capturing group
-                (r'(?:TTC){4,}', 'TRX_5_5', 'TTC repeat', 'Sticky_DNA', 12, 'sticky_dna_score', 0.95, 'Disease-associated repeats', 'Sakamoto 1999'),
+                (r'(?:GAA){4,}', 'TRX_5_4', 'GAA repeat', 'Sticky_DNA', 12, 
+                 'sticky_dna_score', 0.95, 'Disease-associated repeats', 'Sakamoto 1999'),
+                (r'(?:TTC){4,}', 'TRX_5_5', 'TTC repeat', 'Sticky_DNA', 12, 
+                 'sticky_dna_score', 0.95, 'Disease-associated repeats', 'Sakamoto 1999'),
             ]
         }
     
@@ -3067,17 +3085,10 @@ class TriplexDetector(BaseMotifDetector):
         used = [False] * len(seq)
         patterns = self.get_patterns()['triplex_forming_sequences']
 
-        # Lazy import to avoid circular dependency
-        find_mirror_repeats_func = None
-        try:
-            from scanner import find_mirror_repeats as fmr
-            find_mirror_repeats_func = fmr
-        except ImportError:
-            pass
-        
-        # First, detect mirror repeats using optimized scanner if available
-        if find_mirror_repeats_func is not None:
-            mirror_results = find_mirror_repeats_func(seq, min_arm=10, max_loop=100, purine_pyrimidine_threshold=0.9)
+        # Use optimized scanner if available
+        if _find_mirror_repeats_optimized is not None:
+            mirror_results = _find_mirror_repeats_optimized(seq, min_arm=10, max_loop=100, 
+                                                            purine_pyrimidine_threshold=0.9)
             
             # Only keep those that pass the triplex threshold (>90% purine or pyrimidine)
             for mr_rec in mirror_results:
