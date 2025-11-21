@@ -877,7 +877,7 @@ with tab_pages["Home"]:
 with tab_pages["Upload & Analyze"]:
     st.markdown("<h2>Sequence Upload and Motif Analysis</h2>", unsafe_allow_html=True)
     st.markdown('<span style="font-family:Montserrat,Arial; font-size:1.12rem;">Supports multi-FASTA and single FASTA. Paste, upload, select example, or fetch from NCBI.</span>', unsafe_allow_html=True)
-    st.caption("Supported formats: .fa, .fasta, .txt | Limit: 200MB/file.")
+    st.caption("Supported formats: .fa, .fasta, .txt, .fna | Limit: 200MB/file.")
 
     st.markdown("---")
 
@@ -894,7 +894,7 @@ with tab_pages["Upload & Analyze"]:
         seqs, names = [], []
 
         if input_method == "📂 Upload FASTA File":
-            fasta_file = st.file_uploader("Drag and drop FASTA/multi-FASTA file here", type=["fa", "fasta", "txt"])
+            fasta_file = st.file_uploader("Drag and drop FASTA/multi-FASTA file here", type=["fa", "fasta", "txt", "fna"])
             if fasta_file:
                 content = fasta_file.read().decode("utf-8")
                 seqs, names = [], []
