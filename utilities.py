@@ -1487,10 +1487,13 @@ def calculate_motif_statistics(motifs: List[Dict[str, Any]], sequence_length: in
     subclass_counts = Counter(m.get('Subclass', 'Unknown') for m in motifs)
     
     # Calculate coverage
+    # COORDINATE SYSTEM: Motifs use 1-based INCLUSIVE coordinates
+    # Example: Start=1, End=20 means positions 1-20 inclusive (20 bases)
+    # Convert to 0-based half-open for Python range(): range(0, 20)
     covered_positions = set()
     for motif in motifs:
-        start = motif.get('Start', 0) - 1  # Convert to 0-based
-        end = motif.get('End', 0)
+        start = motif.get('Start', 0) - 1  # Convert 1-based to 0-based
+        end = motif.get('End', 0)  # Inclusive end becomes exclusive in range()
         covered_positions.update(range(start, end))
     
     coverage_percent = (len(covered_positions) / sequence_length * 100) if sequence_length > 0 else 0

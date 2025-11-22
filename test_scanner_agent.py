@@ -2,6 +2,15 @@
 """
 Test suite for scanner_agent.py and coverage/density/enrichment calculations.
 
+COORDINATE SYSTEM:
+    NonBScanner uses 1-based INCLUSIVE coordinates:
+    - Start: 1-based position (first base = 1)
+    - End: 1-based position (INCLUSIVE - last base in motif)
+    - Length: End - Start + 1
+    
+    Example: Start=1, End=20, Length=20 represents 20 bases
+             In Python: range(0, 20) covers these positions
+
 This test validates:
 1. ParallelScanner chunking and deduplication
 2. Coverage calculations with overlaps

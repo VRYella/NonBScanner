@@ -14,6 +14,19 @@ DESCRIPTION:
     Uses Hyperscan (when available) and parallel processing for optimal performance.
     Designed to work within Streamlit's 1GB memory limit.
 
+COORDINATE SYSTEM:
+    This module uses 1-based INCLUSIVE coordinates for input/output to match the
+    existing NonBScanner convention:
+    - Start: 1-based position (first base = 1)
+    - End: 1-based position (INCLUSIVE - last base in motif)
+    - Length: End - Start + 1
+    
+    Internally, Python range() uses 0-based half-open intervals:
+    - range(Start-1, End) covers positions Start through End inclusive
+    
+    Example: Start=1, End=20 represents 20 bases (positions 1-20 inclusive)
+             Converted to range(0, 20) for Python indexing
+
 ARCHITECTURE:
     - Chunks genome into overlapping segments (1000nt overlap)
     - Parallel processing using multiprocessing.Pool
@@ -108,13 +121,15 @@ def hs_worker_task(args: Tuple[int, np.ndarray, Any]) -> List[Tuple[int, int, in
             chunk_motifs = analyze_sequence(chunk_str, f"chunk_{offset}")
             
             # Convert to (start, end, pattern_id) format
-            # Note: Motifs use 1-based inclusive coordinates
-            # We convert to 0-based half-open intervals for internal use
+            # COORDINATE SYSTEM NOTE:
+            # - Input motifs use 1-based INCLUSIVE coordinates (Start=1, End=20 = 20 bases)
+            # - We convert to 0-based half-open for internal tuple format
+            # - Conversion: Start-1 (to 0-based), End (already exclusive in half-open)
             for i, motif in enumerate(chunk_motifs):
-                # Start: 1-based to 0-based (subtract 1)
-                # End: already exclusive in our internal format
+                # Start: 1-based inclusive → 0-based (subtract 1)
+                # End: 1-based inclusive → 0-based exclusive (no change, becomes half-open)
                 global_start = offset + motif.get('Start', 0) - 1
-                global_end = offset + motif.get('End', 0)  # End is already exclusive
+                global_end = offset + motif.get('End', 0)  # Becomes 0-based half-open
                 pattern_id = hash(f"{motif.get('Class', '')}_{motif.get('Subclass', '')}")
                 local_results.append((global_start, global_end, pattern_id))
         except Exception as e:
