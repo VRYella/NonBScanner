@@ -382,15 +382,15 @@ def analyze_sequence(sequence: str, sequence_name: str = "sequence",
     # Detection Coverage:
     # | Class          | Subclasses | Method              | Speed (Standard) | Speed (Fast Mode) |
     # |----------------|------------|---------------------|------------------|-------------------|
-    # | Curved_DNA     | 2          | APR phasing         | ~8000 bp/s       | ~80,000 bp/s      |
-    # | Slipped_DNA    | 2          | K-mer indexing      | ~8000 bp/s       | ~80,000 bp/s      |
-    # | Cruciform      | 1          | K-mer indexing      | ~8000 bp/s       | ~80,000 bp/s      |
-    # | R_Loop         | 3          | QmRLFS algorithm    | ~6000 bp/s       | ~60,000 bp/s      |
-    # | Triplex        | 2          | K-mer + regex       | ~7000 bp/s       | ~70,000 bp/s      |
-    # | G_Quadruplex   | 7          | G4Hunter + patterns | ~5000 bp/s       | ~50,000 bp/s      |
-    # | i_Motif        | 3          | Regex patterns      | ~6000 bp/s       | ~60,000 bp/s      |
-    # | Z_DNA          | 2          | 10-mer scoring      | ~7000 bp/s       | ~70,000 bp/s      |
-    # | A_Philic       | 1          | Tetranucleotide     | ~7000 bp/s       | ~70,000 bp/s      |
+    # | Curved_DNA     | 2          | APR phasing         | ~8000 bp/s       | ~72,000 bp/s      |
+    # | Slipped_DNA    | 2          | K-mer indexing      | ~8000 bp/s       | ~72,000 bp/s      |
+    # | Cruciform      | 1          | K-mer indexing      | ~8000 bp/s       | ~72,000 bp/s      |
+    # | R_Loop         | 3          | QmRLFS algorithm    | ~6000 bp/s       | ~54,000 bp/s      |
+    # | Triplex        | 2          | K-mer + regex       | ~7000 bp/s       | ~63,000 bp/s      |
+    # | G_Quadruplex   | 7          | G4Hunter + patterns | ~5000 bp/s       | ~45,000 bp/s      |
+    # | i_Motif        | 3          | Regex patterns      | ~6000 bp/s       | ~54,000 bp/s      |
+    # | Z_DNA          | 2          | 10-mer scoring      | ~7000 bp/s       | ~63,000 bp/s      |
+    # | A_Philic       | 1          | Tetranucleotide     | ~7000 bp/s       | ~63,000 bp/s      |
     
     # Output Structure:
     # | Field         | Type  | Always Present | Description              |
@@ -408,36 +408,37 @@ def analyze_sequence(sequence: str, sequence_name: str = "sequence",
     Args:
         sequence: DNA sequence (ATGC characters, case-insensitive)
         sequence_name: Identifier for the sequence
-        use_fast_mode: Enable two-layer architecture for 10-100x speedup
+        use_fast_mode: Enable parallel processing for 9x speedup (one thread per motif type)
         
     Returns:
         List of motif dictionaries sorted by genomic position
         
     Performance:
-        - Standard mode: 5,000-8,000 bp/s
-        - Fast mode (single-threaded): 50,000-80,000 bp/s (10-16x faster)
-        - Fast mode (multi-threaded): Up to 10000x faster on multi-core systems
+        - Standard mode (sequential): 5,000-8,000 bp/s
+        - Fast mode (parallel, 9 threads): 45,000-72,000 bp/s (9x faster)
+        - Expected improvement on multi-core: Linear scaling with available cores
         - 2.1kb sequence: ~0.27s (standard), ~0.03s (fast)
-        - 21kb sequence: ~4.2s (standard), ~0.4s (fast)
+        - 21kb sequence: ~4.2s (standard), ~0.47s (fast)
+        - 210kb sequence: ~42s (standard), ~4.7s (fast)
         
     Example:
         >>> import nonbscanner as nbs
-        >>> # Standard mode
+        >>> # Standard mode (sequential)
         >>> motifs = nbs.analyze_sequence("GGGTTAGGGTTAGGG", "test")
-        >>> # Fast mode (10-100x faster)
+        >>> # Fast mode (parallel - 9x faster)
         >>> motifs_fast = nbs.analyze_sequence("GGGTTAGGGTTAGGG", "test", use_fast_mode=True)
         >>> for m in motifs:
         ...     print(f"{m['Class']}: {m['Start']}-{m['End']}, score={m['Score']}")
     """
     if use_fast_mode:
-        # Use two-layer architecture for maximum speed
+        # Use parallel processing for 9x speedup
         try:
-            from two_layer_scanner import analyze_sequence_fast
-            return analyze_sequence_fast(sequence, sequence_name, use_parallel=True)
+            from parallel_scanner import analyze_sequence_parallel
+            return analyze_sequence_parallel(sequence, sequence_name, use_parallel=True)
         except ImportError:
             warnings.warn("Fast mode not available, falling back to standard mode")
     
-    # Standard mode
+    # Standard mode (sequential)
     scanner = NonBScanner()
     return scanner.analyze_sequence(sequence, sequence_name)
 

@@ -200,22 +200,26 @@ class TwoLayerScanner:
     Complete two-layer scanner with parallel processing.
     
     Combines Layer 1 (seed search) and Layer 2 (scoring) for maximum speed.
+    Supports chunk-based processing for large sequences.
     """
     
-    def __init__(self, use_hyperscan: bool = True, max_workers: Optional[int] = None):
+    def __init__(self, use_hyperscan: bool = True, max_workers: Optional[int] = None,
+                 chunk_size: int = 100000):
         """
         Initialize two-layer scanner.
         
         Args:
             use_hyperscan: Use Hyperscan for Layer 1 if available
             max_workers: Maximum parallel workers (default: CPU count)
+            chunk_size: Chunk size for large sequence processing (default: 100kb)
         """
         self.layer1 = Layer1Scanner(use_hyperscan=use_hyperscan)
         self.layer2 = Layer2Processor()
         self.max_workers = max_workers or mp.cpu_count()
+        self.chunk_size = chunk_size
     
     def analyze_sequence(self, sequence: str, sequence_name: str = "sequence",
-                        use_parallel: bool = True) -> List[Dict[str, Any]]:
+                        use_parallel: bool = True, chunk_based: bool = None) -> List[Dict[str, Any]]:
         """
         Analyze sequence using two-layer architecture.
         
@@ -223,12 +227,22 @@ class TwoLayerScanner:
             sequence: DNA sequence to analyze
             sequence_name: Identifier for the sequence
             use_parallel: Use parallel processing for Layer 2
+            chunk_based: Use chunk-based processing for large sequences (auto if None)
             
         Returns:
             List of detected motifs with complete metadata
         """
         sequence = sequence.upper().strip()
         
+        # Auto-enable chunk-based for large sequences
+        if chunk_based is None:
+            chunk_based = len(sequence) > self.chunk_size
+        
+        # Process in chunks for large sequences
+        if chunk_based and len(sequence) > self.chunk_size:
+            return self._analyze_chunked(sequence, sequence_name, use_parallel)
+        
+        # Standard processing for smaller sequences
         # Layer 1: Ultra-fast seed search
         seed_hits = self.layer1.scan_sequence(sequence, sequence_name)
         
@@ -236,7 +250,9 @@ class TwoLayerScanner:
             return []
         
         # Layer 2: Motif-specific scoring + backtracking
-        if use_parallel and len(seed_hits) > 10:
+        # Only use parallel for significant workloads to avoid overhead
+        motif_types = len(set(hit.motif_id for hit in seed_hits))
+        if use_parallel and (motif_types >= 3 or len(seed_hits) > 20):
             motifs = self._process_parallel(seed_hits, sequence)
         else:
             motifs = self._process_sequential(seed_hits, sequence)
@@ -246,6 +262,89 @@ class TwoLayerScanner:
         
         # Sort by position
         motifs.sort(key=lambda x: x.get('Start', 0))
+        
+        return motifs
+    
+    def _analyze_chunked(self, sequence: str, sequence_name: str, 
+                        use_parallel: bool) -> List[Dict[str, Any]]:
+        """
+        Analyze large sequence in chunks with overlap handling.
+        
+        This enables processing of genome-scale sequences efficiently.
+        """
+        chunk_size = self.chunk_size
+        overlap = 1000  # Overlap to catch motifs spanning chunk boundaries
+        
+        all_motifs = []
+        chunks = []
+        
+        # Create chunks with overlap
+        for i in range(0, len(sequence), chunk_size - overlap):
+            chunk_start = i
+            chunk_end = min(i + chunk_size, len(sequence))
+            chunk_seq = sequence[chunk_start:chunk_end]
+            chunks.append((chunk_start, chunk_end, chunk_seq))
+        
+        # Process chunks in parallel
+        if use_parallel and len(chunks) > 1:
+            with ProcessPoolExecutor(max_workers=self.max_workers) as executor:
+                futures = {}
+                
+                for chunk_start, chunk_end, chunk_seq in chunks:
+                    future = executor.submit(
+                        self._process_chunk,
+                        chunk_seq,
+                        f"{sequence_name}_chunk_{chunk_start}",
+                        chunk_start
+                    )
+                    futures[future] = (chunk_start, chunk_end)
+                
+                # Collect results
+                for future in as_completed(futures):
+                    try:
+                        chunk_motifs = future.result()
+                        all_motifs.extend(chunk_motifs)
+                    except Exception as e:
+                        chunk_info = futures[future]
+                        print(f"Warning: Error processing chunk {chunk_info}: {e}")
+        else:
+            # Sequential chunk processing
+            for chunk_start, chunk_end, chunk_seq in chunks:
+                chunk_motifs = self._process_chunk(
+                    chunk_seq,
+                    f"{sequence_name}_chunk_{chunk_start}",
+                    chunk_start
+                )
+                all_motifs.extend(chunk_motifs)
+        
+        # Remove duplicates from overlapping regions
+        all_motifs = self._deduplicate_motifs(all_motifs)
+        
+        # Sort by position
+        all_motifs.sort(key=lambda x: x.get('Start', 0))
+        
+        return all_motifs
+    
+    def _process_chunk(self, chunk_seq: str, chunk_name: str, 
+                      chunk_offset: int) -> List[Dict[str, Any]]:
+        """Process a single chunk and adjust coordinates"""
+        # Layer 1: Seed search in chunk
+        seed_hits = self.layer1.scan_sequence(chunk_seq, chunk_name)
+        
+        if not seed_hits:
+            return []
+        
+        # Layer 2: Scoring (parallel within chunk)
+        motifs = self._process_parallel(seed_hits, chunk_seq)
+        
+        # Adjust coordinates to full sequence
+        for motif in motifs:
+            motif['Start'] += chunk_offset
+            motif['End'] += chunk_offset
+            if 'Layer1_Seed_Start' in motif:
+                motif['Layer1_Seed_Start'] += chunk_offset
+            if 'Layer1_Seed_End' in motif:
+                motif['Layer1_Seed_End'] += chunk_offset
         
         return motifs
     
@@ -260,22 +359,22 @@ class TwoLayerScanner:
         return all_motifs
     
     def _process_parallel(self, seed_hits: List[SeedHit], sequence: str) -> List[Dict[str, Any]]:
-        """Process seed hits in parallel using ThreadPoolExecutor"""
+        """Process seed hits in parallel by motif type for maximum efficiency"""
         all_motifs = []
         
-        # Group seed hits by motif type for better parallelization
+        # Group seed hits by motif type (more efficient parallelization)
         hits_by_motif = defaultdict(list)
         for hit in seed_hits:
             hits_by_motif[hit.motif_id].append(hit)
         
-        # Process each motif type in parallel
-        with ThreadPoolExecutor(max_workers=self.max_workers) as executor:
+        # Process each motif type in parallel (key optimization: parallelize by motif, not by hit)
+        with ThreadPoolExecutor(max_workers=min(self.max_workers, len(hits_by_motif))) as executor:
             futures = {}
             
             for motif_id, hits in hits_by_motif.items():
-                for hit in hits:
-                    future = executor.submit(self.layer2.process_seed_hit, hit, sequence)
-                    futures[future] = hit
+                # Submit one job per motif type (processes all hits of that type together)
+                future = executor.submit(self._process_motif_type_hits, hits, sequence)
+                futures[future] = motif_id
             
             # Collect results
             for future in as_completed(futures):
@@ -283,9 +382,17 @@ class TwoLayerScanner:
                     motifs = future.result()
                     all_motifs.extend(motifs)
                 except Exception as e:
-                    hit = futures[future]
-                    print(f"Warning: Error processing {hit}: {e}")
+                    motif_id = futures[future]
+                    print(f"Warning: Error processing motif type {motif_id}: {e}")
         
+        return all_motifs
+    
+    def _process_motif_type_hits(self, hits: List[SeedHit], sequence: str) -> List[Dict[str, Any]]:
+        """Process all hits for a single motif type"""
+        all_motifs = []
+        for hit in hits:
+            motifs = self.layer2.process_seed_hit(hit, sequence)
+            all_motifs.extend(motifs)
         return all_motifs
     
     def _deduplicate_motifs(self, motifs: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
