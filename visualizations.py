@@ -1485,7 +1485,8 @@ def plot_enrichment_analysis(enrichment_results: Dict[str, Dict[str, Any]],
     for cls in classes:
         result = enrichment_results[cls]
         fe = result.get('fold_enrichment', 0)
-        if fe == 'Inf':
+        # Handle both string 'Inf' and float infinity values robustly
+        if fe == 'Inf' or (isinstance(fe, float) and np.isinf(fe)):
             fe = INFINITE_FOLD_ENRICHMENT_CAP  # Cap infinite values for visualization
         fold_enrichments.append(fe)
         p_values.append(result.get('p_value', 1.0))

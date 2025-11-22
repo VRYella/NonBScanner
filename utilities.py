@@ -1188,6 +1188,7 @@ import re
 import os
 import json
 import csv
+import random
 import pandas as pd
 import numpy as np
 from typing import Dict, List, Any, Optional, Union, Tuple
@@ -2465,10 +2466,13 @@ AAAAATTTTCCCCGGGG"""
     
     print("✓ All utility tests completed")
 
-
 # =============================================================================
 # ENHANCED STATISTICS: DENSITY AND ENRICHMENT ANALYSIS
 # =============================================================================
+
+# Constants for enrichment analysis
+DEFAULT_FOLD_ENRICHMENT_WHEN_ZERO_BACKGROUND = 1.0  # When background is zero
+
 
 def shuffle_sequence(sequence: str, preserve_composition: bool = True) -> str:
     """
@@ -2481,7 +2485,6 @@ def shuffle_sequence(sequence: str, preserve_composition: bool = True) -> str:
     Returns:
         Shuffled sequence
     """
-    import random
     seq_list = list(sequence.upper())
     random.shuffle(seq_list)
     return ''.join(seq_list)
@@ -2610,9 +2613,8 @@ def calculate_enrichment_with_shuffling(motifs: List[Dict[str, Any]],
         - background_mean: Mean density in shuffled sequences
         - background_std: Std deviation of background
     """
-    import random
-    
-    # Import analyze_sequence from nonbscanner to avoid circular import
+    # Import analyze_sequence locally to avoid circular dependency
+    # (nonbscanner imports from utilities, so we can't import at module level)
     try:
         from nonbscanner import analyze_sequence
     except ImportError:
@@ -2677,7 +2679,8 @@ def calculate_enrichment_with_shuffling(motifs: List[Dict[str, Any]],
         if bg_mean > 0:
             fold_enrichment = obs_density / bg_mean
         else:
-            fold_enrichment = float('inf') if obs_density > 0 else 1.0
+            # When background is zero, use infinity if observed > 0, else default value
+            fold_enrichment = float('inf') if obs_density > 0 else DEFAULT_FOLD_ENRICHMENT_WHEN_ZERO_BACKGROUND
         
         # Calculate p-value (proportion of shuffled >= observed)
         if bg_densities:
@@ -2689,7 +2692,7 @@ def calculate_enrichment_with_shuffling(motifs: List[Dict[str, Any]],
             'observed_density': round(obs_density, 4),
             'background_mean': round(bg_mean, 4),
             'background_std': round(bg_std, 4),
-            'fold_enrichment': round(fold_enrichment, 2) if fold_enrichment != float('inf') else 'Inf',
+            'fold_enrichment': round(fold_enrichment, 2) if not np.isinf(fold_enrichment) else 'Inf',
             'p_value': round(p_value, 4),
             'n_shuffles': n_shuffles,
             'observed_count': len([m for m in motifs if m.get('Class', 'Unknown') == class_name]) if class_name != 'Overall' else len(motifs)
