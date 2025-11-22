@@ -1188,6 +1188,7 @@ import re
 import os
 import json
 import csv
+import random
 import pandas as pd
 import numpy as np
 from typing import Dict, List, Any, Optional, Union, Tuple
@@ -2464,6 +2465,287 @@ AAAAATTTTCCCCGGGG"""
     print(f"\nQuality check: {quality_report['status']}")
     
     print("✓ All utility tests completed")
+
+# =============================================================================
+# ENHANCED STATISTICS: DENSITY AND ENRICHMENT ANALYSIS
+# =============================================================================
+
+# Constants for enrichment analysis
+DEFAULT_FOLD_ENRICHMENT_WHEN_ZERO_BACKGROUND = 1.0  # When background is zero
+
+
+def shuffle_sequence(sequence: str, preserve_composition: bool = True) -> str:
+    """
+    Shuffle a DNA sequence while preserving nucleotide composition.
+    
+    Args:
+        sequence: DNA sequence to shuffle
+        preserve_composition: If True, maintains exact nucleotide counts
+        
+    Returns:
+        Shuffled sequence
+    """
+    seq_list = list(sequence.upper())
+    random.shuffle(seq_list)
+    return ''.join(seq_list)
+
+
+def calculate_genomic_density(motifs: List[Dict[str, Any]], 
+                               sequence_length: int,
+                               by_class: bool = True) -> Dict[str, float]:
+    """
+    Calculate genomic density (coverage) for motifs.
+    
+    Genomic Density (σ_G) = (Total length in bp of all predicted motifs / 
+                             Total length in bp of analyzed region) × 100
+    
+    Args:
+        motifs: List of motif dictionaries
+        sequence_length: Total length of analyzed sequence
+        by_class: If True, calculate density per motif class
+        
+    Returns:
+        Dictionary with density metrics (percentage)
+    """
+    if not motifs or sequence_length == 0:
+        return {'Overall': 0.0}
+    
+    if not by_class:
+        # Overall density
+        total_motif_length = sum(m.get('Length', 0) for m in motifs)
+        overall_density = (total_motif_length / sequence_length) * 100
+        return {'Overall': round(overall_density, 4)}
+    
+    # Density per class
+    density_by_class = {}
+    class_groups = defaultdict(list)
+    
+    for motif in motifs:
+        class_name = motif.get('Class', 'Unknown')
+        class_groups[class_name].append(motif)
+    
+    for class_name, class_motifs in class_groups.items():
+        total_class_length = sum(m.get('Length', 0) for m in class_motifs)
+        class_density = (total_class_length / sequence_length) * 100
+        density_by_class[class_name] = round(class_density, 4)
+    
+    # Also add overall
+    total_motif_length = sum(m.get('Length', 0) for m in motifs)
+    density_by_class['Overall'] = round((total_motif_length / sequence_length) * 100, 4)
+    
+    return density_by_class
+
+
+def calculate_positional_density(motifs: List[Dict[str, Any]], 
+                                  sequence_length: int,
+                                  unit: str = 'Mbp',
+                                  by_class: bool = True) -> Dict[str, float]:
+    """
+    Calculate positional density (frequency) for motifs.
+    
+    Positional Density (λ) = Total count of predicted motifs / 
+                             Total length (in kbp or Mbp) of analyzed region
+    
+    Args:
+        motifs: List of motif dictionaries
+        sequence_length: Total length of analyzed sequence in bp
+        unit: 'kbp' or 'Mbp' for reporting units
+        by_class: If True, calculate density per motif class
+        
+    Returns:
+        Dictionary with positional density (motifs per unit)
+    """
+    if not motifs or sequence_length == 0:
+        return {'Overall': 0.0}
+    
+    # Convert to appropriate unit
+    if unit == 'kbp':
+        sequence_length_unit = sequence_length / 1000
+    elif unit == 'Mbp':
+        sequence_length_unit = sequence_length / 1000000
+    else:
+        sequence_length_unit = sequence_length
+    
+    if not by_class:
+        # Overall positional density
+        overall_density = len(motifs) / sequence_length_unit
+        return {'Overall': round(overall_density, 2)}
+    
+    # Positional density per class
+    density_by_class = {}
+    class_counts = Counter(m.get('Class', 'Unknown') for m in motifs)
+    
+    for class_name, count in class_counts.items():
+        class_density = count / sequence_length_unit
+        density_by_class[class_name] = round(class_density, 2)
+    
+    # Also add overall
+    density_by_class['Overall'] = round(len(motifs) / sequence_length_unit, 2)
+    
+    return density_by_class
+
+
+def calculate_enrichment_with_shuffling(motifs: List[Dict[str, Any]], 
+                                       sequence: str,
+                                       n_shuffles: int = 100,
+                                       by_class: bool = True,
+                                       progress_callback=None) -> Dict[str, Any]:
+    """
+    Calculate fold enrichment and statistical significance using sequence shuffling.
+    
+    Compares observed motif density against background (shuffled sequences).
+    
+    Fold Enrichment = D_Observed / D_Background
+    where D = Motif Density = Total bp of motif / Total bp of region
+    
+    Args:
+        motifs: List of detected motifs in original sequence
+        sequence: Original DNA sequence
+        n_shuffles: Number of shuffling iterations (default: 100)
+        by_class: If True, calculate enrichment per motif class
+        progress_callback: Optional callback function for progress updates
+        
+    Returns:
+        Dictionary with enrichment metrics including:
+        - fold_enrichment: Observed/Background ratio
+        - p_value: Statistical significance
+        - observed_density: Density in original sequence
+        - background_mean: Mean density in shuffled sequences
+        - background_std: Std deviation of background
+    """
+    # Import analyze_sequence locally to avoid circular dependency
+    # (nonbscanner imports from utilities, so we can't import at module level)
+    try:
+        from nonbscanner import analyze_sequence
+    except ImportError:
+        logger.error("Failed to import analyze_sequence from nonbscanner")
+        return {}
+    
+    if not motifs or not sequence:
+        return {}
+    
+    sequence_length = len(sequence)
+    
+    # Calculate observed densities (genomic density is used for enrichment)
+    observed_genomic_density = calculate_genomic_density(motifs, sequence_length, by_class=by_class)
+    
+    # Initialize background storage
+    if by_class:
+        class_names = set(m.get('Class', 'Unknown') for m in motifs)
+        background_densities = {cls: [] for cls in class_names}
+        background_densities['Overall'] = []
+    else:
+        background_densities = {'Overall': []}
+    
+    # Perform shuffling and detection
+    for i in range(n_shuffles):
+        if progress_callback:
+            progress_callback(i + 1, n_shuffles)
+        
+        # Shuffle sequence
+        shuffled_seq = shuffle_sequence(sequence)
+        
+        # Detect motifs in shuffled sequence
+        try:
+            shuffled_motifs = analyze_sequence(shuffled_seq, f"shuffled_{i}")
+            
+            # Calculate density for shuffled sequence
+            shuffled_density = calculate_genomic_density(shuffled_motifs, sequence_length, by_class=by_class)
+            
+            # Store background densities
+            for key in background_densities.keys():
+                background_densities[key].append(shuffled_density.get(key, 0.0))
+        
+        except Exception as e:
+            # If shuffled analysis fails, record zero density
+            logger.warning(f"Shuffled analysis {i} failed: {e}")
+            for key in background_densities.keys():
+                background_densities[key].append(0.0)
+    
+    # Calculate enrichment statistics
+    enrichment_results = {}
+    
+    for class_name, bg_densities in background_densities.items():
+        bg_densities = [d for d in bg_densities if d is not None]
+        
+        if not bg_densities:
+            continue
+        
+        obs_density = observed_genomic_density.get(class_name, 0.0)
+        bg_mean = np.mean(bg_densities)
+        bg_std = np.std(bg_densities)
+        
+        # Calculate fold enrichment
+        if bg_mean > 0:
+            fold_enrichment = obs_density / bg_mean
+        else:
+            # When background is zero, use infinity if observed > 0, else default value
+            fold_enrichment = float('inf') if obs_density > 0 else DEFAULT_FOLD_ENRICHMENT_WHEN_ZERO_BACKGROUND
+        
+        # Calculate p-value (proportion of shuffled >= observed)
+        if bg_densities:
+            p_value = sum(1 for bg in bg_densities if bg >= obs_density) / len(bg_densities)
+        else:
+            p_value = 1.0
+        
+        enrichment_results[class_name] = {
+            'observed_density': round(obs_density, 4),
+            'background_mean': round(bg_mean, 4),
+            'background_std': round(bg_std, 4),
+            'fold_enrichment': round(fold_enrichment, 2) if not np.isinf(fold_enrichment) else 'Inf',
+            'p_value': round(p_value, 4),
+            'n_shuffles': n_shuffles,
+            'observed_count': len([m for m in motifs if m.get('Class', 'Unknown') == class_name]) if class_name != 'Overall' else len(motifs)
+        }
+    
+    return enrichment_results
+
+
+def calculate_enhanced_statistics(motifs: List[Dict[str, Any]], 
+                                  sequence: str,
+                                  include_enrichment: bool = True,
+                                  n_shuffles: int = 100,
+                                  progress_callback=None) -> Dict[str, Any]:
+    """
+    Calculate comprehensive statistics including density and enrichment analysis.
+    
+    Args:
+        motifs: List of detected motifs
+        sequence: Original DNA sequence
+        include_enrichment: Whether to perform enrichment analysis (time-consuming)
+        n_shuffles: Number of shuffles for enrichment analysis
+        progress_callback: Optional callback for progress updates
+        
+    Returns:
+        Dictionary with comprehensive statistics
+    """
+    sequence_length = len(sequence)
+    
+    # Basic statistics
+    basic_stats = calculate_motif_statistics(motifs, sequence_length)
+    
+    # Density calculations
+    genomic_density = calculate_genomic_density(motifs, sequence_length, by_class=True)
+    positional_density_kbp = calculate_positional_density(motifs, sequence_length, unit='kbp', by_class=True)
+    positional_density_mbp = calculate_positional_density(motifs, sequence_length, unit='Mbp', by_class=True)
+    
+    enhanced_stats = {
+        'basic': basic_stats,
+        'genomic_density': genomic_density,
+        'positional_density_per_kbp': positional_density_kbp,
+        'positional_density_per_mbp': positional_density_mbp
+    }
+    
+    # Enrichment analysis (optional, time-consuming)
+    if include_enrichment and motifs:
+        enrichment_results = calculate_enrichment_with_shuffling(
+            motifs, sequence, n_shuffles=n_shuffles, 
+            by_class=True, progress_callback=progress_callback
+        )
+        enhanced_stats['enrichment'] = enrichment_results
+    
+    return enhanced_stats
+
 
 if __name__ == "__main__":
     test_utilities()

@@ -116,6 +116,9 @@ plt.rcParams.update({
     'axes.facecolor': '#FAFBFC',
 })
 
+# Constants for enrichment analysis visualization
+INFINITE_FOLD_ENRICHMENT_CAP = 100  # Cap for infinite fold enrichment values in plots
+
 def set_scientific_style():
     """Apply scientific publication-ready styling"""
     sns.set_style("whitegrid")
@@ -1387,6 +1390,249 @@ def test_visualizations():
     
     print(f"\n✓ Visualization testing completed")
     print(f"Plotly available: {'Yes' if PLOTLY_AVAILABLE else 'No'}")
+
+
+# =============================================================================
+# ENHANCED STATISTICS VISUALIZATIONS: DENSITY AND ENRICHMENT
+# =============================================================================
+
+def plot_density_comparison(genomic_density: Dict[str, float],
+                            positional_density: Dict[str, float],
+                            title: str = "Motif Density Analysis",
+                            figsize: Tuple[int, int] = (14, 6)) -> plt.Figure:
+    """
+    Plot comparison of genomic density (coverage %) and positional density (motifs/kbp).
+    
+    Args:
+        genomic_density: Dictionary of class -> genomic density (%)
+        positional_density: Dictionary of class -> positional density (motifs/unit)
+        title: Plot title
+        figsize: Figure size
+        
+    Returns:
+        Matplotlib figure object
+    """
+    set_scientific_style()
+    
+    # Remove 'Overall' for class-specific comparison
+    classes = [k for k in genomic_density.keys() if k != 'Overall']
+    if not classes:
+        classes = list(genomic_density.keys())
+    
+    genomic_vals = [genomic_density.get(c, 0) for c in classes]
+    positional_vals = [positional_density.get(c, 0) for c in classes]
+    
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=figsize)
+    
+    # Genomic Density (Coverage %)
+    colors1 = [MOTIF_CLASS_COLORS.get(c, '#808080') for c in classes]
+    bars1 = ax1.barh(classes, genomic_vals, color=colors1, alpha=0.8, edgecolor='black', linewidth=0.5)
+    ax1.set_xlabel('Genomic Density (Coverage %)', fontsize=11, fontweight='bold')
+    ax1.set_ylabel('Motif Class', fontsize=11, fontweight='bold')
+    ax1.set_title('A. Genomic Density (σ_G)', fontsize=12, fontweight='bold', pad=10)
+    
+    # Add value labels
+    for i, (bar, val) in enumerate(zip(bars1, genomic_vals)):
+        if val > 0:
+            ax1.text(val + max(genomic_vals) * 0.01, i, f'{val:.3f}%', 
+                    va='center', fontsize=9, fontweight='bold')
+    
+    # Positional Density (Frequency)
+    colors2 = [MOTIF_CLASS_COLORS.get(c, '#808080') for c in classes]
+    bars2 = ax2.barh(classes, positional_vals, color=colors2, alpha=0.8, edgecolor='black', linewidth=0.5)
+    ax2.set_xlabel('Positional Density (motifs/kbp)', fontsize=11, fontweight='bold')
+    ax2.set_ylabel('Motif Class', fontsize=11, fontweight='bold')
+    ax2.set_title('B. Positional Density (λ)', fontsize=12, fontweight='bold', pad=10)
+    
+    # Add value labels
+    for i, (bar, val) in enumerate(zip(bars2, positional_vals)):
+        if val > 0:
+            ax2.text(val + max(positional_vals) * 0.01, i, f'{val:.2f}', 
+                    va='center', fontsize=9, fontweight='bold')
+    
+    plt.suptitle(title, fontsize=14, fontweight='bold', y=1.00)
+    plt.tight_layout(rect=[0, 0, 1, 0.97])
+    
+    return fig
+
+
+def plot_enrichment_analysis(enrichment_results: Dict[str, Dict[str, Any]],
+                             title: str = "Motif Enrichment Analysis",
+                             figsize: Tuple[int, int] = (14, 8)) -> plt.Figure:
+    """
+    Plot enrichment analysis results with fold enrichment and p-values.
+    
+    Args:
+        enrichment_results: Dictionary from calculate_enrichment_with_shuffling
+        title: Plot title
+        figsize: Figure size
+        
+    Returns:
+        Matplotlib figure object
+    """
+    set_scientific_style()
+    
+    # Extract data (exclude 'Overall' for class-specific view)
+    classes = [k for k in enrichment_results.keys() if k != 'Overall']
+    if not classes:
+        classes = list(enrichment_results.keys())
+    
+    fold_enrichments = []
+    p_values = []
+    observed_densities = []
+    background_means = []
+    
+    for cls in classes:
+        result = enrichment_results[cls]
+        fe = result.get('fold_enrichment', 0)
+        # Handle both string 'Inf' and float infinity values robustly
+        if fe == 'Inf' or (isinstance(fe, float) and np.isinf(fe)):
+            fe = INFINITE_FOLD_ENRICHMENT_CAP  # Cap infinite values for visualization
+        fold_enrichments.append(fe)
+        p_values.append(result.get('p_value', 1.0))
+        observed_densities.append(result.get('observed_density', 0))
+        background_means.append(result.get('background_mean', 0))
+    
+    fig = plt.figure(figsize=figsize)
+    gs = fig.add_gridspec(2, 2, hspace=0.35, wspace=0.3)
+    
+    # 1. Fold Enrichment
+    ax1 = fig.add_subplot(gs[0, 0])
+    colors = [MOTIF_CLASS_COLORS.get(c, '#808080') for c in classes]
+    bars1 = ax1.barh(classes, fold_enrichments, color=colors, alpha=0.8, edgecolor='black', linewidth=0.5)
+    ax1.axvline(x=1.0, color='red', linestyle='--', linewidth=2, label='No enrichment (FE=1)')
+    ax1.set_xlabel('Fold Enrichment', fontsize=11, fontweight='bold')
+    ax1.set_ylabel('Motif Class', fontsize=11, fontweight='bold')
+    ax1.set_title('A. Fold Enrichment', fontsize=12, fontweight='bold')
+    ax1.legend(loc='best', fontsize=9)
+    
+    # Add value labels
+    for i, (bar, val) in enumerate(zip(bars1, fold_enrichments)):
+        label_text = f'{val:.2f}' if val < INFINITE_FOLD_ENRICHMENT_CAP else 'Inf'
+        ax1.text(val + max(fold_enrichments) * 0.01, i, label_text, 
+                va='center', fontsize=9, fontweight='bold')
+    
+    # 2. P-values
+    ax2 = fig.add_subplot(gs[0, 1])
+    # Color code by significance
+    p_colors = ['green' if p < 0.05 else 'orange' if p < 0.1 else 'red' for p in p_values]
+    bars2 = ax2.barh(classes, p_values, color=p_colors, alpha=0.7, edgecolor='black', linewidth=0.5)
+    ax2.axvline(x=0.05, color='green', linestyle='--', linewidth=2, label='p=0.05')
+    ax2.axvline(x=0.1, color='orange', linestyle='--', linewidth=1.5, label='p=0.1')
+    ax2.set_xlabel('P-value', fontsize=11, fontweight='bold')
+    ax2.set_ylabel('Motif Class', fontsize=11, fontweight='bold')
+    ax2.set_title('B. Statistical Significance', fontsize=12, fontweight='bold')
+    ax2.set_xlim(0, max(1.0, max(p_values) * 1.1))
+    ax2.legend(loc='best', fontsize=9)
+    
+    # Add value labels
+    for i, (bar, val) in enumerate(zip(bars2, p_values)):
+        ax2.text(val + 0.02, i, f'{val:.3f}', va='center', fontsize=9, fontweight='bold')
+    
+    # 3. Observed vs Background Density
+    ax3 = fig.add_subplot(gs[1, :])
+    x = np.arange(len(classes))
+    width = 0.35
+    
+    bars3a = ax3.bar(x - width/2, observed_densities, width, label='Observed', 
+                    color='steelblue', alpha=0.8, edgecolor='black', linewidth=0.5)
+    bars3b = ax3.bar(x + width/2, background_means, width, label='Background (Mean)', 
+                    color='coral', alpha=0.8, edgecolor='black', linewidth=0.5)
+    
+    ax3.set_xlabel('Motif Class', fontsize=11, fontweight='bold')
+    ax3.set_ylabel('Density (%)', fontsize=11, fontweight='bold')
+    ax3.set_title('C. Observed vs. Background Density Comparison', fontsize=12, fontweight='bold')
+    ax3.set_xticks(x)
+    ax3.set_xticklabels(classes, rotation=45, ha='right', fontsize=9)
+    ax3.legend(loc='best', fontsize=10)
+    ax3.grid(axis='y', alpha=0.3)
+    
+    plt.suptitle(title, fontsize=14, fontweight='bold', y=0.99)
+    
+    return fig
+
+
+def plot_enrichment_summary_table(enrichment_results: Dict[str, Dict[str, Any]],
+                                  title: str = "Enrichment Summary Statistics") -> plt.Figure:
+    """
+    Create a summary table visualization for enrichment results.
+    
+    Args:
+        enrichment_results: Dictionary from calculate_enrichment_with_shuffling
+        title: Plot title
+        
+    Returns:
+        Matplotlib figure object
+    """
+    set_scientific_style()
+    
+    # Prepare data for table
+    classes = [k for k in enrichment_results.keys() if k != 'Overall']
+    if not classes:
+        return None
+    
+    table_data = []
+    for cls in classes:
+        result = enrichment_results[cls]
+        fe = result.get('fold_enrichment', 0)
+        fe_str = f"{fe:.2f}" if fe != 'Inf' else 'Inf'
+        
+        row = [
+            cls,
+            result.get('observed_count', 0),
+            f"{result.get('observed_density', 0):.4f}%",
+            f"{result.get('background_mean', 0):.4f}%",
+            fe_str,
+            f"{result.get('p_value', 1.0):.4f}",
+            '***' if result.get('p_value', 1.0) < 0.001 else 
+            '**' if result.get('p_value', 1.0) < 0.01 else 
+            '*' if result.get('p_value', 1.0) < 0.05 else 'ns'
+        ]
+        table_data.append(row)
+    
+    # Create figure
+    fig, ax = plt.subplots(figsize=(14, max(6, len(classes) * 0.4)))
+    ax.axis('tight')
+    ax.axis('off')
+    
+    # Create table
+    headers = ['Class', 'Count', 'Observed\nDensity', 'Background\nMean', 
+               'Fold\nEnrichment', 'P-value', 'Sig.']
+    
+    table = ax.table(cellText=table_data, colLabels=headers, 
+                    cellLoc='center', loc='center',
+                    colWidths=[0.20, 0.10, 0.15, 0.15, 0.15, 0.12, 0.08])
+    
+    table.auto_set_font_size(False)
+    table.set_fontsize(10)
+    table.scale(1, 2)
+    
+    # Style header
+    for i, header in enumerate(headers):
+        cell = table[(0, i)]
+        cell.set_facecolor('#2196F3')
+        cell.set_text_props(weight='bold', color='white', fontsize=11)
+    
+    # Style rows with alternating colors
+    for i in range(1, len(table_data) + 1):
+        for j in range(len(headers)):
+            cell = table[(i, j)]
+            if i % 2 == 0:
+                cell.set_facecolor('#F5F5F5')
+            else:
+                cell.set_facecolor('white')
+            
+            # Highlight significant results
+            if j == 6:  # Significance column
+                if table_data[i-1][j] in ['***', '**', '*']:
+                    cell.set_facecolor('#C8E6C9')
+                    cell.set_text_props(weight='bold', color='green')
+    
+    plt.title(title, fontsize=14, fontweight='bold', pad=20)
+    plt.tight_layout()
+    
+    return fig
+
 
 if __name__ == "__main__":
     test_visualizations()

@@ -8,9 +8,13 @@ NonBScanner is a state-of-the-art bioinformatics tool for detecting and analyzin
 
 **New in Version 2024.1:** Professional 5-file architecture for maximum elegance and maintainability.
 
-**✨ Latest Enhancements (2024.1.1):**
+**✨ Latest Enhancements (2024.1.2):**
+- **📏 Density Analysis**: Genomic density (coverage %) and positional density (motifs/kbp) calculations per motif class
+- **✨ Enrichment Analysis**: Fold enrichment calculation with 100-iteration sequence shuffling for statistical validation
+- **📊 Statistical Significance**: P-value calculation using permutation testing to validate motif enrichment
+- **🎨 Enhanced Visualizations**: New density comparison and enrichment analysis plots with no text overlap
 - **Consolidated Registry**: Single file (`consolidated_registry.json`) instead of 18 separate files
-- **Enhanced Scientific Visualizations**: 4 new publication-quality plotting functions
+- **Enhanced Scientific Visualizations**: Publication-quality plotting functions
 - **Comprehensive Class Analysis**: Shows all 11 classes with detection status
 - **Advanced Statistics**: Mean, median, std, min/max for scores and lengths
 - **300 DPI Output**: Publication-ready figures
@@ -22,6 +26,7 @@ NonBScanner is a state-of-the-art bioinformatics tool for detecting and analyzin
 - **Literature-validated** scoring algorithms
 - **✨ Enhanced hybrid/cluster detection** with actual sequence extraction
 - **✨ 25+ advanced publication-quality visualizations** (colorblind-friendly)
+- **📏 Rigorous statistical analysis** with density and enrichment metrics
 
 ### ⚡ Performance Highlights
 - **100,000 bp in 4 seconds** with optimized detectors

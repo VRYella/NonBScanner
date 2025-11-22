@@ -36,7 +36,9 @@ from collections import Counter
 from utilities import (
     canonicalize_motif, parse_fasta, gc_content, reverse_complement, wrap,
     get_basic_stats, export_to_bed, export_to_csv, export_to_json,
-    validate_sequence, quality_check_motifs, export_to_excel
+    validate_sequence, quality_check_motifs, export_to_excel,
+    calculate_genomic_density, calculate_positional_density,
+    calculate_enrichment_with_shuffling, calculate_enhanced_statistics
 )
 from nonbscanner import (
     analyze_sequence, analyze_multiple_sequences,
@@ -46,7 +48,8 @@ from utilities import export_results_to_dataframe
 from visualizations import (
     plot_motif_distribution, plot_coverage_map, plot_density_heatmap,
     plot_length_distribution, plot_score_distribution, plot_nested_pie_chart, 
-    save_all_plots, MOTIF_CLASS_COLORS
+    save_all_plots, MOTIF_CLASS_COLORS,
+    plot_density_comparison, plot_enrichment_analysis, plot_enrichment_summary_table
 )
 
 # Try to import Entrez for demo functionality
@@ -1481,23 +1484,177 @@ with tab_pages["Results"]:
                     st.error(f"Error generating coverage map: {e}")
             
             with viz_tabs[2]:  # Statistics  
-                st.subheader("Statistical Analysis")
-                try:
-                    # Length distribution by class - violin plot for better distribution visualization
-                    st.markdown("**Motif Length Distribution by Class**")
-                    fig6 = plot_length_distribution(filtered_motifs, by_class=True, 
-                                                   title="Length Distribution by Motif Class") 
-                    st.pyplot(fig6)
-                    plt.close(fig6)
+                st.subheader("📊 Statistical Analysis")
+                
+                # Tabs for different statistical analyses
+                stat_tabs = st.tabs(["📏 Density Metrics", "✨ Enrichment Analysis", "📈 Distributions"])
+                
+                with stat_tabs[0]:  # Density Metrics
+                    st.markdown("### Density Calculations")
+                    st.markdown("""
+                    <div style='background: #e3f2fd; border-left: 4px solid #2196F3; padding: 15px; border-radius: 5px; margin: 10px 0;'>
+                    <p><b>Genomic Density (σ_G):</b> Percentage of sequence covered by motifs</p>
+                    <p><b>Positional Density (λ):</b> Number of motifs per unit length (kbp or Mbp)</p>
+                    </div>
+                    """, unsafe_allow_html=True)
                     
-                    # Score distribution by class - box plot for score comparison
-                    st.markdown("**Motif Score Distribution by Class**")
-                    fig7 = plot_score_distribution(filtered_motifs, by_class=True,
-                                                  title="Score Distribution by Motif Class")
-                    st.pyplot(fig7)
-                    plt.close(fig7)
-                except Exception as e:
-                    st.error(f"Error generating statistical plots: {e}")
+                    try:
+                        # Calculate density metrics
+                        genomic_density = calculate_genomic_density(filtered_motifs, sequence_length, by_class=True)
+                        positional_density_kbp = calculate_positional_density(filtered_motifs, sequence_length, unit='kbp', by_class=True)
+                        positional_density_mbp = calculate_positional_density(filtered_motifs, sequence_length, unit='Mbp', by_class=True)
+                        
+                        # Display overall metrics
+                        st.markdown("#### Overall Metrics")
+                        col1, col2, col3 = st.columns(3)
+                        with col1:
+                            st.metric("Genomic Density", f"{genomic_density.get('Overall', 0):.4f}%")
+                        with col2:
+                            st.metric("Density (motifs/kbp)", f"{positional_density_kbp.get('Overall', 0):.2f}")
+                        with col3:
+                            st.metric("Density (motifs/Mbp)", f"{positional_density_mbp.get('Overall', 0):.2f}")
+                        
+                        # Display per-class density table
+                        st.markdown("#### Density by Motif Class")
+                        density_data = []
+                        for class_name in sorted([k for k in genomic_density.keys() if k != 'Overall']):
+                            density_data.append({
+                                'Motif Class': class_name,
+                                'Genomic Density (%)': f"{genomic_density.get(class_name, 0):.4f}",
+                                'Motifs per kbp': f"{positional_density_kbp.get(class_name, 0):.2f}",
+                                'Motifs per Mbp': f"{positional_density_mbp.get(class_name, 0):.2f}"
+                            })
+                        
+                        if density_data:
+                            density_df = pd.DataFrame(density_data)
+                            st.dataframe(density_df, use_container_width=True, height=300)
+                        
+                        # Visualize density comparison
+                        st.markdown("#### Density Visualization")
+                        fig_density = plot_density_comparison(genomic_density, positional_density_kbp,
+                                                              title="Motif Density Analysis")
+                        st.pyplot(fig_density)
+                        plt.close(fig_density)
+                        
+                    except Exception as e:
+                        st.error(f"Error calculating density metrics: {e}")
+                        import traceback
+                        st.error(traceback.format_exc())
+                
+                with stat_tabs[1]:  # Enrichment Analysis
+                    st.markdown("### Enrichment Analysis")
+                    st.markdown("""
+                    <div style='background: #fff3e0; border-left: 4px solid #ff9800; padding: 15px; border-radius: 5px; margin: 10px 0;'>
+                    <p><b>Fold Enrichment:</b> Ratio of observed motif density to background (shuffled sequences)</p>
+                    <p><b>P-value:</b> Statistical significance (proportion of shuffled sequences with equal or higher density)</p>
+                    <p><b>Method:</b> 100 iterations of sequence shuffling to generate background distribution</p>
+                    </div>
+                    """, unsafe_allow_html=True)
+                    
+                    # Option to run enrichment analysis
+                    if st.button("🔬 Run Enrichment Analysis (100 shuffles)", key="run_enrichment"):
+                        with st.spinner("Performing enrichment analysis... This may take a few minutes."):
+                            progress_bar = st.progress(0)
+                            status_text = st.empty()
+                            
+                            def progress_callback(current, total):
+                                progress = current / total
+                                progress_bar.progress(progress)
+                                status_text.text(f"Processing shuffle {current}/{total}...")
+                            
+                            try:
+                                enrichment_results = calculate_enrichment_with_shuffling(
+                                    filtered_motifs, 
+                                    st.session_state.seqs[seq_idx],
+                                    n_shuffles=100,
+                                    by_class=True,
+                                    progress_callback=progress_callback
+                                )
+                                
+                                # Store results in session state
+                                st.session_state.enrichment_results = enrichment_results
+                                progress_bar.empty()
+                                status_text.empty()
+                                st.success("✅ Enrichment analysis completed!")
+                                
+                            except Exception as e:
+                                st.error(f"Error during enrichment analysis: {e}")
+                                import traceback
+                                st.error(traceback.format_exc())
+                    
+                    # Display enrichment results if available
+                    if hasattr(st.session_state, 'enrichment_results') and st.session_state.enrichment_results:
+                        enrichment_results = st.session_state.enrichment_results
+                        
+                        st.markdown("#### Enrichment Results")
+                        
+                        # Create summary table
+                        enrich_data = []
+                        for class_name in sorted([k for k in enrichment_results.keys() if k != 'Overall']):
+                            result = enrichment_results[class_name]
+                            fe = result.get('fold_enrichment', 0)
+                            fe_str = f"{fe:.2f}" if fe != 'Inf' else 'Inf'
+                            p_val = result.get('p_value', 1.0)
+                            sig = '***' if p_val < 0.001 else '**' if p_val < 0.01 else '*' if p_val < 0.05 else 'ns'
+                            
+                            enrich_data.append({
+                                'Motif Class': class_name,
+                                'Count': result.get('observed_count', 0),
+                                'Observed Density (%)': f"{result.get('observed_density', 0):.4f}",
+                                'Background Mean (%)': f"{result.get('background_mean', 0):.4f}",
+                                'Fold Enrichment': fe_str,
+                                'P-value': f"{p_val:.4f}",
+                                'Significance': sig
+                            })
+                        
+                        if enrich_data:
+                            enrich_df = pd.DataFrame(enrich_data)
+                            st.dataframe(enrich_df, use_container_width=True, height=300)
+                            
+                            st.markdown("""
+                            <div style='background: #f5f5f5; padding: 10px; border-radius: 5px; margin: 10px 0; font-size: 0.9em;'>
+                            <b>Significance levels:</b> *** p < 0.001, ** p < 0.01, * p < 0.05, ns = not significant
+                            </div>
+                            """, unsafe_allow_html=True)
+                        
+                        # Visualizations
+                        st.markdown("#### Enrichment Visualizations")
+                        
+                        try:
+                            fig_enrich = plot_enrichment_analysis(enrichment_results,
+                                                                 title="Motif Enrichment Analysis")
+                            st.pyplot(fig_enrich)
+                            plt.close(fig_enrich)
+                            
+                            # Summary table visualization
+                            fig_table = plot_enrichment_summary_table(enrichment_results,
+                                                                     title="Enrichment Summary Statistics")
+                            if fig_table:
+                                st.pyplot(fig_table)
+                                plt.close(fig_table)
+                        except Exception as e:
+                            st.error(f"Error generating enrichment plots: {e}")
+                    else:
+                        st.info("👆 Click the button above to run enrichment analysis")
+                
+                with stat_tabs[2]:  # Distributions
+                    st.markdown("### Distribution Analysis")
+                    try:
+                        # Length distribution by class - violin plot for better distribution visualization
+                        st.markdown("**Motif Length Distribution by Class**")
+                        fig6 = plot_length_distribution(filtered_motifs, by_class=True, 
+                                                       title="Length Distribution by Motif Class") 
+                        st.pyplot(fig6)
+                        plt.close(fig6)
+                        
+                        # Score distribution by class - box plot for score comparison
+                        st.markdown("**Motif Score Distribution by Class**")
+                        fig7 = plot_score_distribution(filtered_motifs, by_class=True,
+                                                      title="Score Distribution by Motif Class")
+                        st.pyplot(fig7)
+                        plt.close(fig7)
+                    except Exception as e:
+                        st.error(f"Error generating distribution plots: {e}")
             
             with viz_tabs[3]:  # Cluster/Hybrid
                 st.subheader("🔗 Hybrid and Cluster Motifs")
