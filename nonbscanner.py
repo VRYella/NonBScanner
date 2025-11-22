@@ -441,7 +441,7 @@ def analyze_sequence(sequence: str, sequence_name: str = "sequence",
             from parallel_scanner import analyze_sequence_parallel
             return analyze_sequence_parallel(sequence, sequence_name, use_parallel=True)
         except ImportError:
-            warnings.warn("Fast mode not available, falling back to standard mode")
+            warnings.warn("Fast mode not available (parallel_scanner module not found), falling back to standard mode")
     
     # Standard mode (sequential)
     scanner = NonBScanner()

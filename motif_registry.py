@@ -1,24 +1,28 @@
 """
 ╔══════════════════════════════════════════════════════════════════════════════╗
-║                    MOTIF REGISTRY - TWO-LAYER ARCHITECTURE                   ║
-║        Seed Patterns + Scoring Functions for 10000x Speed Improvement        ║
+║                    MOTIF REGISTRY - PARALLEL ARCHITECTURE                    ║
+║          Seed Patterns + Scoring Functions for Speed Improvement             ║
 ╚══════════════════════════════════════════════════════════════════════════════╝
 
 MODULE: motif_registry.py
 AUTHOR: Dr. Venkata Rajesh Yella
-VERSION: 2024.2 - Two-Layer Architecture
+VERSION: 2024.2 - Parallel Architecture
 LICENSE: MIT
 
 DESCRIPTION:
-    Implements the two-layer architecture for ultra-fast motif detection:
+    Registry for motif detection with two complementary architectures:
     
-    Layer 1: Ultra-fast seed search (Hyperscan/RE2) with minimal backtracking
-    Layer 2: Motif-specific scoring + backtracking with DP/state machines
+    1. Parallel Architecture (Recommended): Run all detectors simultaneously
+       - ~9x wall-clock speedup on 9+ core systems
+       - Simple and effective
     
-    This enables 10000x speed improvement through parallel processing and
-    efficient seed-and-extend approach.
+    2. Two-Layer Architecture (Alternative): Seed matching + detailed scoring
+       - Layer 1: Ultra-fast seed search with minimal backtracking
+       - Layer 2: Motif-specific scoring + backtracking
+       - Foundation for future Hyperscan acceleration
 
 ARCHITECTURE:
+    - 11 motif types registered (one entry per detector class)
     - Seed patterns: Simple regex without backtracking for initial filtering
     - Scan functions: Sophisticated scoring with backtracking for accuracy
     - Window sizes: Configurable padding around seed matches
@@ -26,10 +30,10 @@ ARCHITECTURE:
 
 REFERENCE:
     Architecture based on:
-    - Hyperscan streaming for O(n) seed matching
+    - ThreadPoolExecutor for parallel detector execution
+    - Regex-based seed matching (Hyperscan-ready)
     - Dynamic programming for repeat scoring
     - State machines for G4/i-motif detection
-    - Parallel execution for 10000x speedup
 """
 
 from typing import List, Dict, Any, Tuple, Callable, Optional
@@ -69,21 +73,21 @@ class MotifClass:
 
 class MotifRegistry:
     """
-    Central registry for all 23 motif types with seed patterns and scan functions.
+    Central registry for all 11 motif types with seed patterns and scan functions.
     
-    Implements the two-layer architecture:
-    - Layer 1: Seed patterns for fast filtering
-    - Layer 2: Sophisticated scoring with backtracking
+    Implements parallel and two-layer architectures:
+    - Parallel: Execute all 11 detectors simultaneously (~9x speedup)
+    - Two-layer: Seed matching + detailed scoring (foundation for optimization)
     """
     
     def __init__(self):
-        """Initialize registry with all 23 motif seed patterns"""
+        """Initialize registry with all 11 motif seed patterns"""
         self.motifs: List[MotifClass] = []
         self._register_all_motifs()
         self._compiled_db = None
         
     def _register_all_motifs(self):
-        """Register all 23 motif types with seed patterns and scan functions"""
+        """Register all 11 motif types with seed patterns and scan functions"""
         
         # Import detector classes for scan functions
         from detectors import (

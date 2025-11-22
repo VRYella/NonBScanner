@@ -1,6 +1,6 @@
 """
 ╔══════════════════════════════════════════════════════════════════════════════╗
-║                    PARALLEL MOTIF SCANNER - 10000X SPEEDUP                   ║
+║                    PARALLEL MOTIF SCANNER - 9X SPEEDUP                       ║
 ║              Process Each Motif Type in Parallel for Maximum Speed           ║
 ╚══════════════════════════════════════════════════════════════════════════════╝
 

@@ -1,6 +1,6 @@
 """
 ╔══════════════════════════════════════════════════════════════════════════════╗
-║                    TWO-LAYER SCANNER - 10000X SPEEDUP                        ║
+║                    TWO-LAYER SCANNER - OPTIMIZED ARCHITECTURE                ║
 ║           Ultra-Fast Seed Search + Motif-Specific Backtracking               ║
 ╚══════════════════════════════════════════════════════════════════════════════╝
 
