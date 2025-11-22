@@ -92,6 +92,10 @@ def cache_hyperscan_database(_patterns: list = None):
     Note: This is a placeholder for when Hyperscan patterns are defined.
     Currently returns None as Hyperscan is not yet integrated.
     
+    Note: The underscore prefix on _patterns is a Streamlit convention
+    to indicate the parameter should not be hashed for caching purposes.
+    This prevents Streamlit from attempting to hash complex pattern objects.
+    
     Args:
         _patterns: List of regex patterns to compile (underscore prefix prevents hashing)
         

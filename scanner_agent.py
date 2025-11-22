@@ -98,10 +98,7 @@ def hs_worker_task(args: Tuple[int, np.ndarray, Any]) -> List[Tuple[int, int, in
         # Fallback: Use regex-based detection from existing scanner
         # This maintains compatibility when Hyperscan is not available
         try:
-            # Import here to avoid circular dependency
-            import sys
-            import os
-            sys.path.insert(0, os.path.dirname(__file__))
+            # Use absolute import to avoid sys.path manipulation
             from scanner import analyze_sequence
             
             # Decode chunk to string
@@ -111,9 +108,13 @@ def hs_worker_task(args: Tuple[int, np.ndarray, Any]) -> List[Tuple[int, int, in
             chunk_motifs = analyze_sequence(chunk_str, f"chunk_{offset}")
             
             # Convert to (start, end, pattern_id) format
+            # Note: Motifs use 1-based inclusive coordinates
+            # We convert to 0-based half-open intervals for internal use
             for i, motif in enumerate(chunk_motifs):
-                global_start = offset + motif.get('Start', 0) - 1  # Convert to 0-based
-                global_end = offset + motif.get('End', 0) - 1
+                # Start: 1-based to 0-based (subtract 1)
+                # End: already exclusive in our internal format
+                global_start = offset + motif.get('Start', 0) - 1
+                global_end = offset + motif.get('End', 0)  # End is already exclusive
                 pattern_id = hash(f"{motif.get('Class', '')}_{motif.get('Subclass', '')}")
                 local_results.append((global_start, global_end, pattern_id))
         except Exception as e:

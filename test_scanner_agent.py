@@ -86,10 +86,10 @@ def test_coverage_with_overlaps():
             'name': 'No overlaps',
             'motifs': [
                 {'Class': 'G4', 'Start': 1, 'End': 20, 'Length': 20},
-                {'Class': 'G4', 'Start': 31, 'End': 51, 'Length': 21},  # Non-overlapping (21-51 = 21 positions)
+                {'Class': 'G4', 'Start': 31, 'End': 50, 'Length': 20},  # Non-overlapping (31-50 = 20 positions in 1-based inclusive)
             ],
             'seq_len': 100,
-            'expected_coverage': 41.0  # 20 + 21 = 41
+            'expected_coverage': 40.0  # 20 + 20 = 40
         },
         {
             'name': 'Full overlap (identical)',
@@ -212,10 +212,11 @@ def test_motif_statistics():
     print("="*70)
     
     # Test with overlapping motifs
+    # Note: Start and End are 1-based inclusive coordinates
     motifs = [
         {'Class': 'G4', 'Subclass': 'Canonical', 'Start': 1, 'End': 50, 'Length': 50, 'Score': 0.8},
-        {'Class': 'G4', 'Subclass': 'Relaxed', 'Start': 40, 'End': 80, 'Length': 41, 'Score': 0.7},  # Overlaps (40-80 = 41 positions)
-        {'Class': 'Curved', 'Subclass': 'A-tract', 'Start': 100, 'End': 130, 'Length': 31, 'Score': 0.9},  # 100-130 = 31 positions
+        {'Class': 'G4', 'Subclass': 'Relaxed', 'Start': 40, 'End': 80, 'Length': 41, 'Score': 0.7},  # Overlaps (positions 40-80 inclusive = 41 bases)
+        {'Class': 'Curved', 'Subclass': 'A-tract', 'Start': 100, 'End': 130, 'Length': 31, 'Score': 0.9},  # 100-130 inclusive = 31 bases
     ]
     
     sequence_length = 200
@@ -234,8 +235,11 @@ def test_motif_statistics():
     print(f"  Subclasses detected: {stats['Subclasses_Detected']}")
     
     # Verify coverage is correct (should be less than sum of lengths due to overlap)
-    # Positions: 0-50 (50), 39-80 (41, overlap 39-50 = 11), 99-130 (31)
-    # Unique: 0-80 (80) + 99-130 (31) = 111 positions
+    # In 0-based half-open: [0,50) + [39,80) + [99,130)
+    # Unique positions: 0-49 (50), 39-79 (overlap 39-49 = 10), 99-129 (31)
+    # Total unique: 50 + (80-39-10) + 31 = 50 + 31 + 31 = 112? No wait...
+    # Simpler: range(0,50) ∪ range(39,80) ∪ range(99,130)
+    # = [0,79] ∪ [99,129] = 80 + 31 = 111 positions
     expected_coverage = 111 / 200 * 100  # 55.5%
     assert abs(stats['Coverage%'] - expected_coverage) < 0.1, f"Coverage should be ~{expected_coverage}%"
     print(f"  ✅ Coverage correct: {stats['Coverage%']}% (expected ~{expected_coverage}%)")
