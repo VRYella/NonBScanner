@@ -2610,8 +2610,14 @@ def calculate_enrichment_with_shuffling(motifs: List[Dict[str, Any]],
         - background_mean: Mean density in shuffled sequences
         - background_std: Std deviation of background
     """
-    from scanner import analyze_sequence
     import random
+    
+    # Import analyze_sequence from nonbscanner to avoid circular import
+    try:
+        from nonbscanner import analyze_sequence
+    except ImportError:
+        logger.error("Failed to import analyze_sequence from nonbscanner")
+        return {}
     
     if not motifs or not sequence:
         return {}
