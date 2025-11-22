@@ -1,0 +1,76 @@
+================================================================================
+NON-B DNA MOTIF DETECTION ANALYSIS REPORT
+================================================================================
+
+SUMMARY:
+  Total Classes: 11
+  Detected Classes: 6
+  Not Detected Classes: 9
+  Total Motifs: 904
+  Detection Rate: 54.5%
+
+DETECTED CLASSES:
+--------------------------------------------------------------------------------
+
+G-Quadruplex (99 motifs):
+  Expected subclasses: 8
+  Detected subclasses: 3
+  ✓ Detected:
+    - Imperfect G4 (47 motifs)
+    - Relaxed G4 (46 motifs)
+    - Canonical G4 (6 motifs)
+  ✗ Not Detected:
+    - Multimeric G4
+    - Bulged G4
+    - Bipartite G4
+    - G-Triplex intermediate
+    - Long-loop G4
+
+Z-DNA (21 motifs):
+  Expected subclasses: 2
+  Detected subclasses: 1
+  ✓ Detected:
+    - Z-DNA (21 motifs)
+  ✗ Not Detected:
+    - eGZ
+
+NOT DETECTED CLASSES:
+--------------------------------------------------------------------------------
+
+✗ Curved DNA:
+  Expected subclasses: Global Curvature, Local Curvature
+  Reason: No motifs of this class were found in the sequence
+
+✗ Slipped DNA:
+  Expected subclasses: Direct Repeat, STR
+  Reason: No motifs of this class were found in the sequence
+
+✗ Cruciform DNA:
+  Expected subclasses: Inverted Repeats
+  Reason: No motifs of this class were found in the sequence
+
+✗ R-loop:
+  Expected subclasses: R-loop formation sites, QmRLFS-m1, QmRLFS-m2
+  Reason: No motifs of this class were found in the sequence
+
+✗ Triplex:
+  Expected subclasses: Triplex, Sticky DNA
+  Reason: No motifs of this class were found in the sequence
+
+✗ i-Motif:
+  Expected subclasses: Canonical i-motif, Relaxed i-motif, AC-motif
+  Reason: No motifs of this class were found in the sequence
+
+✗ A-philic DNA:
+  Expected subclasses: A-philic DNA
+  Reason: No motifs of this class were found in the sequence
+
+✗ Hybrid:
+  Expected subclasses: Dynamic overlaps
+  Reason: No motifs of this class were found in the sequence
+
+✗ Non-B_DNA_Clusters:
+  Expected subclasses: Dynamic clusters
+  Reason: No motifs of this class were found in the sequence
+
+================================================================================
