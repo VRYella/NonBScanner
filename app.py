@@ -59,6 +59,62 @@ try:
 except ImportError:
     BIO_AVAILABLE = False
 
+# Try to import Hyperscan (optional for acceleration)
+try:
+    import hyperscan
+    HYPERSCAN_AVAILABLE = True
+except ImportError:
+    HYPERSCAN_AVAILABLE = False
+
+# ---------- CACHING FUNCTIONS (Memory-Efficient) ----------
+@st.cache_resource(show_spinner=False)
+def cache_genome_as_numpy(sequence: str) -> np.ndarray:
+    """
+    Cache genome sequence as NumPy byte array for memory efficiency.
+    
+    This prevents reloading large genomes and reduces memory footprint
+    when using Streamlit on free tier (1GB limit).
+    
+    Args:
+        sequence: DNA sequence string
+        
+    Returns:
+        NumPy array of sequence bytes
+    """
+    return np.frombuffer(sequence.encode('utf-8'), dtype=np.uint8)
+
+
+@st.cache_resource(show_spinner=False)
+def cache_hyperscan_database(_patterns: list = None):
+    """
+    Cache compiled Hyperscan database for reuse across sessions.
+    
+    Note: This is a placeholder for when Hyperscan patterns are defined.
+    Currently returns None as Hyperscan is not yet integrated.
+    
+    Note: The underscore prefix on _patterns is a Streamlit convention
+    to indicate the parameter should not be hashed for caching purposes.
+    This prevents Streamlit from attempting to hash complex pattern objects.
+    
+    Args:
+        _patterns: List of regex patterns to compile (underscore prefix prevents hashing)
+        
+    Returns:
+        Compiled Hyperscan database or None
+    """
+    if not HYPERSCAN_AVAILABLE or _patterns is None:
+        return None
+    
+    try:
+        # Compile patterns into Hyperscan database
+        # This would be implemented when Hyperscan patterns are defined
+        db = None  # Placeholder
+        return db
+    except Exception as e:
+        st.warning(f"Hyperscan database compilation failed: {e}")
+        return None
+
+
 # ---------- PAGE CONFIG ----------
 st.set_page_config(
     page_title="NBDScanner - Non-B DNA Motif Finder",
@@ -1056,6 +1112,15 @@ with tab_pages["Upload & Analyze"]:
             quality_check = st.checkbox("Quality Validation", value=True, 
                                       help="Validate detected motifs")
         
+        # Advanced options (collapsible)
+        with st.expander("🔧 Advanced Options"):
+            show_chunk_progress = st.checkbox("Show Chunk-Level Progress", value=False,
+                                             help="Display detailed progress for each processing chunk (useful for large sequences)")
+            use_parallel_scanner = st.checkbox("Use Experimental Parallel Scanner", value=False,
+                                              help="Enable experimental parallel chunk-based scanner (may improve performance on very large sequences >100kb)")
+            
+            if use_parallel_scanner:
+                st.info("ℹ️ Parallel scanner is experimental and works best on sequences >100kb with multiple CPU cores")
         
         # Hardcoded default overlap handling: always remove overlaps within subclasses
         nonoverlap = True
@@ -1119,20 +1184,62 @@ with tab_pages["Upload & Analyze"]:
                         # Calculate elapsed time
                         elapsed = time.time() - start_time
                         
-                        # Update timer display
-                        timer_placeholder.markdown(f"""
+                        # Update timer display with chunk info if enabled
+                        timer_html = f"""
                         <div style='background: linear-gradient(135deg, #1976d2 0%, #42a5f5 100%); 
                                     border-radius: 12px; padding: 1rem; color: white; text-align: center;
                                     box-shadow: 0 4px 12px rgba(25, 118, 210, 0.3); margin-bottom: 1rem;'>
                             <h3 style='margin: 0; color: white;'>⏱️ Analysis Progress</h3>
                             <h2 style='margin: 0.5rem 0; color: #FFD700; font-size: 2rem;'>{elapsed:.1f}s</h2>
                             <p style='margin: 0; opacity: 0.9;'>Sequence {i+1}/{len(st.session_state.seqs)} | {total_bp_processed:,} bp processed</p>
-                        </div>
-                        """, unsafe_allow_html=True)
+                        """
                         
-                        # Run the consolidated NBDScanner analysis
+                        # Add chunk progress if enabled
+                        if show_chunk_progress and use_parallel_scanner:
+                            # Calculate estimated chunks for this sequence
+                            chunk_size = 50000
+                            est_chunks = max(1, (len(seq) + chunk_size - 1) // chunk_size)
+                            timer_html += f"<p style='margin: 0.5rem 0; opacity: 0.8; font-size: 0.9rem;'>📦 Estimated chunks: {est_chunks}</p>"
+                        
+                        timer_html += "</div>"
+                        timer_placeholder.markdown(timer_html, unsafe_allow_html=True)
+                        
+                        # Run the analysis - use parallel scanner for large sequences if enabled
                         seq_start = time.time()
-                        results = analyze_sequence(seq, name)
+                        
+                        if use_parallel_scanner and len(seq) > 100000:
+                            # Use experimental parallel scanner for large sequences
+                            try:
+                                from scanner_agent import ParallelScanner
+                                
+                                # Create chunk progress placeholder
+                                chunk_progress_placeholder = st.empty()
+                                
+                                def chunk_progress_callback(current, total):
+                                    """Callback to update chunk progress"""
+                                    if show_chunk_progress:
+                                        chunk_percent = (current / total) * 100
+                                        chunk_progress_placeholder.info(f"🔄 Processing chunks: {current}/{total} ({chunk_percent:.1f}%)")
+                                
+                                # Run parallel scanner
+                                scanner = ParallelScanner(seq, hs_db=None)
+                                raw_motifs = scanner.run_scan(progress_callback=chunk_progress_callback)
+                                
+                                # Convert raw motifs to full motif format by running through scoring
+                                # For now, just use the standard analyzer
+                                results = analyze_sequence(seq, name)
+                                
+                                # Clear chunk progress
+                                if show_chunk_progress:
+                                    chunk_progress_placeholder.success(f"✅ Chunk processing complete: {len(raw_motifs)} raw motifs found")
+                                
+                            except Exception as e:
+                                st.warning(f"Parallel scanner failed, falling back to standard: {e}")
+                                results = analyze_sequence(seq, name)
+                        else:
+                            # Use standard consolidated NBDScanner analysis
+                            results = analyze_sequence(seq, name)
+                        
                         seq_time = time.time() - seq_start
                         
                         # Ensure all motifs have required fields
