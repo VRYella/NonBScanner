@@ -2496,8 +2496,11 @@ def calculate_genomic_density(motifs: List[Dict[str, Any]],
     """
     Calculate genomic density (coverage) for motifs.
     
-    Genomic Density (σ_G) = (Total length in bp of all predicted motifs / 
+    Genomic Density (σ_G) = (Total unique bp covered by motifs / 
                              Total length in bp of analyzed region) × 100
+    
+    IMPORTANT: Uses set-based overlap handling to ensure coverage never exceeds 100%.
+    If motifs overlap, only unique positions are counted.
     
     Args:
         motifs: List of motif dictionaries
@@ -2505,18 +2508,23 @@ def calculate_genomic_density(motifs: List[Dict[str, Any]],
         by_class: If True, calculate density per motif class
         
     Returns:
-        Dictionary with density metrics (percentage)
+        Dictionary with density metrics (percentage, capped at 100%)
     """
     if not motifs or sequence_length == 0:
         return {'Overall': 0.0}
     
     if not by_class:
-        # Overall density
-        total_motif_length = sum(m.get('Length', 0) for m in motifs)
-        overall_density = (total_motif_length / sequence_length) * 100
+        # Overall density using set-based coverage (handles overlaps correctly)
+        covered_positions = set()
+        for motif in motifs:
+            start = motif.get('Start', 0) - 1  # Convert to 0-based
+            end = motif.get('End', 0)
+            covered_positions.update(range(start, end))
+        
+        overall_density = min((len(covered_positions) / sequence_length) * 100, 100.0)
         return {'Overall': round(overall_density, 4)}
     
-    # Density per class
+    # Density per class using set-based coverage
     density_by_class = {}
     class_groups = defaultdict(list)
     
@@ -2524,14 +2532,26 @@ def calculate_genomic_density(motifs: List[Dict[str, Any]],
         class_name = motif.get('Class', 'Unknown')
         class_groups[class_name].append(motif)
     
+    # Calculate per-class density with overlap handling
     for class_name, class_motifs in class_groups.items():
-        total_class_length = sum(m.get('Length', 0) for m in class_motifs)
-        class_density = (total_class_length / sequence_length) * 100
+        covered_positions = set()
+        for motif in class_motifs:
+            start = motif.get('Start', 0) - 1  # Convert to 0-based
+            end = motif.get('End', 0)
+            covered_positions.update(range(start, end))
+        
+        class_density = min((len(covered_positions) / sequence_length) * 100, 100.0)
         density_by_class[class_name] = round(class_density, 4)
     
-    # Also add overall
-    total_motif_length = sum(m.get('Length', 0) for m in motifs)
-    density_by_class['Overall'] = round((total_motif_length / sequence_length) * 100, 4)
+    # Calculate overall density (all motifs combined)
+    all_covered_positions = set()
+    for motif in motifs:
+        start = motif.get('Start', 0) - 1  # Convert to 0-based
+        end = motif.get('End', 0)
+        all_covered_positions.update(range(start, end))
+    
+    overall_density = min((len(all_covered_positions) / sequence_length) * 100, 100.0)
+    density_by_class['Overall'] = round(overall_density, 4)
     
     return density_by_class
 
