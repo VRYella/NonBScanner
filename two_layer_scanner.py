@@ -10,7 +10,7 @@ VERSION: 2024.2 - Two-Layer Architecture
 LICENSE: MIT
 
 DESCRIPTION:
-    Implements the two-layer architecture for 10000x speed improvement:
+    Implements the two-layer architecture for optimized motif detection:
     
     Layer 1: Ultra-fast seed search (Hyperscan/RE2)
     - Zero/minimal backtracking
@@ -28,9 +28,9 @@ DESCRIPTION:
     - Per-chromosome parallelization
 
 PERFORMANCE:
-    - Single-threaded: 10-100x faster than original
-    - Multi-threaded (11 motifs): 10000x faster on multi-core systems
-    - Memory efficient: processes windows, not full sequences
+    - Wall-clock speedup through parallelization: ~9x on 9+ core systems
+    - Foundation for further optimization with Hyperscan and chunk processing
+    - Scalable architecture for genome-wide analysis
 """
 
 from typing import List, Dict, Any, Tuple, Optional

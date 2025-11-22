@@ -16,9 +16,10 @@ DESCRIPTION:
     - Direct parallelization for maximum speedup
     
 PERFORMANCE:
-    - Single motif: ~5,000-8,000 bp/s (same as standard)
-    - All motifs parallel (9 workers): ~45,000-72,000 bp/s (9x speedup)
-    - Multi-core system: Up to 10000x speedup potential with optimizations
+    - Single detector: ~5,000-8,000 bp/s (same as standard mode)
+    - All 9 detectors parallel: ~9x faster wall-clock time (not throughput)
+    - Multi-core system with 9+ cores: Near-linear speedup
+    - Foundation for further optimization: Hyperscan, chunk processing, etc.
 """
 
 from typing import List, Dict, Any, Optional

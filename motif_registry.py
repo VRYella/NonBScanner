@@ -98,15 +98,20 @@ class MotifRegistry:
             APhilicDetector
         )
         
+        # Helper function to create scan_fn without variable capture issues
+        def make_scan_fn(detector):
+            """Create scan function that properly captures detector instance"""
+            return lambda seq, name: detector.detect_motifs(seq, name)
+        
         # Create detector instances
+        g4_detector = GQuadruplexDetector()
+        imotif_detector = IMotifDetector()
+        zdna_detector = ZDNADetector()
         curved_detector = CurvedDNADetector()
         slipped_detector = SlippedDNADetector()
         cruciform_detector = CruciformDetector()
         rloop_detector = RLoopDetector()
         triplex_detector = TriplexDetector()
-        g4_detector = GQuadruplexDetector()
-        imotif_detector = IMotifDetector()
-        zdna_detector = ZDNADetector()
         aphilic_detector = APhilicDetector()
         
         # 1. G-Quadruplex (7 subclasses)
@@ -115,7 +120,7 @@ class MotifRegistry:
             seed_regex=r"G{3,}[ACGT]{0,15}G{3,}[ACGT]{0,15}G{3,}",  # At least 3 G-runs
             seed_id=1,
             window_size=200,
-            scan_fn=lambda seq, name: g4_detector.detect_motifs(seq, name),
+            scan_fn=make_scan_fn(g4_detector),
             description="Canonical G-quadruplex seed",
             priority=10
         ))
@@ -126,7 +131,7 @@ class MotifRegistry:
             seed_regex=r"C{3,}[ACGT]{0,15}C{3,}[ACGT]{0,15}C{3,}",  # At least 3 C-runs
             seed_id=2,
             window_size=200,
-            scan_fn=lambda seq, name: imotif_detector.detect_motifs(seq, name),
+            scan_fn=make_scan_fn(imotif_detector),
             description="i-Motif seed pattern",
             priority=9
         ))
@@ -137,7 +142,7 @@ class MotifRegistry:
             seed_regex=r"[CG]{6,}",  # CG-rich regions
             seed_id=3,
             window_size=150,
-            scan_fn=lambda seq, name: zdna_detector.detect_motifs(seq, name),
+            scan_fn=make_scan_fn(zdna_detector),
             description="Z-DNA alternating purine-pyrimidine",
             priority=8
         ))
@@ -148,7 +153,7 @@ class MotifRegistry:
             seed_regex=r"A{4,}",  # A-tract seed
             seed_id=4,
             window_size=150,
-            scan_fn=lambda seq, name: curved_detector.detect_motifs(seq, name),
+            scan_fn=make_scan_fn(curved_detector),
             description="Curved DNA A-tracts",
             priority=7
         ))
@@ -159,7 +164,7 @@ class MotifRegistry:
             seed_regex=r"([ACGT]{6,})",  # Simple repeat unit seed
             seed_id=5,
             window_size=300,
-            scan_fn=lambda seq, name: slipped_detector.detect_motifs(seq, name),
+            scan_fn=make_scan_fn(slipped_detector),
             description="Direct repeat seed",
             priority=6
         ))
@@ -170,7 +175,7 @@ class MotifRegistry:
             seed_regex=r"([ACGT]{1,6})\1{2,}",  # 3-4 unit repeats
             seed_id=6,
             window_size=200,
-            scan_fn=lambda seq, name: slipped_detector.detect_motifs(seq, name),
+            scan_fn=make_scan_fn(slipped_detector),
             description="Short tandem repeat seed",
             priority=6
         ))
@@ -181,7 +186,7 @@ class MotifRegistry:
             seed_regex=r"[ACGT]{6,}",  # Arm seed (minimal loop)
             seed_id=7,
             window_size=250,
-            scan_fn=lambda seq, name: cruciform_detector.detect_motifs(seq, name),
+            scan_fn=make_scan_fn(cruciform_detector),
             description="Inverted repeat arm seed",
             priority=6
         ))
@@ -192,7 +197,7 @@ class MotifRegistry:
             seed_regex=r"G{3,}[ACGT]{5,50}G{3,}",  # G-rich regions
             seed_id=8,
             window_size=300,
-            scan_fn=lambda seq, name: rloop_detector.detect_motifs(seq, name),
+            scan_fn=make_scan_fn(rloop_detector),
             description="R-loop formation site seed",
             priority=7
         ))
@@ -203,7 +208,7 @@ class MotifRegistry:
             seed_regex=r"[GA]{10,}|[CT]{10,}",  # Homopurine/homopyrimidine
             seed_id=9,
             window_size=250,
-            scan_fn=lambda seq, name: triplex_detector.detect_motifs(seq, name),
+            scan_fn=make_scan_fn(triplex_detector),
             description="Triplex mirror repeat seed",
             priority=6
         ))
@@ -214,7 +219,7 @@ class MotifRegistry:
             seed_regex=r"(?:GAA){3,}|(?:TTC){3,}",  # GAA/TTC repeats
             seed_id=10,
             window_size=150,
-            scan_fn=lambda seq, name: triplex_detector.detect_motifs(seq, name),
+            scan_fn=make_scan_fn(triplex_detector),
             description="Sticky DNA GAA/TTC repeats",
             priority=6
         ))
@@ -225,7 +230,7 @@ class MotifRegistry:
             seed_regex=r"A{6,}",  # Poly-A tracts
             seed_id=11,
             window_size=150,
-            scan_fn=lambda seq, name: aphilic_detector.detect_motifs(seq, name),
+            scan_fn=make_scan_fn(aphilic_detector),
             description="A-philic DNA regions",
             priority=5
         ))
