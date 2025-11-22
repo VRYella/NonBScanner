@@ -116,6 +116,9 @@ plt.rcParams.update({
     'axes.facecolor': '#FAFBFC',
 })
 
+# Constants for enrichment analysis visualization
+INFINITE_FOLD_ENRICHMENT_CAP = 100  # Cap for infinite fold enrichment values in plots
+
 def set_scientific_style():
     """Apply scientific publication-ready styling"""
     sns.set_style("whitegrid")
@@ -1483,7 +1486,7 @@ def plot_enrichment_analysis(enrichment_results: Dict[str, Dict[str, Any]],
         result = enrichment_results[cls]
         fe = result.get('fold_enrichment', 0)
         if fe == 'Inf':
-            fe = 100  # Cap infinite values for visualization
+            fe = INFINITE_FOLD_ENRICHMENT_CAP  # Cap infinite values for visualization
         fold_enrichments.append(fe)
         p_values.append(result.get('p_value', 1.0))
         observed_densities.append(result.get('observed_density', 0))
@@ -1504,7 +1507,7 @@ def plot_enrichment_analysis(enrichment_results: Dict[str, Dict[str, Any]],
     
     # Add value labels
     for i, (bar, val) in enumerate(zip(bars1, fold_enrichments)):
-        label_text = f'{val:.2f}' if val < 100 else 'Inf'
+        label_text = f'{val:.2f}' if val < INFINITE_FOLD_ENRICHMENT_CAP else 'Inf'
         ax1.text(val + max(fold_enrichments) * 0.01, i, label_text, 
                 va='center', fontsize=9, fontweight='bold')
     

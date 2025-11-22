@@ -2624,9 +2624,8 @@ def calculate_enrichment_with_shuffling(motifs: List[Dict[str, Any]],
     
     sequence_length = len(sequence)
     
-    # Calculate observed densities
+    # Calculate observed densities (genomic density is used for enrichment)
     observed_genomic_density = calculate_genomic_density(motifs, sequence_length, by_class=by_class)
-    observed_positional_density = calculate_positional_density(motifs, sequence_length, unit='kbp', by_class=by_class)
     
     # Initialize background storage
     if by_class:
