@@ -32,11 +32,11 @@ class ParallelScanner:
     """
     Parallel scanner that processes each motif type independently.
     
-    This is the most effective approach for 10000x speedup:
+    This is an effective approach for significant speedup (~9x on multi-core systems):
     - No seed matching overhead
     - No window extraction overhead
     - Direct parallelization of detector classes
-    - Scales linearly with number of cores
+    - Scales near-linearly with number of cores (up to 9 cores)
     """
     
     def __init__(self, max_workers: Optional[int] = None):

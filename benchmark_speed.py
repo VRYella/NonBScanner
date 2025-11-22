@@ -1,12 +1,17 @@
 #!/usr/bin/env python3
 """
-Benchmark script for NonBScanner two-layer architecture.
+Benchmark script for NonBScanner parallel processing architectures.
 
-Tests performance improvements of the new architecture:
-- Single-threaded vs multi-threaded
-- Standard mode vs fast mode
-- Different sequence sizes
-- Realistic genomic sequences
+Tests performance improvements across multiple modes:
+- Standard mode: Sequential execution of all 9 detectors
+- Fast mode (single-threaded): Two-layer architecture without parallelization
+- Fast mode (multi-threaded): Parallel execution of all 9 detectors
+
+Compares:
+- Number of motifs detected
+- Execution time
+- Throughput (bp/s)
+- Speedup factors
 """
 
 import time

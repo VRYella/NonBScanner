@@ -203,6 +203,10 @@ class TwoLayerScanner:
     Supports chunk-based processing for large sequences.
     """
     
+    # Configuration constants for parallelization thresholds
+    MIN_MOTIF_TYPES_FOR_PARALLEL = 3  # Minimum unique motif types to justify parallel processing
+    MIN_SEED_HITS_FOR_PARALLEL = 20   # Minimum total seed hits to justify parallel processing
+    
     def __init__(self, use_hyperscan: bool = True, max_workers: Optional[int] = None,
                  chunk_size: int = 100000):
         """
@@ -252,7 +256,8 @@ class TwoLayerScanner:
         # Layer 2: Motif-specific scoring + backtracking
         # Only use parallel for significant workloads to avoid overhead
         motif_types = len(set(hit.motif_id for hit in seed_hits))
-        if use_parallel and (motif_types >= 3 or len(seed_hits) > 20):
+        if use_parallel and (motif_types >= self.MIN_MOTIF_TYPES_FOR_PARALLEL or 
+                            len(seed_hits) > self.MIN_SEED_HITS_FOR_PARALLEL):
             motifs = self._process_parallel(seed_hits, sequence)
         else:
             motifs = self._process_sequential(seed_hits, sequence)

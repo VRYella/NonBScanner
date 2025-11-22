@@ -103,6 +103,7 @@ class MotifRegistry:
         )
         
         # Helper function to create scan_fn without variable capture issues
+        # Using closure-based approach which is clear and maintains compatibility
         def make_scan_fn(detector):
             """Create scan function that properly captures detector instance"""
             return lambda seq, name: detector.detect_motifs(seq, name)
